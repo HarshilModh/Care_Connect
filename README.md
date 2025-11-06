@@ -1,143 +1,195 @@
-# care_connect_final
+# CareConnect
 
-A small full-stack project (frontend + backend) configured to run with Docker Compose.
+CareConnect is a MERN based caregiving collaboration platform.
+Families, caregivers and care recipients can coordinate care activities in one place.
 
-## What this repo contains
+---
 
-- `backend/` — Node/Express API
-- `frontend/` — Vite + React app
-- `docker-compose.yml` — brings up API, frontend (dev server), MongoDB and Redis
+## Repository Structure
 
-## Prerequisites
+```
+/backend      Node plus Express API
+/frontend     React with Vite
+docker-compose.yml   Starts backend, frontend, MongoDB, Redis
+```
 
-- Docker & Docker Compose (desktop on macOS)
-- (Optional) Node.js/npm/yarn for local development without Docker
+---
 
-## Quick start (recommended — Docker)
+## Requirements
 
-From the project root:
+* Docker Desktop (Mac, Windows or Linux)
+* Optional: Node JS for running backend or frontend without Docker
 
-```bash
-# stop any previous run
+---
+
+## Start the entire project with Docker (recommended)
+
+From the project root folder:
+
+```sh
 docker compose down
-
-# build and start all services
 docker compose up --build
 ```
 
-This will:
-- Build and run the `api` service on container port 3000 (host mapped to 3000)
-- Start the frontend dev server on container port 5173 (host mapped to 5173)
-- Run MongoDB and Redis containers
+What happens
 
-Frontend will use the environment variable `VITE_API_URL` configured in `docker-compose.yml` (by default: `http://localhost:3000/api`).
+| Service     | URL or Port                                    | Description                                 |
+| ----------- | ---------------------------------------------- | ------------------------------------------- |
+| Backend API | [http://localhost:3000](http://localhost:3000) | Express server connected to Mongo and Redis |
+| Frontend    | [http://localhost:5173](http://localhost:5173) | Vite development server with hot reload     |
+| MongoDB     | 27017                                          | Data persistence through Docker volume      |
+| Redis       | 6379                                           | Token caching and background processes      |
 
-## Local development (without Docker)
+The frontend reads the API base URL from the environment variable `VITE_API_URL` set inside docker compose.
 
-Backend (from `backend/`):
+---
 
-```bash
+## Run locally without Docker (development mode)
+
+### Backend
+
+```sh
 cd backend
 npm install
-npm run dev # or npm start depending on package.json scripts
+npm run dev
 ```
 
-Frontend (from `frontend/`):
+Your backend `.env` should contain:
 
-```bash
+```
+MONGODB_URI=mongodb://127.0.0.1:27017/care_connect_db
+REDIS_URL=redis://127.0.0.1:6379
+```
+
+### Frontend
+
+```sh
 cd frontend
 npm install
 npm run dev
 ```
 
-When running locally, make sure to set the frontend's API base URL (for Vite) — e.g. create `.env` with `VITE_API_URL=http://localhost:3000/api` or set it in your dev environment.
-
-## Ports
-
-- API: http://localhost:3000
-- Frontend: http://localhost:5173
-- MongoDB: 27017 (container mapped to host 27017 by default)
-- Redis: 6379 (container mapped to host 6379 by default)
-
-## Redis port conflict (common issue)
-
-If you see an error like:
+Create `frontend/.env`:
 
 ```
-Bind for 0.0.0.0:6379 failed: port is already allocated
+VITE_API_URL=http://localhost:3000/api
 ```
 
-That means something on your host is already listening on port 6379 (commonly a local Redis server). You have two main options:
+---
 
-1) Stop the host Redis service (macOS Homebrew example):
+## Optional: Run MongoDB and Redis manually (useful when backend runs with nodemon)
 
-```bash
-# check brew services
-brew services list
-# stop redis if it's running via brew
+### Start MongoDB with volume persistence
+
+```sh
+docker run -d \
+  --name mongodb \
+  -p 27017:27017 \
+  -v mongo-data:/data/db \
+  mongo:7
+```
+
+### Start Redis
+
+```sh
+docker run -d \
+  --name redis \
+  -p 6379:6379 \
+  redis:7 --appendonly yes
+```
+
+### Stop or start later
+
+```sh
+docker stop mongodb redis
+docker start mongodb redis
+```
+
+You do not need to recreate containers every time.
+Just stop and start them.
+
+---
+
+## Redis port already in use
+
+If Redis is already running on your machine you may see:
+
+```
+Bind for port 6379 failed: port is already allocated
+```
+
+Fix option:
+
+Stop the local Redis service if installed via Homebrew:
+
+```sh
 brew services stop redis
 ```
 
-Or find and kill the process directly:
-
-```bash
-# find process using port 6379
-lsof -iTCP:6379 -sTCP:LISTEN -n -P
-# kill the PID shown (use cautiously)
-sudo kill -9 <PID>
-```
-
-2) Change the host port mapping in `docker-compose.yml` to avoid colliding with host 6379. Example — map host 6380 to container 6379:
+Or change Redis port inside docker compose:
 
 ```yaml
-services:
-  redis:
-    image: redis:7
-    ports:
-      - "6380:6379"
+redis:
+  ports:
+    - "6380:6379"
 ```
 
-After changing the port mapping, update any code/config that connects to Redis from the host (if needed). Containers can still talk to each other using the container port `6379` (no host mapping required for inter-container communication).
+---
 
-Alternatively, if you don't need external access to Redis from the host, you can remove the `ports:` mapping for Redis entirely — containers will still be able to connect internally via the service name `redis:6379`.
+## Notes about volumes and node modules
 
-## Notes about volumes and node_modules
+Docker compose keeps the backend and frontend `node_modules` isolated using volumes.
+This avoids permission issues between host and container.
 
-The Compose file mounts the project directories into `/app` and uses a separate `node_modules` volume path (`/app/node_modules`) to avoid host/guest permission issues. If you face strange permissions or differences between host and container node modules, consider using a named volume for node_modules or avoid mounting `node_modules` from host.
-
-Example named volume (in `docker-compose.yml`):
+Example in `docker-compose.yml`:
 
 ```yaml
 volumes:
   backend_node_modules:
 ```
 
-Then use it in `api` service:
+Then referenced in backend service:
 
 ```yaml
-    volumes:
-      - ./backend:/app
-      - backend_node_modules:/app/node_modules
+volumes:
+  - ./backend:/app
+  - backend_node_modules:/app/node_modules
 ```
-
-## Troubleshooting
-
-- If a service fails to start, run `docker compose logs <service>` to inspect output.
-- To rebuild after code or Dockerfile changes: `docker compose up --build`.
-- To run detached: `docker compose up -d --build` and `docker compose logs -f` to follow logs.
-
-## Project-specific env files
-
-The `api` service reads environment from `backend/.env` (see `docker-compose.yml`). Make sure required variables are present.
-
-## Next steps / Improvements
-
-- Add a healthcheck for services in `docker-compose.yml`.
-- Use named volumes for `node_modules` to make developer experience smoother across platforms.
 
 ---
 
-If you'd like, I can also:
-- Add a short `Makefile` or npm scripts to simplify common Docker commands.
-- Update `docker-compose.yml` to use a non-conflicting Redis host port or add named volumes.
+## Troubleshooting
 
+| Problem                      | Solution                        |
+| ---------------------------- | ------------------------------- |
+| Service is not starting      | `docker compose logs <service>` |
+| Need to rebuild containers   | `docker compose up --build`     |
+| Run containers in background | `docker compose up -d`          |
+| Follow logs live             | `docker compose logs -f`        |
+
+---
+
+## Environment file locations
+
+* Backend uses: `backend/.env`
+* Frontend uses: `frontend/.env`
+* Docker Compose injects both automatically
+
+---
+
+## Future improvements
+
+* Add health checks for Mongo and Redis
+* Add Makefile or npm scripts to simplify common Docker commands
+
+---
+
+If you want, I can also generate:
+
+* a Makefile (`make up`, `make stop`, `make restart`)
+* a production compose file for deployment
+* a small architecture diagram for the README
+
+Just say:
+
+> add Makefile and architecture diagram
