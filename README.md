@@ -174,22 +174,3 @@ volumes:
 * Backend uses: `backend/.env`
 * Frontend uses: `frontend/.env`
 * Docker Compose injects both automatically
-
----
-
-## Future improvements
-
-* Add health checks for Mongo and Redis
-* Add Makefile or npm scripts to simplify common Docker commands
-
----
-
-If you want, I can also generate:
-
-* a Makefile (`make up`, `make stop`, `make restart`)
-* a production compose file for deployment
-* a small architecture diagram for the README
-
-Just say:
-
-> add Makefile and architecture diagram
