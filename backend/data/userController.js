@@ -11,7 +11,22 @@ import { createClient } from 'redis';
 const client = createClient();
 
 //Data Functions
+const generateAccessAndRefereshTokens = async(userId) =>{
+    try {
+        const user = await User.findById(userId)
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
 
+        user.refreshToken = refreshToken
+        await user.save({ validateBeforeSave: false })
+
+        return {accessToken, refreshToken}
+
+
+    } catch (error) {
+        throw new ApiError(500, "Something went wrong while generating referesh and access token")
+    }
+}
 //Create User
 export const createUser = async ( firstName,
   lastName,
@@ -19,8 +34,51 @@ export const createUser = async ( firstName,
   password,
   confirmPassword
 ) => {
-    
+  try {
+    //validation
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
+      throw new Error('All fields are required');
+    }
+    if(typeof firstName !== 'string' || typeof lastName !== 'string' || typeof email !== 'string' || typeof password !== 'string' || typeof confirmPassword !== 'string'){
+      throw new Error('All fields must be strings');
+    }
+    if(firstName.trim()==="" || lastName.trim()==="" || email.trim()==="" || password.trim()==="" || confirmPassword.trim()===""){
+      throw new Error('Fields cannot be empty');
+    }
+    if (
+      !isValidString(firstName) ||
+      !isValidString(lastName) ||
+      !isValidEmail(email) ||
+      !isValidPassword(password) ||
+      !isValidPassword(confirmPassword)
+    ) {
+      throw new Error('Invalid input data');
+    }
+    if (password !== confirmPassword) {
+      throw new Error('Passwords do not match');
+    }
+
+    //check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      throw new Error('User with this email already exists');
+    } 
+    //create new user
+    const newUser = new User({
+      firstName,
+      lastName,
+      email,
+      password,
+    });
+    await newUser.save();
+    return newUser;
+  } catch (error) {
+    throw new Error(`Error creating user: ${error.message}`);
+  }
+
 };
+//demo sample data for user creation
+
 //now create only function defination we will implement later
 
 //Get User by ID
@@ -36,7 +94,44 @@ export const deleteUser = async (userId) => {};
 export const getAllUsers = async () => {};
 
 //Authenticate User
-export const authenticateUser = async (email, password) => {};
+export const authenticateUser = async (email, password) => {
+  try {
+    if (!email || !password) {
+      throw new Error('Email and password are required');
+    }
+    if(typeof email !== 'string' || typeof password !== 'string'){
+      throw new Error('Email and password must be strings');
+    }
+    if(email.trim()==="" || password.trim()===""){
+      throw new Error('Email and password cannot be empty');
+    }
+    if (!isValidEmail(email) || !isValidPassword(password)) {
+      throw new Error('Invalid email or password format');
+    }
+    console.log(password);
+    
+    email = email.trim();
+    password = password.trim();
+    
+    let user = await User.findOne({ email });
+    // console.log(user);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    // console.log(user.password);
+    
+    const isPasswordValid = await user.isPasswordCorrect(password);
+    if (!isPasswordValid) {
+      throw new Error('Invalid password');
+    }
+    const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(user._id);
+    let loggedInUser = await User.findOne({ email }).select('-password');
+
+    return loggedInUser;
+  } catch (error) {
+    throw new Error(`Error authenticating user: ${error.message}`);
+  }     
+};
 
 //Change User Password
 export const changeUserPassword = async (userId, oldPassword, newPassword) => {};
