@@ -5,61 +5,62 @@ import jwt from 'jsonwebtoken';
 dotenv.config();
 
 const userSchema = new mongoose.Schema({
-    firstName: { 
-        type: String, 
-        required: true ,
-        trim: true,
-        lowercase: true,
-        minlength: 2,
-        maxlength: 50
-    
-    },
-    lastName: {
-         type: String,
-         required: true ,
-        trim: true,
-            lowercase: true,
-            minlength: 2,
-            maxlength: 50
-        
-        },
-    email: {
-         type: String, 
-         required: true, 
-         unique: true, 
-         trim: true,
-         lowercase: true ,
-         match: [/^\S+@\S+\.\S+$/, 'Please use a valid email address.']},
-    password: { 
-        type: String,
-         required: true,
-         select: false,// Exclude password from queries by default
-         trim: true,
-         minlength: 6,
-         maxlength: 128,
-        match: [/(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}/, 'Password must contain at least one uppercase letter, one lowercase letter, and one number.']
-        },
-    role: { type: String,
-         enum: ['admin', 'familyMember', 'careGiver','careRecipient'], 
-         default: 'familyMember',
-         required: true 
-        },
-        refreshToken: {
-            type: String,
-            default: null
-        },
-        isVerified: {
-            type: Boolean,
-            default: false
-        },
-        googleId: {
-            type: String,
-            default: null
-        },
-        profilePicture: {
-            type: String,
-            default: null
-        }
+  firstName: {
+    type: String,
+    required: true,
+    trim: true,
+    lowercase: true,
+    minlength: 2,
+    maxlength: 50
+
+  },
+  lastName: {
+    type: String,
+    required: true,
+    trim: true,
+    lowercase: true,
+    minlength: 2,
+    maxlength: 50
+
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    lowercase: true,
+    match: [/^\S+@\S+\.\S+$/, 'Please use a valid email address.']
+  },
+  password: {
+    type: String,
+    required: true,
+    trim: true,
+    minlength: 6,
+    maxlength: 128,
+    match: [/(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}/, 'Password must contain at least one uppercase letter, one lowercase letter, and one number.']
+    //demo Password Validation: 
+  },
+  role: {
+    type: String,
+    enum: ['admin', 'familyMember', 'careGiver', 'careRecipient'],
+    default: 'familyMember'
+  },
+  refreshToken: {
+    type: String,
+    default: null
+  },
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  googleId: {
+    type: String,
+    default: null
+  },
+  profilePicture: {
+    type: String,
+    default: null
+  }
 
 }, { timestamps: true });
 // Hash password before saving
@@ -106,3 +107,10 @@ userSchema.methods.generateRefreshToken = function () {
 const User = mongoose.model("User", userSchema);
 
 export default User;
+// {
+//     "firstName": "John",
+//     "lastName": "Doe",
+//     "email": "john.doe@example.com",
+//     "password": "password123",
+//     "confirmPassword": "password123"
+// }
