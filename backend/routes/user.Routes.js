@@ -1,12 +1,13 @@
-import {createUser,authenticateUser} from '../data/userController.js';
+import { createUser, authenticateUser } from '../data/userController.js';
 import express from 'express';
 
 const router = express.Router();
 
 // Route to create a new user
 router.post('/signUp', async (req, res) => {
-  try { 
+  try {
     const { firstName, lastName, email, password, confirmPassword } = req.body;
+    console.log(">>", req.body);
     const newUser = await createUser(firstName, lastName, email, password, confirmPassword);
     res.status(201).json({ message: 'User created successfully', userId: newUser._id });
   } catch (error) {
@@ -22,10 +23,10 @@ router.post('/login', async (req, res) => {
     if (!email || !password) {
       throw new Error('Email and password are required');
     }
-    if(typeof email !== 'string' || typeof password !== 'string'){
+    if (typeof email !== 'string' || typeof password !== 'string') {
       throw new Error('Email and password must be strings');
     }
-    if(email.trim()==="" || password.trim()===""){
+    if (email.trim() === "" || password.trim() === "") {
       throw new Error('Email and password cannot be empty');
     }
     email = email.trim();

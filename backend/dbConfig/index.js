@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export const connectDB = async () => {
-    try {      
+    try {
         await mongoose.connect(`${process.env.MONGODB_URI}`);
         console.log(`Connected to MongoDB care_connect_db`);
     } catch (error) {

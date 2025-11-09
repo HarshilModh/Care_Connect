@@ -18,14 +18,14 @@ app.use(express.json());
 
 
 // // Sample Route
-// app.get('/', (req, res) => {
-//   res.send('Hello, World!');
-// });
+app.get('/', (req, res) => {
+    res.send('Hello, World!');
+});
 // API Routes
 apiRouter(app);
 // Connect to Database and Start Server
 connectDB().then(() => {
-  //redis client connection
+    //redis client connection
     client.connect().then(() => {
         console.log('Connected to Redis');
     }).catch((err) => {

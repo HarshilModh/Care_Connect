@@ -1,9 +1,9 @@
 import React from "react";
 import { useState, useEffect } from "react";
 import { FcGoogle } from "react-icons/fc";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { ToastContainer, toast } from 'react-toastify';
-
+import api from "../api/axios";
 
 
 export default function Signup() {
@@ -12,13 +12,15 @@ export default function Signup() {
         lastName: "",
         email: "",
         password: "",
+        confirmpassword: "",
     });
+
 
     const [errors, setErrors] = useState({});
     const [theme, setTheme] = useState('light');
 
     useEffect(() => {
-        // On component mount, check local storage for theme preference
+
         const savedTheme = localStorage.getItem('theme');
         console.log("savedTheme", savedTheme)
         if (savedTheme) {
@@ -47,9 +49,11 @@ export default function Signup() {
         }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Add your form validation and submission logic here
+
+
+
 
         if (formData.firstName.trim() === "") {
             toast.error("First Name is required");
@@ -67,6 +71,56 @@ export default function Signup() {
             toast.error("Password is required");
             return;
         }
+        if (formData.confirmpassword.trim() === "") {
+            toast.error("Confirm Password is required");
+            return;
+        }
+        if (formData.password !== formData.confirmpassword) {
+            toast.error("Passwords do not match");
+            return;
+        }
+
+
+
+
+        const payload = {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            password: formData.password,
+            confirmPassword: formData.confirmpassword,
+
+        };
+
+
+
+        const response = api.post('users/signUp', payload)
+            .then((res) => {
+                console.log("res", res);
+                toast.success("Account created successfully! Please check your email to verify your account.");
+                Navigate('/signin');
+                // Reset form
+                setFormData({
+                    firstName: "",
+                    lastName: "",
+                    email: "",
+                    password: "",
+                    confirmpassword: "",
+                });
+            })
+            .catch((err) => {
+                console.log("err", err);
+                if (err.response && err.response.data && err.response.data.error) {
+                    toast.error(err.response.data.error);
+                } else {
+                    toast.error("An error occurred. Please try again.");
+                }
+            });
+
+        console.log("response", response);
+
+
+
 
         console.log("Form submitted:", formData);
 
@@ -332,7 +386,7 @@ export default function Signup() {
                                     id="password"
                                     name="password"
                                     type="password"
-                                    value={formData.email}
+                                    value={formData.password}
                                     onChange={handleChange}
                                     placeholder="••••••••"
                                     className="w-full px-4 py-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
@@ -340,6 +394,25 @@ export default function Signup() {
                                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 py-4">
                                     Must be at least 8 characters long
                                 </p>
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="confirmpassword"
+                                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 py-4"
+                                >
+                                    Confirm Password
+                                </label>
+                                <input
+                                    id="confirmpassword"
+                                    name="confirmpassword"
+                                    type="password"
+                                    value={formData.confirmpassword}
+                                    onChange={handleChange}
+                                    placeholder="••••••••"
+                                    className="w-full px-4 py-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                                />
+
                             </div>
 
                             {/* Terms and Conditions */}
