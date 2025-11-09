@@ -1,9 +1,5 @@
-<<<<<<< HEAD
-import { createUser, authenticateUser } from '../data/userController.js';
-=======
-import {createUser,authenticateUser,getUserById,updateUser, logoutUser, refreshToken, changeUserPassword} from '../data/userController.js';
+import { createUser, authenticateUser, getUserById, updateUser, logoutUser, refreshToken, changeUserPassword } from '../data/userController.js';
 import { requireAuth } from '../middlewares/auth.js';
->>>>>>> Aditya
 import express from 'express';
 
 const router = express.Router();
