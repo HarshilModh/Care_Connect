@@ -5,6 +5,7 @@ import Home from './pages/Home'
 import Landing from './pages/Landing';
 import SignUp from './pages/Signup';
 import SignIn from './pages/SignIn';
+import VerifySuccess from './pages/VerifySuccess';
 
 
 
@@ -21,6 +22,8 @@ function App() {
 
       <Routes>
         <Route path='/' element={<Landing />} />
+        <Route path='/verify-success' element={<VerifySuccess />} />
+        <Route path='/home' element={<Home />} />
 
         {/* <Route path='/dashbaord' element={<PrivateRoute />}>
           <Route path='/dashboard' element={<Dashbaord />} />

@@ -1,12 +1,15 @@
 import React from "react";
 import { useState, useEffect } from "react";
 import { FcGoogle } from "react-icons/fc";
-import { Link, Navigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from 'react-toastify';
+import { signInWithPopup, sendEmailVerification, onAuthStateChanged, createUserWithEmailAndPassword } from "firebase/auth";
+import { auth, googleProvider } from "../firebase";
 import api from "../api/axios";
 
 
 export default function Signup() {
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
         firstName: "",
         lastName: "",
@@ -15,6 +18,16 @@ export default function Signup() {
         confirmpassword: "",
     });
 
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            if (user.emailVerified) {
+                navigate('/'); // Redirect to home or dashboard
+                console.log("Email verified:", user.email);
+            } else {
+                console.log("Email not verified yet");
+            }
+        }
+    });
 
     const [errors, setErrors] = useState({});
     const [theme, setTheme] = useState('light');
@@ -49,11 +62,45 @@ export default function Signup() {
         }
     };
 
+
+    const handleGoogleLogin = async () => {
+
+        try {
+
+            const result = await signInWithPopup(auth, googleProvider);
+            console.log("Google sign-in result:", result);
+            const user = result.user;
+            const token = await user.getIdToken();
+            console.log("token", token);
+
+
+            const res = await api.post("/users/google", { "idToken": token }, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (res.data.error) {
+                toast.error(res.data.error);
+                return;
+            }
+            if (res.data && res.data.tokens && res.data.tokens.accessToken) {
+                localStorage.setItem("accessToken", res.data.tokens.accessToken);
+            }
+            console.log("Backend response:", res.data);
+            toast.success("Logged in successfully!");
+            // navigate('/home');
+            // navigate("/home", { replace: true })
+            setTimeout(() => navigate("/home", { replace: true }), 1000);
+
+
+
+        } catch (err) {
+            console.error("Google login error:", err);
+            toast.error("Google Sign-In failed. Try again.");
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-
-
 
         if (formData.firstName.trim() === "") {
             toast.error("First Name is required");
@@ -80,8 +127,21 @@ export default function Signup() {
             return;
         }
 
+        const userCredential = await createUserWithEmailAndPassword(
+            auth,
+            formData.email,
+            formData.password
+        );
+        const user = userCredential.user;
+        console.log("User created:", user);
+        console.log("User created:", user.auth.currentUser.uid);
+        console.log("User UID:", user.uid);
 
-
+        // Step 2: Send Firebase email verification
+        await sendEmailVerification(user, {
+            url: "http://localhost:5173/verify-success", // custom redirect URL
+        });
+        toast.success("Verification email sent! Please check your inbox.");
 
         const payload = {
             firstName: formData.firstName,
@@ -89,16 +149,15 @@ export default function Signup() {
             email: formData.email,
             password: formData.password,
             confirmPassword: formData.confirmpassword,
+            firebaseUid: user.uid
 
         };
-
 
 
         const response = api.post('users/signUp', payload)
             .then((res) => {
                 console.log("res", res);
-                toast.success("Account created successfully! Please check your email to verify your account.");
-                Navigate('/signin');
+                console.log("auth", auth)
                 // Reset form
                 setFormData({
                     firstName: "",
@@ -119,6 +178,11 @@ export default function Signup() {
 
         console.log("response", response);
 
+
+        if (response && response.data) {
+            toast.success("Signup successful! Please verify your email before logging in.");
+        }
+        setTimeout(() => navigate("/home", { replace: true }), 1000);
 
 
 
@@ -290,6 +354,7 @@ export default function Signup() {
                         {/* OAuth Buttons */}
                         <div className="space-y-3 mb-8">
                             <button
+                                onClick={handleGoogleLogin}
                                 type="button"
                                 className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 group hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md"
                             >

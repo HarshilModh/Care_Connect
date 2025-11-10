@@ -1,14 +1,17 @@
-import { createUser, authenticateUser, getUserById, updateUser, logoutUser, refreshToken, changeUserPassword } from '../data/userController.js';
-import { requireAuth } from '../middlewares/auth.js';
+import { createUser, authenticateUser, getUserById, updateUser, logoutUser, refreshToken, changeUserPassword, authenticateUserWithGoogle } from '../data/userController.js';
+import { requireAuth, verifyFirebaseToken } from '../middlewares/auth.js';
 import express from 'express';
+import admin from '../integrations/firebaseAdmin.js';
+import User from '../models/user.model.js';
+
 
 const router = express.Router();
 
 // Route to create a new user
 router.post('/signUp', async (req, res) => {
   try {
-    const { firstName, lastName, email, password, confirmPassword, phone } = req.body;
-    const newUser = await createUser(firstName, lastName, email, password, confirmPassword, phone);
+    const { firstName, lastName, email, password, confirmPassword, phone, firebaseUid } = req.body;
+    const newUser = await createUser(firstName, lastName, email, password, confirmPassword, phone, firebaseUid);
     res.status(201).json({ message: 'User created successfully', user: newUser });
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -31,6 +34,7 @@ router.post('/login', async (req, res) => {
     }
     email = email.trim().toLowerCase();
     password = password.trim();
+    console.log("Attempting login for:", email);
     const authResult = await authenticateUser(email, password);
     res.status(200).json(authResult);
   } catch (error) {
@@ -77,6 +81,60 @@ router.patch('/me/password', requireAuth, async (req, res, next) => {
     const result = await changeUserPassword(req.user._id, oldPassword, newPassword);
     res.json(result); // { ok: true }
   } catch (e) { next(e); }
+});
+
+router.post('/google', verifyFirebaseToken, async (req, res, next) => {
+  try {
+    const { idToken } = req.body || {};
+    console.log("firstToken", idToken, req.body);
+    if (!idToken) return res.status(400).json({ error: 'ID token required' });
+    // Call the controller function to handle Google sign-in
+    const authResult = await authenticateUserWithGoogle(idToken);
+    res.status(200).json(authResult);
+  } catch (e) { next(e); }
+});
+
+router.post("/verify-email", verifyFirebaseToken, async (req, res) => {
+  try {
+    console.log('📧 Syncing email verification for:', req.firebaseUser);
+
+    // Find or create user
+    let user = await User.findOne({ email: req.firebaseUser.email });
+    console.log("firstUser", user);
+
+    if (!user) {
+      // Create new user if doesn't exist
+      user = await User.create({
+        firebaseUid: req.user.uid,
+        email: req.user.email,
+        emailVerified: true,
+        verifiedAt: new Date()
+      });
+      console.log('✅ Created new user in MongoDB');
+    } else {
+      // Update existing user
+      user.isVerified = true;
+      await user.save();
+      console.log('✅ Updated user verification status');
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Email verification synced',
+      user: {
+        email: user.email,
+        emailVerified: user.emailVerified
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Verification sync error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to sync verification',
+      details: error.message
+    });
+  }
 });
 
 

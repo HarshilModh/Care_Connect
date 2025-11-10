@@ -35,7 +35,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true,
     default: null
-  },  
+  },
   password: {
     type: String,
     required: true,
@@ -63,6 +63,10 @@ const userSchema = new mongoose.Schema({
     default: null
   },
   profilePicture: {
+    type: String,
+    default: null
+  },
+  firebaseUid: {
     type: String,
     default: null
   }

@@ -72,7 +72,7 @@ export const isValidArray = (arr, varName) => {
   return arr;
 };
 
-export const isValidNumber =  (value, varName) => {
+export const isValidNumber = (value, varName) => {
   if (value === undefined || value === null) {
     throw new Error(`${varName} is required.`);
   }

@@ -4,11 +4,15 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import User from '../models/user.model.js';
-import {isValidArray,isValidEmail,isValidID,isValidPassword,isValidString,isValidNumber,isValidPhone } from '../utils/validation.utils.js';
+import { isValidArray, isValidEmail, isValidID, isValidPassword, isValidString, isValidNumber, isValidPhone } from '../utils/validation.utils.js';
 //redisClient
 import { createClient } from 'redis';
-import {toSeconds} from '../helper.js'
+import { toSeconds } from '../helper.js'
 import jwt from 'jsonwebtoken';
+
+import admin from "../integrations/firebaseAdmin.js";
+
+dotenv.config();
 
 const client = createClient({
   url: process.env.REDIS_URL,
@@ -21,27 +25,27 @@ if (!client.isOpen) {
 }
 
 //Data Functions
-const generateAccessAndRefereshTokens = async(userId) =>{
-    try {
-        const user = await User.findById(userId)
-        if (!user) {
-          throw new Error('User not found when generating tokens');
-        }
-        const accessToken = user.generateAccessToken()
-        const refreshToken = user.generateRefreshToken()
-
-        const refreshTTL = toSeconds(process.env.REFRESH_TOKEN_EXPIRY || '7d');
-        await client.set(`refresh:${userId}`, refreshToken, { EX: refreshTTL });
-
-        user.refreshToken = refreshToken
-        await user.save({ validateBeforeSave: false })
-
-        return {accessToken, refreshToken}
-
-
-    } catch (error) {
-        throw new Error(`Failed to generate tokens: ${error.message}`)
+const generateAccessAndRefereshTokens = async (userId) => {
+  try {
+    const user = await User.findById(userId)
+    if (!user) {
+      throw new Error('User not found when generating tokens');
     }
+    const accessToken = user.generateAccessToken()
+    const refreshToken = user.generateRefreshToken()
+
+    const refreshTTL = toSeconds(process.env.REFRESH_TOKEN_EXPIRY || '7d');
+    await client.set(`refresh:${userId}`, refreshToken, { EX: refreshTTL });
+
+    user.refreshToken = refreshToken
+    await user.save({ validateBeforeSave: false })
+
+    return { accessToken, refreshToken }
+
+
+  } catch (error) {
+    throw new Error(`Failed to generate tokens: ${error.message}`)
+  }
 }
 //Create User
 export const createUser = async (
@@ -50,46 +54,51 @@ export const createUser = async (
   email,
   password,
   confirmPassword,
-  phone
+  phone,
+  firebaseUid
 ) => {
   try {
     //validation
-    if (!firstName || !lastName || !email || !password || !confirmPassword || !phone) {
+    if (!firstName || !lastName || !email || !password || !confirmPassword || phone) {
       throw new Error('All fields are required');
     }
-    if(typeof firstName !== 'string' || typeof lastName !== 'string' || typeof email !== 'string' || typeof password !== 'string' || typeof confirmPassword !== 'string' || typeof phone !== 'string'){
+    if (typeof firstName !== 'string' || typeof lastName !== 'string' || typeof email !== 'string' || typeof password !== 'string' || typeof confirmPassword !== 'string') {
       throw new Error('All fields must be strings');
     }
-    if(firstName.trim()==="" || lastName.trim()==="" || email.trim()==="" || password.trim()==="" || confirmPassword.trim()==="" || phone.trim()===""){
+    if (firstName.trim() === "" || lastName.trim() === "" || email.trim() === "" || password.trim() === "" || confirmPassword.trim() === "") {
       throw new Error('Fields cannot be empty');
     }
     if (
-      !isValidString(firstName) ||
-      !isValidString(lastName) ||
+      !isValidString(firstName, "firstName") ||
+      !isValidString(lastName, "lastName") ||
       !isValidEmail(email) ||
       !isValidPassword(password) ||
-      !isValidPassword(confirmPassword) ||
-      !isValidPhone(phone)
+      !isValidPassword(confirmPassword)
     ) {
       throw new Error('Invalid input data');
     }
+    // if (phone) {
+    //   if (!isValidPhone(phone)) {
+    //     throw new Error('Invalid phone number');
+    //   }
+    // }
     if (password !== confirmPassword) {
       throw new Error('Passwords do not match');
     }
 
-    const normEmail=email.trim().toLowerCase()
+    const normEmail = email.trim().toLowerCase()
     //check if user already exists
-    const existingUser = await User.findOne({ email:normEmail });
+    const existingUser = await User.findOne({ email: normEmail });
     if (existingUser) {
       throw new Error('User with this email already exists');
-    } 
+    }
     //create new user
     const newUser = await User.create({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: normEmail,
       password: password.trim(),
-      phone: phone.trim()
+      firebaseUid: firebaseUid || null,
     });
 
     const { password: _ignore, ...safe } = newUser.toObject();
@@ -129,7 +138,7 @@ export const updateUser = async (userId, updateData) => {
     }
 
     const { firstName, lastName, phone, profilePicture } = updateData;
-    const safe={}
+    const safe = {}
 
     if (typeof firstName === 'string' && firstName.trim()) {
       safe.firstName = isValidString(firstName, 'firstName');
@@ -137,7 +146,7 @@ export const updateUser = async (userId, updateData) => {
     if (typeof lastName === 'string' && lastName.trim()) {
       safe.lastName = isValidString(lastName, 'lastName');
     }
-    if (typeof profilePicture    === 'string' && profilePicture.trim())    safe.profilePicture    = profilePicture.trim();
+    if (typeof profilePicture === 'string' && profilePicture.trim()) safe.profilePicture = profilePicture.trim();
     if (typeof phone === 'string' && phone.trim()) {
       if (!isValidPhone(phone)) throw new Error('Invalid phone');
       safe.phone = phone.trim();
@@ -175,7 +184,7 @@ export const deleteUser = async (userId) => {
   } catch (error) {
     throw new Error(`Error deleting user: ${error.message}`);
   }
-}; 
+};
 
 //Get All Users
 export const getAllUsers = async () => {
@@ -193,38 +202,38 @@ export const authenticateUser = async (email, password) => {
     if (!email || !password) {
       throw new Error('Email and password are required');
     }
-    if(typeof email !== 'string' || typeof password !== 'string'){
+    if (typeof email !== 'string' || typeof password !== 'string') {
       throw new Error('Email and password must be strings');
     }
-    if(email.trim()==="" || password.trim()===""){
+    if (email.trim() === "" || password.trim() === "") {
       throw new Error('Email and password cannot be empty');
     }
     if (!isValidEmail(email) || !isValidPassword(password)) {
       throw new Error('Invalid email or password format');
     }
     //console.log(password);
-    
+
     email = email.trim().toLowerCase();
     password = password.trim();
-    
+
     const user = await User.findOne({ email });
-    // console.log(user);
+    console.log("user.password", user);
     if (!user) {
       throw new Error('User not found');
     }
     // console.log(user.password);
-    
+
     const isPasswordValid = await user.isPasswordCorrect(password);
     if (!isPasswordValid) {
       throw new Error('Invalid password');
     }
-    const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(user._id);
+    const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(user._id);
     let loggedInUser = await User.findOne({ email }).select('-password -refreshToken');
 
     return { user: loggedInUser, tokens: { accessToken, refreshToken } };
   } catch (error) {
     throw new Error(`Error authenticating user: ${error.message}`);
-  }     
+  }
 };
 
 //Change User Password
@@ -281,15 +290,15 @@ export const resetUserPassword = async (email, newPassword) => {
     return { ok: true };
 
   } catch (error) {
-        throw new Error(`Error resetting password: ${error.message}`);
+    throw new Error(`Error resetting password: ${error.message}`);
   }
 };
 
 //Verify User Email
-export const verifyUserEmail = async (userId, verificationCode) => {};
+export const verifyUserEmail = async (userId, verificationCode) => { };
 
 //Send Password Reset Email
-export const sendPasswordResetEmail = async (email) => {};
+export const sendPasswordResetEmail = async (email) => { };
 
 //Update User Profile Picture
 export const updateUserProfilePicture = async (userId, profilePictureUrl) => {
@@ -297,13 +306,13 @@ export const updateUserProfilePicture = async (userId, profilePictureUrl) => {
     if (!isValidID(userId, 'userId')) throw new Error('Invalid user id');
     if (typeof profilePictureUrl !== 'string' || !profilePictureUrl.trim())
       throw new Error('Invalid profile picture URL');
-  
+
     const updated = await User.findByIdAndUpdate(
       userId,
       { $set: { profilePicture: profilePictureUrl.trim() } },
       { new: true, runValidators: true }
     ).select('-password');
-  
+
     if (!updated) throw new Error('User not found');
     return updated;
   } catch (error) {
@@ -366,8 +375,8 @@ export const getUsersByRole = async (role) => {
     const map = {
       admin: 'admin',
       familymember: 'familyMember',
-     caregiver: 'careGiver',
-     carerecipient: 'careRecipient',
+      caregiver: 'careGiver',
+      carerecipient: 'careRecipient',
     };
     const normalized = map[r];
     if (!normalized) throw new Error('Invalid role');
@@ -387,7 +396,7 @@ export const searchUsers = async (searchTerm) => {
 
     const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
     const users = await User.find({
-      $or: [{ firstName: rx }, { lastName: rx }, { email: rx },{ phone: rx }],
+      $or: [{ firstName: rx }, { lastName: rx }, { email: rx }, { phone: rx }],
     }).select('-password');
 
     return users;
@@ -427,11 +436,70 @@ export const refreshToken = async (oldRefreshToken) => {
     }
 
     const { accessToken, refreshToken: newRefreshToken } =
-    await generateAccessAndRefereshTokens(userId);
+      await generateAccessAndRefereshTokens(userId);
 
     return { accessToken, refreshToken: newRefreshToken };
   } catch (error) {
     throw new Error(`Error refreshing token: ${error.message}`);
+  }
+}
+
+export const authenticateUserWithGoogle = async (idToken) => {
+  try {
+    if (!idToken || typeof idToken !== "string") {
+      throw new Error("Firebase ID token required");
+    }
+
+
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    console.log("Decoded Firebase token<<>>", decodedToken);
+
+
+    if (!decodedToken || !decodedToken.uid) {
+      throw new Error("Invalid Firebase ID token");
+    }
+
+
+    const checkUser = await User.findOne({ firebaseUid: decodedToken.uid });
+    if (checkUser) {
+
+      const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(checkUser._id);
+
+      const loggedInUser = await User.findById(checkUser._id).select("-password -refreshToken");
+
+      return { user: loggedInUser, tokens: { accessToken, refreshToken } };
+    }
+
+    const { uid, email, name, picture } = decodedToken;
+    const [firstName, lastName = ""] = (name || "Google User").split(" ");
+    // Password must contain at least one uppercase letter, one lowercase letter, and one number.
+    const password = Math.random().toString(36).slice(-8) + "Aa1"; // random  password
+
+    // Add user in  MongoDB
+    let user = await User.findOne({ firebaseUid: uid });
+    if (!user) {
+      user = await User.create({
+        firebaseUid: uid,
+        firstName,
+        lastName,
+        email,
+        isVerified: true,
+        googleId: uid,
+        password,
+        profileImage: picture || "",
+      });
+    }
+
+
+    const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(user._id);
+
+
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
+
+    return { user: loggedInUser, tokens: { accessToken, refreshToken } };
+  } catch (error) {
+    console.error("Error authenticating with Firebase Google:", error);
+    throw new Error(`Error verifying Firebase ID token: ${error.message}`);
   }
 }
 
