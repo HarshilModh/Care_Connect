@@ -72,7 +72,7 @@ export const isValidArray = (arr, varName) => {
   return arr;
 };
 
-export const isValidNumber =  (value, varName) => {
+export const isValidNumber = (value, varName) => {
   if (value === undefined || value === null) {
     throw new Error(`${varName} is required.`);
   }
@@ -84,3 +84,13 @@ export const isValidNumber =  (value, varName) => {
   return value;
 };
 
+export const isValidPhone = (phone) => {
+  if (typeof phone !== "string") return false;
+  const p = phone.trim();
+  if (!p) return false;
+
+  // allow spaces, dashes, dots, parentheses; optional leading +
+  const cleaned = p.replace(/[\s\-().]/g, "");
+  // 7–15 digits total (E.164-friendly without enforcing country format)
+  return /^\+?\d{7,15}$/.test(cleaned);
+};
