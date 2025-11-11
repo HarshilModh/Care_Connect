@@ -55,7 +55,7 @@ export const createUser = async (
   password,
   confirmPassword,
   phone,
-  firebaseUid
+  uid
 ) => {
   try {
     //validation
@@ -96,9 +96,10 @@ export const createUser = async (
     const newUser = await User.create({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
+      displayName: firstName,// 
       email: normEmail,
       password: password.trim(),
-      firebaseUid: firebaseUid || null,
+      uid: uid || null,
     });
 
     const { password: _ignore, ...safe } = newUser.toObject();
@@ -237,25 +238,21 @@ export const authenticateUser = async (email, password) => {
 };
 
 //Change User Password
-export const changeUserPassword = async (userId, oldPassword, newPassword) => {
+export const changeUserPassword = async (userId, newPassword) => {
   try {
     if (!isValidID(userId, 'userId')) throw new Error('Invalid user id');
-    if (!oldPassword || !newPassword) throw new Error('Both passwords are required');
-    if (typeof oldPassword !== 'string' || typeof newPassword !== 'string')
+    if (!newPassword) throw new Error(' password is required');
+    if (typeof newPassword !== 'string')
       throw new Error('Passwords must be strings');
 
-    const oldP = oldPassword.trim();
     const newP = newPassword.trim();
 
-    if (!isValidPassword(oldP) || !isValidPassword(newP))
+    if (!isValidPassword(newP))
       throw new Error('Password does not meet policy');
-    if (oldP === newP) throw new Error('New password must be different');
+    // if (oldP === newP) throw new Error('New password must be different');
 
     const user = await User.findById(userId);
     if (!user) throw new Error('User not found');
-
-    const ok = await user.isPasswordCorrect(oldP);
-    if (!ok) throw new Error('Old password is incorrect');
 
     user.password = newP;
     await user.save();
@@ -460,7 +457,7 @@ export const authenticateUserWithGoogle = async (idToken) => {
     }
 
 
-    const checkUser = await User.findOne({ firebaseUid: decodedToken.uid });
+    const checkUser = await User.findOne({ uid: decodedToken.uid });
     if (checkUser) {
 
       const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(checkUser._id);
@@ -476,12 +473,13 @@ export const authenticateUserWithGoogle = async (idToken) => {
     const password = Math.random().toString(36).slice(-8) + "Aa1"; // random  password
 
     // Add user in  MongoDB
-    let user = await User.findOne({ firebaseUid: uid });
+    let user = await User.findOne({ uid: uid });
     if (!user) {
       user = await User.create({
-        firebaseUid: uid,
+        uid: uid,
         firstName,
         lastName,
+        displayName: firstName,// 
         email,
         isVerified: true,
         googleId: uid,

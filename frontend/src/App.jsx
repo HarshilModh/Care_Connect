@@ -6,6 +6,9 @@ import Landing from './pages/Landing';
 import SignUp from './pages/Signup';
 import SignIn from './pages/SignIn';
 import VerifySuccess from './pages/VerifySuccess';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+
 
 
 
@@ -18,12 +21,15 @@ function App() {
   return (
 
     <>
+
       {!HideNavbar && <NavbarTwo />}
 
       <Routes>
         <Route path='/' element={<Landing />} />
         <Route path='/verify-success' element={<VerifySuccess />} />
         <Route path='/home' element={<Home />} />
+        <Route path='/forgot-password' element={<ForgotPassword />} />
+        <Route path='/reset-password' element={<ResetPassword />} />
 
         {/* <Route path='/dashbaord' element={<PrivateRoute />}>
           <Route path='/dashboard' element={<Dashbaord />} />
@@ -31,6 +37,7 @@ function App() {
         <Route path='/signin' element={<SignIn />} />
         <Route path='/signup' element={<SignUp />} />
       </Routes >
+
     </>
 
 

@@ -66,9 +66,14 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  firebaseUid: {
+  uid: {
     type: String,
     default: null
+  },
+  displayName: {
+    type: String,
+    default: null
+    // set firstname  as display name if not provided
   }
 
 }, { timestamps: true });

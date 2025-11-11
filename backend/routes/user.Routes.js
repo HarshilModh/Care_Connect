@@ -74,11 +74,11 @@ router.post('/refresh', async (req, res, next) => {
 
 router.patch('/me/password', requireAuth, async (req, res, next) => {
   try {
-    const { oldPassword, newPassword } = req.body || {};
-    if (!oldPassword || !newPassword) {
-      return res.status(400).json({ error: 'Both oldPassword and newPassword are required' });
+    const { newPassword } = req.body || {};
+    if (!newPassword) {
+      return res.status(400).json({ error: 'password is required' });
     }
-    const result = await changeUserPassword(req.user._id, oldPassword, newPassword);
+    const result = await changeUserPassword(req.user._id, newPassword);
     res.json(result); // { ok: true }
   } catch (e) { next(e); }
 });

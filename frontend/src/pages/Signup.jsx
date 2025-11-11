@@ -1,15 +1,22 @@
 import React from "react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from 'react-toastify';
-import { signInWithPopup, sendEmailVerification, onAuthStateChanged, createUserWithEmailAndPassword } from "firebase/auth";
+import { signInWithPopup, sendEmailVerification, createUserWithEmailAndPassword } from "firebase/auth";
 import { auth, googleProvider } from "../firebase";
 import api from "../api/axios";
+import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 
 
 export default function Signup() {
     const navigate = useNavigate();
+    const { login } = useAuth();
+    const { theme } = useTheme();
+    console.log("theme", theme);
+    const [errors, setErrors] = useState({});
+
     const [formData, setFormData] = useState({
         firstName: "",
         lastName: "",
@@ -17,36 +24,6 @@ export default function Signup() {
         password: "",
         confirmpassword: "",
     });
-
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            if (user.emailVerified) {
-                navigate('/'); // Redirect to home or dashboard
-                console.log("Email verified:", user.email);
-            } else {
-                console.log("Email not verified yet");
-            }
-        }
-    });
-
-    const [errors, setErrors] = useState({});
-    const [theme, setTheme] = useState('light');
-
-    useEffect(() => {
-
-        const savedTheme = localStorage.getItem('theme');
-        console.log("savedTheme", savedTheme)
-        if (savedTheme) {
-            setTheme(savedTheme);
-            console.log("firstTheme", theme)
-            if (savedTheme === 'dark') {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
-        }
-    }, [theme]);
-
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({
@@ -63,35 +40,27 @@ export default function Signup() {
     };
 
 
+
     const handleGoogleLogin = async () => {
 
         try {
-
             const result = await signInWithPopup(auth, googleProvider);
-            console.log("Google sign-in result:", result);
+            // console.log("Google signin result:", result);
             const user = result.user;
             const token = await user.getIdToken();
-            console.log("token", token);
-
+            // console.log("token", token);
 
             const res = await api.post("/users/google", { "idToken": token }, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
-            if (res.data.error) {
-                toast.error(res.data.error);
-                return;
-            }
-            if (res.data && res.data.tokens && res.data.tokens.accessToken) {
-                localStorage.setItem("accessToken", res.data.tokens.accessToken);
-            }
             console.log("Backend response:", res.data);
+            // setUser(user);
+            // setToken(token);
+            login(res.data.user, token);
             toast.success("Logged in successfully!");
-            // navigate('/home');
-            // navigate("/home", { replace: true })
-            setTimeout(() => navigate("/home", { replace: true }), 1000);
-
-
+            navigate("/home", { replace: true });
+            // setTimeout(() => navigate("/home", { replace: true }), 1000);
 
         } catch (err) {
             console.error("Google login error:", err);
@@ -101,27 +70,12 @@ export default function Signup() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.confirmpassword) {
+            toast.error("All fields are required");
+            return;
+        }
 
-        if (formData.firstName.trim() === "") {
-            toast.error("First Name is required");
-            return;
-        }
-        if (formData.lastName.trim() === "") {
-            toast.error("Last Name is required");
-            return;
-        }
-        if (formData.email.trim() === "") {
-            toast.error("Email is required");
-            return;
-        }
-        if (formData.password.trim() === "") {
-            toast.error("Password is required");
-            return;
-        }
-        if (formData.confirmpassword.trim() === "") {
-            toast.error("Confirm Password is required");
-            return;
-        }
+
         if (formData.password !== formData.confirmpassword) {
             toast.error("Passwords do not match");
             return;
@@ -133,9 +87,9 @@ export default function Signup() {
             formData.password
         );
         const user = userCredential.user;
-        console.log("User created:", user);
-        console.log("User created:", user.auth.currentUser.uid);
-        console.log("User UID:", user.uid);
+        // console.log("User created:", user);
+        // console.log("User created:", user.auth.currentUser.uid);
+        // console.log("User UID:", user.uid);
 
         // Step 2: Send Firebase email verification
         await sendEmailVerification(user, {
@@ -149,44 +103,20 @@ export default function Signup() {
             email: formData.email,
             password: formData.password,
             confirmPassword: formData.confirmpassword,
-            firebaseUid: user.uid
+            uid: user.uid
 
         };
 
+        const response = await api.post('users/signUp', payload)
 
-        const response = api.post('users/signUp', payload)
-            .then((res) => {
-                console.log("res", res);
-                console.log("auth", auth)
-                // Reset form
-                setFormData({
-                    firstName: "",
-                    lastName: "",
-                    email: "",
-                    password: "",
-                    confirmpassword: "",
-                });
-            })
-            .catch((err) => {
-                console.log("err", err);
-                if (err.response && err.response.data && err.response.data.error) {
-                    toast.error(err.response.data.error);
-                } else {
-                    toast.error("An error occurred. Please try again.");
-                }
-            });
-
-        console.log("response", response);
-
-
-        if (response && response.data) {
+        if (response.success) {
             toast.success("Signup successful! Please verify your email before logging in.");
+            setFormData({ email: "", password: "" });
+            navigate("/signin", { replace: true });
+        } else {
+            toast.error(response.message);
         }
-        setTimeout(() => navigate("/home", { replace: true }), 1000);
 
-
-
-        console.log("Form submitted:", formData);
 
     }
 

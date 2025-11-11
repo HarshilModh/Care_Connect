@@ -1,39 +1,30 @@
 import React from 'react'
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from 'react-toastify';
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "../firebase";
+import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import api from "../api/axios";
 
 function SignIn() {
 
     const navigate = useNavigate();
 
+
+    const { login } = useAuth();
+    const { theme } = useTheme();
+    console.log("first theme", theme);
+    const [errors, setErrors] = useState({});
+
+
+
     const [formData, setFormData] = useState({
         email: "",
         password: ""
     });
-
-
-    const [errors, setErrors] = useState({});
-    const [theme, setTheme] = useState('light');
-
-    useEffect(() => {
-
-        const savedTheme = localStorage.getItem('theme');
-        console.log("savedTheme", savedTheme)
-        if (savedTheme) {
-            setTheme(savedTheme);
-            console.log("firstTheme", theme)
-            if (savedTheme === 'dark') {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
-        }
-    }, [theme]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -55,21 +46,23 @@ function SignIn() {
         try {
 
             const result = await signInWithPopup(auth, googleProvider);
-            console.log("Google sign-in result:", result);
+            // console.log("Google sign-in result:", result);
             const user = result.user;
             const token = await user.getIdToken();
-            console.log("token", token);
-
+            // console.log("token", token);
 
             const res = await api.post("/users/google", { "idToken": token }, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            // navigate('/home');
+
             console.log("Backend response:", res.data);
+            // setUser(user);
+            // setToken(token);
+            login(res.data.user, token);
+
             toast.success("Logged in successfully!");
-            setTimeout(() => navigate("/home", { replace: true }), 1000);
-
-
+            navigate("/home", { replace: true });
+            // setTimeout(() => navigate("/home", { replace: true }), 1000);
 
         } catch (err) {
             console.error("Google login error:", err);
@@ -80,58 +73,63 @@ function SignIn() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-
-
-        if (formData.email.trim() === "") {
-            toast.error("Email is required");
-            return;
-        }
-        if (formData.password.trim() === "") {
-            toast.error("Password is required");
+        if (!formData.email.trim() || !formData.password.trim()) {
+            toast.error("Please fill all fields");
             return;
         }
 
 
         const payload = {
-
             email: formData.email,
             password: formData.password,
-
-
         };
-
-
-
-        const response = api.post('users/login', payload)
-            .then((res) => {
-                console.log("res", res);
-                toast.success("LoggedIn successfully! ");
-                navigate('/');
-                // Reset form
-                setFormData({
-                    email: "",
-                    password: "",
-                });
-            })
-            .catch((err) => {
-                console.log("err", err);
-                if (err.response && err.response.data && err.response.data.error) {
-                    toast.error(err.response.data.error);
-                } else {
-                    toast.error("An error occurred. Please try again.");
-                }
-            });
-
-        console.log("response", response);
-
-        if (response && response.data) {
-            toast.success("Signup successful! Please verify your email before logging in.");
+        try {
+            const { data } = await api.post("users/login", payload);
+            console.log("Login response:", data);
+            if (data?.user && data?.tokens?.accessToken) {
+                login(data.user, data.tokens.accessToken);
+                toast.success("Login successful!");
+                setFormData({ email: "", password: "" });
+                navigate("/home", { replace: true });
+            } else {
+                toast.error("Invalid server response");
+            }
+        } catch (error) {
+            console.error("Login error:", error);
+            toast.error(error.response?.data?.message || "Login failed. Try again.");
         }
-        setTimeout(() => navigate("/home", { replace: true }), 1000);
+    };
 
-        console.log("Form submitted:", formData);
+    // const handleSubmit = async (e) => {
+    //     e.preventDefault();
+    //     if (formData.email.trim() === "") {
+    //         toast.error("Email is required");
+    //         return;
+    //     }
+    //     if (formData.password.trim() === "") {
+    //         toast.error("Password is required");
+    //         return;
+    //     }
 
-    }
+    //     const payload = {
+    //         email: formData.email,
+    //         password: formData.password,
+    //     };
+
+    //     console.log("Submitting login with payload:", payload);
+
+
+    //     const result = await api.post('users/login', payload);
+    //     console.log("Login response:", result.data);
+    //     if (result.data) {
+    //         toast.success("Login successful!");
+    //         login(result.data.user, result.data.tokens.accessToken);
+    //         setFormData({ email: "", password: "" });
+    //         navigate("/home", { replace: true });
+    //     } else {
+    //         toast.error(result.message);
+    //     }
+    // }
 
 
     return (
@@ -404,6 +402,8 @@ function SignIn() {
                 theme="colored"
 
             />
+
+
 
 
         </div>
