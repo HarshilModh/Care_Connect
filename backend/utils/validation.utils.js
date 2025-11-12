@@ -11,23 +11,23 @@ export const isValidPassword = (password) => {
   return passwordRegex.test(password);
 };
 
-export const isValidID = (id, varName) => {
-  console.log("ID", id);
+export const isValidID = (id) => {
+  // console.log("ID", id);
 
   if (!id) {
-    throw new Error(`Error: You must provide a ${varName}`);
+    throw new Error(`Error: You must provide a valid ID`);
   }
   if (typeof id !== "string") {
-    throw new Error(`Error: ${varName} must be a string`);
+    throw new Error(`Error: ID must be a string`);
   }
   id = id.trim();
   if (id.length === 0) {
     throw new Error(
-      `Error: ${varName} cannot be an empty string or just spaces`
+      `Error: ID cannot be an empty string or just spaces`
     );
   }
   if (!ObjectId.isValid(id)) {
-    throw new Error(`Error: ${varName} invalid object ID`);
+    throw new Error(`Error: ID invalid object ID`);
   }
   return id;
 };
