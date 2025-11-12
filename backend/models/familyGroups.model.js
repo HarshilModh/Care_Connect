@@ -19,7 +19,7 @@ const familyGroupSchema = new mongoose.Schema(
     },
     isPublic: { type: Boolean, default: false, index: true }
   },
-  { timestamps: true, versionKey: false }
+  { timestamps: true }
 );
 
 

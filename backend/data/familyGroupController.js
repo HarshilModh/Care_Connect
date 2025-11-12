@@ -36,14 +36,6 @@ export const createFamilyGroup = async (
     throw new Error("isPublic must be a boolean");
   }
 
-  if (members && members.length > 0) {
-    for (const memberId of members) {
-      if (!isValidID(memberId)) {
-        throw new Error(`Invalid member ID: ${memberId}`);
-      }
-    }
-  }
-
   const familyGroupData = {
     groupName: groupName.trim().toLowerCase(),
     description: description ? description.trim() : "",
@@ -53,7 +45,7 @@ export const createFamilyGroup = async (
   };
 
   const newFamilyGroup = new FamilyGroup(familyGroupData);
-  await newFamilyGroup.save();
+  await newFamilyGroup.save();``
   //add creator as owner member
   const ownerMembership = await createMembership(
     newFamilyGroup._id,
@@ -62,9 +54,13 @@ export const createFamilyGroup = async (
     'active'
   );
   
+ let getCreatedGroup = await FamilyGroup.findById(newFamilyGroup._id).lean();
+ let activeMemberships = await getMembershipsByGroupId(newFamilyGroup._id);
+ //filter only active members
+  activeMemberships = activeMemberships.filter(m => m.status === "active");
+ getCreatedGroup.members = activeMemberships.map(m => m.userId); //view only field
 
-
-  return newFamilyGroup;
+  return getCreatedGroup;
 };
 
 //Get Family Group by ID

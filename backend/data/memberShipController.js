@@ -1,5 +1,5 @@
-import memberShipModel from "../models/memberShip.model.js";
-import  FamilyGroup  from "../models/familyGroups.model.js";
+import {Membership} from "../models/memberShip.model.js";
+import  {FamilyGroup}  from "../models/familyGroups.model.js";
 import User from "../models/user.model.js";
 import { isValidID } from "../utils/validation.utils.js";
 

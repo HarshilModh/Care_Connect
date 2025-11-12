@@ -1,0 +1,18 @@
+/* App.css */
+.app-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-center {
+  flex: 1;
+  display: block;           /* not flex centering */
+  background: transparent;  /* do not paint white */
+}
+
+.page-container {
+  width: 100%;
+  max-width: none;          /* remove max width that clipped the gradient */
+  padding: 0;               /* let pages manage their own padding */
+}
