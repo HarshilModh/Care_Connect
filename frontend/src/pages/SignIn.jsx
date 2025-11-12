@@ -90,7 +90,9 @@ function SignIn() {
                 login(data.user, data.tokens.accessToken);
                 toast.success("Login successful!");
                 setFormData({ email: "", password: "" });
-                navigate("/home", { replace: true });
+                // navigate("/home", { replace: true });
+                setTimeout(() => navigate("/home", { replace: true }), 1000);
+                // navigate("/home", { replace: true });
             } else {
                 toast.error("Invalid server response");
             }
