@@ -34,12 +34,15 @@ const taskSchema = new mongoose.Schema({
         default: ''
     },
     assignedTo: {
-        type: [ { type: mongoose.Schema.Types.ObjectId, ref: 'User' } ],
-        default: []
+        type: mongoose.Schema.Types.ObjectId ,
+        ref: 'User' ,
+        default: null,
+        index: true
     },
     dueAt: {
         type: Date,
-        required: false
+        required: false,
+        default: null
     },
     timezone: {
         type: String,
@@ -60,7 +63,13 @@ const taskSchema = new mongoose.Schema({
     },
     completedAt: {
         type: Date,
-        required: false
+        required: false,
+        default: null
+    },
+    completedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null,
     },
     type: {
         type: String,
@@ -77,17 +86,6 @@ const taskSchema = new mongoose.Schema({
         default: []
     }
 }, { timestamps: true });
-// de-duplicate arrays
-taskSchema.pre("save", function(next) {
-  if (this.assignedTo?.length) {
-    const unique = Array.from(new Set(this.assignedTo.map(id => id.toString())));
-    this.assignedTo = unique.map(id => new mongoose.Types.ObjectId(id));
-  }
-  if (this.attachments?.length) {
-    const unique = Array.from(new Set(this.attachments.map(id => id.toString())));
-    this.attachments = unique.map(id => new mongoose.Types.ObjectId(id));
-  }
-  next();
-});
+
 
 export const Task = mongoose.model('Task', taskSchema);

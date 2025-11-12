@@ -28,7 +28,7 @@ const router = express.Router();
 
 router.post("/", async (req, res) => {
   try {
-    let { groupName, description, createdBy, members, timeZone, isPublic } =
+    let { groupName, description, createdBy, timeZone, isPublic } =
       req.body;
 
     groupName = isValidString(groupName, "groupName");
@@ -45,7 +45,6 @@ router.post("/", async (req, res) => {
       groupName,
       description,
       createdBy,
-      members,
       timeZone,
       isPublic
     );
