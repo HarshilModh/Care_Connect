@@ -9,12 +9,12 @@ import "./index.css"
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <ThemeProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </AuthProvider>
-    </ThemeProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </AuthProvider>
+      </ThemeProvider>
   </React.StrictMode>
 )

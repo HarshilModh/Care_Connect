@@ -3,12 +3,12 @@ export default {
   darkMode: "class",
   content: [
     "./index.html",
-    "./src/**/*.{js,jsx,ts,tsx,css}"
+    "./src/**/*.{js,jsx,ts,tsx}"
   ],
   theme: {
     extend: {},
   },
   plugins: [
-    require('tailwindcss-animate')
+    // optionally add plugins you keep, e.g. require("tailwindcss-animate")
   ],
-}
+};

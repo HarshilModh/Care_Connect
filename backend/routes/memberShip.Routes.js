@@ -1,12 +1,14 @@
+import mongoose from "mongoose";
 import {
     createMembership, countMembershipsInGroup, deleteMembership, getActiveMemberships,
     getAllMemberships, getMembershipById, getMembershipsByRole, getMembershipsByGroupId,
     getMembershipsByUserId, getPendingMemberships
     , getRemovedMemberships, updateMembership,
-    updateMembershipRole, updateMembershipStatus
+    updateMembershipRole, updateMembershipStatus,
+    createMultipleMemberships
 }
     from "../data/memberShipController.js";
-import { isValidID } from "../utils/validation.utils.js";
+import { Membership } from "../models/memberShip.model.js";
 import express from "express";
 const router = express.Router();
 
@@ -33,8 +35,12 @@ router.post("/", async (req, res) => {
         if(!status){
             status = "pending";
         }
-        groupId = isValidID(groupId);
-        userId = isValidID(userId);
+        if(!mongoose.Types.ObjectId.isValid(groupId)){
+            return res.status(400).json({ error: 'Invalid Group ID' });
+        }
+        if(!mongoose.Types.ObjectId.isValid(userId)){
+            return res.status(400).json({ error: 'Invalid User ID' });
+        }
         if(!["owner", "caregiver", "family", "readonly"].includes(role)){
             return res.status(400).json({ error: "Invalid role value" });
         }
@@ -45,7 +51,11 @@ router.post("/", async (req, res) => {
             return res.status(400).json({ error: "Permissions must be an object" });
         }
         
-
+        //check if user is already in the group
+        const isMember = await Membership.findOne({ groupId, userId });
+        if (isMember) {
+          return res.status(400).json({ error: "User is already a member of this group" });
+        }
         const membershipData = {
             groupId,
             userId,
@@ -56,6 +66,65 @@ router.post("/", async (req, res) => {
         const newMembership = await createMembership(membershipData);
         res.status(200).json(newMembership);
     } catch (error) {
+        console.log(error);
+        
+        res.status(500).json({ error: error.message });
+    }
+});
+
+//Create Multiple Memberships
+router.post("/bulk", async (req, res) => {
+    try {
+        const memberships = req.body.memberships;
+        if(!memberships || !Array.isArray(memberships) || memberships.length === 0){
+            return res.status(400).json({ error: "Memberships array is required" });
+        }
+        const validMemberships = [];
+        for(const membership of memberships){
+            let { groupId, userId, role, status, permissions } = membership;
+            if(!groupId || !userId){
+                return res.status(400).json({ error: "Group ID and User ID are required for each membership" });
+            }
+            if(!mongoose.Types.ObjectId.isValid(groupId)){
+                return res.status(400).json({ error: 'Invalid Group ID' });
+            }
+            if(!mongoose.Types.ObjectId.isValid(userId)){
+                return res.status(400).json({ error: 'Invalid User ID' });
+            }
+            if(!role){
+                role = "family";
+            }
+            if(!status){
+                status = "pending";
+            }
+            if(!["owner", "caregiver", "family"].includes(role)){
+                return res.status(400).json({ error: "Invalid role value in one of the memberships" });
+            }
+            if(!["active", "pending", "removed"].includes(status)){
+                return res.status(400).json({ error: "Invalid status value in one of the memberships" });
+            }
+            if(permissions && typeof permissions !== "object"){
+                return res.status(400).json({ error: "Permissions must be an object in one of the memberships" });
+            }
+            //check if user is already in the group
+            const isMember = await Membership.findOne({ groupId, userId });
+            if (isMember) {
+              return res.status(400).json({ error: `User ${userId} is already a member of group ${groupId}` });
+            }
+            validMemberships.push({
+                groupId,
+                userId,
+                role,
+                status,
+                permissions: permissions || {}
+            });
+        }
+        
+        const newMemberships = await createMultipleMemberships(validMemberships);
+        res.status(200).json(newMemberships);
+    } catch (error) {
+        console.log(error);
+        
         res.status(500).json({ error: error.message });
     }
 });
@@ -66,7 +135,9 @@ router.get("/user/:userId", async (req, res) => {
         if(!userId){
             return res.status(400).json({ error: 'User ID is required' });
         }
-        userId = isValidID(userId);
+        if(!mongoose.Types.ObjectId.isValid(userId)){
+            return res.status(400).json({ error: 'Invalid User ID' });
+        }
         const memberships = await getMembershipsByUserId(userId);
         res.status(200).json(memberships);
     } catch (error) {
@@ -80,7 +151,9 @@ router.get("/group/:groupId", async (req, res) => {
         if(!groupId){
             return res.status(400).json({ error: 'Group ID is required' });
         }
-        groupId = isValidID(groupId);
+        if(!mongoose.Types.ObjectId.isValid(groupId)){
+            return res.status(400).json({ error: 'Invalid Group ID' });
+        }
         const memberships = await getMembershipsByGroupId(groupId);
         res.status(200).json(memberships);
     } catch (error) {
@@ -98,7 +171,9 @@ router.put("/:membershipId/role", async (req, res) => {
         if(!role){
             return res.status(400).json({ error: 'Role is required' });
         }
-        membershipId = isValidID(membershipId);
+        if(!mongoose.Types.ObjectId.isValid(membershipId)){
+            return res.status(400).json({ error: 'Invalid Membership ID' });
+        }
         if(!role || typeof role !== "string" || role.trim().length === 0){
             return res.status(400).json({ error: 'Invalid role' });
         }
@@ -123,7 +198,9 @@ router.put("/:membershipId/status", async (req, res) => {
         if(!status){
             return res.status(400).json({ error: 'Status is required' });
         }
-        membershipId = isValidID(membershipId);
+        if(!mongoose.Types.ObjectId.isValid(membershipId)){
+            return res.status(400).json({ error: 'Invalid Membership ID' });
+        }
         if(!status || typeof status !== "string" || status.trim().length === 0){
             return res.status(400).json({ error: 'Invalid status' });
         }
@@ -145,7 +222,9 @@ router.delete("/:membershipId", async (req, res) => {
         if(!membershipId){
             return res.status(400).json({ error: 'Membership ID is required' });
         }
-        membershipId = isValidID(membershipId);
+        if(!mongoose.Types.ObjectId.isValid(membershipId)){
+            return res.status(400).json({ error: 'Invalid Membership ID' });
+        }
         const deletedMembership = await deleteMembership(membershipId);
         res.status(200).json(deletedMembership);
     } catch (error) {
@@ -160,7 +239,9 @@ router.get("/group/:groupId/count", async (req, res) => {
         if(!groupId){
             return res.status(400).json({ error: 'Group ID is required' });
         }
-        groupId = isValidID(groupId);
+        if(!mongoose.Types.ObjectId.isValid(groupId)){
+            return res.status(400).json({ error: 'Invalid Group ID' });
+        }
         const count = await countMembershipsInGroup(groupId);
         res.status(200).json({ count });
     } catch (error) {
@@ -211,7 +292,9 @@ router.get("/:membershipId", async (req, res) => {
         if(!membershipId){
             return res.status(400).json({ error: 'Membership ID is required' });
         }
-        membershipId = isValidID(membershipId);
+        if(!mongoose.Types.ObjectId.isValid(membershipId)){
+            return res.status(400).json({ error: 'Invalid Membership ID' });
+        }
         const membership = await getMembershipById(membershipId);
         res.status(200).json(membership);
     } catch (error) {
@@ -245,10 +328,16 @@ router.put("/:membershipId", async (req, res) => {
         let permissions = req.body.permissions;
         const updateData = {};
         if(groupId){
-            updateData.groupId = isValidID(groupId);
+            if(!mongoose.Types.ObjectId.isValid(groupId)){
+                return res.status(400).json({ error: 'Invalid Group ID' });
+            }
+            updateData.groupId = groupId;
         }
         if(userId){
-            updateData.userId = isValidID(userId);
+            if(!mongoose.Types.ObjectId.isValid(userId)){
+                return res.status(400).json({ error: 'Invalid User ID' });
+            }
+            updateData.userId = userId;
         }
         if(role){
             if(!["owner", "caregiver", "family"].includes(role)){
@@ -271,7 +360,9 @@ router.put("/:membershipId", async (req, res) => {
         if(!membershipId){
             return res.status(400).json({ error: 'Membership ID is required' });
         }
-        membershipId = isValidID(membershipId);
+        if(!mongoose.Types.ObjectId.isValid(membershipId)){
+            return res.status(400).json({ error: 'Invalid Membership ID' });
+        }
         const updatedMembership = await updateMembership(membershipId, updateData);
         res.status(200).json(updatedMembership);
     } catch (error) {
@@ -281,3 +372,17 @@ router.put("/:membershipId", async (req, res) => {
 
 //Export Router
 export default router;
+
+//all routes testing listed below
+//http://localhost:3000/api/memberships/ (GET, POST)
+//http://localhost:3000/api/memberships/bulk (POST)
+//http://localhost:3000/api/memberships/user/:userId (GET)
+//http://localhost:3000/api/memberships/group/:groupId (GET)
+//http://localhost:3000/api/memberships/:membershipId/role (PUT)
+//http://localhost:3000/api/memberships/:membershipId/status (PUT)
+//http://localhost:3000/api/memberships/:membershipId (DELETE, GET, PUT)
+//http://localhost:3000/api/memberships/group/:groupId/count (GET)
+//http://localhost:3000/api/memberships/active (GET)
+//http://localhost:3000/api/memberships/pending (GET)
+//http://localhost:3000/api/memberships/removed (GET)
+//http://localhost:3000/api/memberships/role/:role (GET)    

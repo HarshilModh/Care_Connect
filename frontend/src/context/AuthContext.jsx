@@ -36,35 +36,42 @@ export const AuthProvider = ({ children }) => {
 
     // Monitor Firebase auth state
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-            if (currentUser) {
-                const idToken = await currentUser.getIdToken();
-                const expiryTime = Date.now() + 60 * 60 * 1000; // 1 hour expiry
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+        if (currentUser) {
+            const idToken = await currentUser.getIdToken();
+            const expiryTime = Date.now() + 60 * 60 * 1000; // 1 hour expiry
 
-                const userData = {
-                    uid: currentUser.uid,
-                    email: currentUser.email,
-                    displayName: currentUser.displayName || '',
-                };
+            // Try to get _id from stored user
+            let storedUser = {};
+            try {
+                storedUser = JSON.parse(localStorage.getItem('user')) || {};
+            } catch { storedUser = {}; }
 
-                setUser(userData);
-                setToken(idToken);
-                localStorage.setItem('user', JSON.stringify(userData));
-                localStorage.setItem('accessToken', idToken);
-                localStorage.setItem('tokenExpiry', expiryTime.toString());
-            } else {
-                localStorage.removeItem('user');
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('tokenExpiry');
-                setUser(null);
-                setToken(null);
-            }
-            setLoading(false);
-        });
+            const userData = {
+                userId: storedUser._id || '', // restore _id if present
+                uid: currentUser.uid,
+                email: currentUser.email,
+                displayName: currentUser.displayName || '',
+                _id: storedUser._id || '', // optional: keep _id for backend
+            };
 
-        return () => unsubscribe();
-    }, []);
+            setUser(userData);
+            setToken(idToken);
+            localStorage.setItem('user', JSON.stringify(userData));
+            localStorage.setItem('accessToken', idToken);
+            localStorage.setItem('tokenExpiry', expiryTime.toString());
+        } else {
+            localStorage.removeItem('user');
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('tokenExpiry');
+            setUser(null);
+            setToken(null);
+        }
+        setLoading(false);
+    });
 
+    return () => unsubscribe();
+}, []);
     // Auto-refresh token every 55 minutes
     useEffect(() => {
         if (!auth.currentUser) return;
@@ -94,6 +101,7 @@ export const AuthProvider = ({ children }) => {
         if (userData && accessToken) {
             // Store user and token
             setUser({
+                userId: userData._id || '',
                 uid: userData.firebaseUid || '',
                 email: userData.email,
                 displayName: userData.firstName || '',

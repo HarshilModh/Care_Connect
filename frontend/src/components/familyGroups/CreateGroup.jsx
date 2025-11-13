@@ -1,5 +1,7 @@
 import React, { useState } from "react";
+import axios from "axios";
 // import { useNavigate } from "react-router-dom"; // enable when you want to route to Add Members
+import { ToastContainer, toast } from 'react-toastify';
 
 const CreateGroup = () => {
   // const navigate = useNavigate();
@@ -10,7 +12,10 @@ const CreateGroup = () => {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState({ type: "", text: "" });
 
-  const createdBy = localStorage.getItem("userId") || "";
+  let createdBy = localStorage.getItem("user") || "";
+
+  
+  createdBy = JSON.parse(createdBy)._id || "";
 
   const resetForm = () => {
     setGroupName("");
@@ -30,29 +35,24 @@ const CreateGroup = () => {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/familyGroups", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          groupName: groupName.trim(),
-          description: description.trim(),
-          isPublic,
-          createdBy,
-        }),
+      const response = await axios.post("http://localhost:3000/api/family-groups", {
+        groupName: groupName.trim(),
+        description: description.trim(),
+        isPublic,
+        createdBy,
       });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Failed to create group");
-
-      setMsg({ type: "success", text: "Group created successfully." });
-
-      // Go to Add Members page with the groupId as prop
-      navigate(`/addMember`, { state: { groupId: data.group._id } });
-      // Keep the success visible briefly, then clear inputs
-      setTimeout(() => resetForm(), 400);
+      console.log(response);
+      
+      const data = response.data;
+      toast.success("Family group created successfully!");
+      resetForm();
+      
+      // Optionally, navigate to Add Members page with the new group ID
+      // navigate(`/addMember`, { state: { groupId: data.familyGroup._id } });
     } catch (err) {
-      setMsg({ type: "error", text: err.message || "Something went wrong." });
+      console.error("Error creating family group:", err);
+      toast.error("Error creating family group: " + (err.response?.data?.error || err.message));
+      setMsg({ type: "error", text: "Error creating family group: " + (err.response?.data?.error || err.message) });
     } finally {
       setLoading(false);
     }
@@ -152,6 +152,21 @@ const CreateGroup = () => {
           You can add members after creating the group.
         </p>
       </div>
+            <ToastContainer
+                      position="top-right"
+                      autoClose={3000}
+                      hideProgressBar={false}
+                      newestOnTop={false}
+                      closeOnClick
+                      rtl={false}
+                      pauseOnFocusLoss
+                      draggable
+                      pauseOnHover
+                      theme="colored"
+      
+                  />
+      
+      
     </main>
   );
 };

@@ -500,7 +500,21 @@ export const authenticateUserWithGoogle = async (idToken) => {
     throw new Error(`Error verifying Firebase ID token: ${error.message}`);
   }
 }
-
-
-
-
+export const searchUsersByEmail = async (email) => {
+  try {
+    if (typeof email !== 'string'){
+      throw new Error('Email required');
+    }
+    if (!email.trim().length>0){
+      throw new Error('Email cannot be empty');
+    }
+    let cleanedEmail = email.trim().toLowerCase();
+    // if (!isValidEmail(cleanedEmail)){
+    //   throw new Error('Invalid email format');
+    // }
+    const users = await User.find({ email: { $regex: cleanedEmail, $options: 'i' } }).select('-password -refreshToken');
+    return users;
+  } catch (error) {
+    throw new Error(`Error searching users by email: ${error.message}`);
+  }
+};

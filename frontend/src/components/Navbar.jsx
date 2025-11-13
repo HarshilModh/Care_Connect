@@ -1,164 +1,220 @@
-'use client';
-import React from 'react';
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Popover } from "@headlessui/react";
 import {
-    Bars3Icon,
-    XMarkIcon,
-    SunIcon,
-    MoonIcon,
-} from '@heroicons/react/24/outline';
-import { Link, useNavigate } from 'react-router-dom';
-import { Popover, PopoverButton, PopoverGroup } from '@headlessui/react';
-import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
-import { toast } from 'react-toastify';
+  Bars3Icon,
+  XMarkIcon,
+  SunIcon,
+  MoonIcon,
+} from "@heroicons/react/24/outline";
+import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
+import { toast } from "react-toastify";
 
 export default function Navbar() {
-    const navigate = useNavigate();
-    const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
-    console.log("user in Navbar:", user);
-    const { theme, toggleTheme } = useTheme();
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success("Logged out successfully!");
+      navigate("/signin");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      toast.error("Something went wrong during logout.");
+    }
+  };
 
-    const handleLogout = async () => {
-        try {
-            await logout();
-            toast.success('Logged out successfully!');
-            navigate('/signin');
-        } catch (error) {
-            console.error("Logout failed:", error);
-            toast.error("Something went wrong during logout.");
-        }
-    };
+  return (
+    <header className="w-full bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
+          {/* left - logo */}
+          <div className="flex items-center gap-3">
+            <Link to="/" className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white shadow-md">
+                <svg
+                  className="h-6 w-6"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 20l9-5-9-5-9 5 9 5z" />
+                  <path d="M12 12l9-5-9-5-9 5 9 5z" />
+                </svg>
+              </div>
+              <span className="text-lg font-semibold text-slate-900 dark:text-white">
+                CareConnect
+              </span>
+            </Link>
+          </div>
 
-    return (
-        <header className="navbar_main_div navbar_container  bg-white dark:bg-gray-900 shadow-md transition-colors duration-300">
-            <nav
-                aria-label="Global"
-                className="navbar_container mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8"
+          {/* center - nav links for large screens */}
+          <nav className="hidden lg:flex lg:gap-8" aria-label="Primary">
+            <Link
+              to="/about"
+              className="text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-300 transition"
             >
-                {/* Logo */}
-                <div className="flex items-center gap-2">
-                    <svg
-                        className="h-10 w-10 text-orange-600 dark:text-orange-400"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                    >
-                        <path d="M12 20l9-5-9-5-9 5 9 5z" />
-                        <path d="M12 12l9-5-9-5-9 5 9 5z" />
-                    </svg>
-                    <Link
-                        to="/"
-                        className="text-lg font-semibold text-gray-900 dark:text-white"
-                    >
-                        CareConnect
-                    </Link>
-                </div>
+              About
+            </Link>
+            <Link
+              to="/features"
+              className="text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-300 transition"
+            >
+              Features
+            </Link>
+            <Link
+              to="/contact"
+              className="text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-300 transition"
+            >
+              Contact
+            </Link>
+          </nav>
 
+          {/* right - actions */}
+          <div className="flex items-center gap-3">
+            {/* theme toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              title="Toggle theme"
+              aria-label="Toggle theme"
+            >
+              {theme === "light" ? (
+                <MoonIcon className="w-5 h-5 text-slate-700" />
+              ) : (
+                <SunIcon className="w-5 h-5 text-indigo-300" />
+              )}
+            </button>
 
-                <div className="flex lg:hidden">
-                    <button
-                        type="button"
-                        className="p-2.5 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
-                    >
-                        <Bars3Icon className="w-6 h-6" />
-                    </button>
-                </div>
+            {/* authenticated view desktop */}
+            <div className="hidden lg:flex lg:items-center lg:gap-3">
+              {user ? (
+                <>
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-white flex items-center justify-center font-semibold">
+                      {user.displayName
+                        ? user.displayName.charAt(0)
+                        : user.email?.charAt(0)?.toUpperCase()}
+                    </div>
+                    <span className="text-sm text-slate-800 dark:text-slate-200">
+                      {user.displayName || user.email}
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="px-4 py-2 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/signin"
+                    className="px-4 py-2 rounded-md text-sm font-semibold text-indigo-600 border border-indigo-600 hover:bg-indigo-50 transition"
+                  >
+                    Sign in
+                  </Link>
+                  <Link
+                    to="/signup"
+                    className="px-4 py-2 rounded-md text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition"
+                  >
+                    Sign up
+                  </Link>
+                </>
+              )}
+            </div>
 
+            {/* mobile menu popover */}
+            <Popover className="lg:hidden">
+              {({ open }) => (
+                <>
+                  <Popover.Button
+                    className="inline-flex items-center justify-center rounded-md p-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    aria-label="Open menu"
+                  >
+                    {open ? (
+                      <XMarkIcon className="h-6 w-6" />
+                    ) : (
+                      <Bars3Icon className="h-6 w-6" />
+                    )}
+                  </Popover.Button>
 
-                <PopoverGroup className="hidden lg:flex lg:gap-x-12">
-                    <Link
+                  <Popover.Panel className="absolute inset-x-4 top-16 z-50 origin-top rounded-lg bg-white dark:bg-slate-900 p-4 shadow-lg ring-1 ring-slate-100 dark:ring-slate-800">
+                    <div className="flex flex-col gap-3">
+                      <Link
                         to="/about"
-                        className="text-sm font-semibold text-gray-800 dark:text-gray-200 hover:text-orange-500 dark:hover:text-orange-400"
-                    >
+                        className="text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-indigo-600 transition"
+                      >
                         About
-                    </Link>
-                    <Link
+                      </Link>
+                      <Link
                         to="/features"
-                        className="text-sm font-semibold text-gray-800 dark:text-gray-200 hover:text-orange-500 dark:hover:text-orange-400"
-                    >
+                        className="text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-indigo-600 transition"
+                      >
                         Features
-                    </Link>
-                    <Link
+                      </Link>
+                      <Link
                         to="/contact"
-                        className="text-sm font-semibold text-gray-800 dark:text-gray-200 hover:text-orange-500 dark:hover:text-orange-400"
-                    >
+                        className="text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-indigo-600 transition"
+                      >
                         Contact
-                    </Link>
-                </PopoverGroup>
+                      </Link>
 
-
-                <div className="hidden lg:flex lg:flex-1 lg:justify-end items-center gap-4">
-                    {/* If logged in */}
-                    {user ? (
-                        <>
-                            <div className="flex items-center gap-2">
-                                <div className="h-8 w-8 rounded-full bg-orange-500 text-white flex items-center justify-center font-semibold">
-                                    {user.displayName
-                                        ? user.displayName.charAt(0)
-                                        : user.email?.charAt(0)?.toUpperCase()}
+                      <div className="border-t border-slate-100 dark:border-slate-800 pt-3 mt-2 flex flex-col gap-2">
+                        {user ? (
+                          <>
+                            <div className="flex items-center gap-3">
+                              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-white flex items-center justify-center font-semibold">
+                                {user.displayName
+                                  ? user.displayName.charAt(0)
+                                  : user.email?.charAt(0)?.toUpperCase()}
+                              </div>
+                              <div>
+                                <div className="text-sm text-slate-800 dark:text-slate-200">
+                                  {user.displayName || user.email}
                                 </div>
-                                <span className="text-sm text-gray-800 dark:text-gray-200">
-                                    {user.displayName || user.email}
-                                </span>
+                              </div>
                             </div>
                             <button
-                                onClick={handleLogout}
-                                className="px-4 py-2 bg-orange-600 text-white text-sm rounded-md hover:bg-orange-700 transition"
+                              onClick={handleLogout}
+                              className="w-full px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition"
                             >
-                                Logout
+                              Logout
                             </button>
-                        </>
-                    ) : (
-                        <>
-                            <Link to="/signin" className="animated-button text-orange-500 border border-orange-500 relative  font-semibold overflow-hidden">
-                                <svg viewBox="0 0 24 24" className="arr-2" xmlns="http://www.w3.org/2000/svg">
-                                    <path
-                                        d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
-                                    ></path>
-                                </svg>
-                                <span className="text">Sign In</span>
-                                <span className="circle bg-orange-600"></span>
-                                <svg viewBox="0 0 24 24" className="arr-1 fill-orange-500" xmlns="http://www.w3.org/2000/svg">
-                                    <path
-                                        d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
-                                    ></path>
-                                </svg>
-                            </Link>
-                            <Link to="/signup" className="animated-button text-orange-500 border border-orange-500 relative  font-semibold overflow-hidden">
-                                <svg viewBox="0 0 24 24" className="arr-2" xmlns="http://www.w3.org/2000/svg">
-                                    <path
-                                        d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
-                                    ></path>
-                                </svg>
-                                <span className="text">Sign Up</span>
-                                <span className="circle bg-orange-600"></span>
-                                <svg viewBox="0 0 24 24" className="arr-1 fill-orange-500" xmlns="http://www.w3.org/2000/svg">
-                                    <path
-                                        d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
-                                    ></path>
-                                </svg>
-                            </Link>
-                        </>
-                    )}
-
-
-                    <button
-                        onClick={toggleTheme}
-                        className="p-2 rounded-md hover:scale-105 transition"
-                        title="Toggle theme"
-                    >
-                        {theme === 'light' ? (
-                            <MoonIcon className="w-6 h-6 text-gray-800" />
+                          </>
                         ) : (
-                            <SunIcon className="w-6 h-6 text-yellow-400" />
+                          <>
+                            <Link
+                              to="/signin"
+                              className="w-full px-4 py-2 rounded-md text-sm font-semibold text-indigo-600 border border-indigo-600 hover:bg-indigo-50 text-center transition"
+                            >
+                              Sign in
+                            </Link>
+                            <Link
+                              to="/signup"
+                              className="w-full px-4 py-2 rounded-md text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 text-center transition"
+                            >
+                              Sign up
+                            </Link>
+                          </>
                         )}
-                    </button>
-                </div>
-            </nav>
-        </header>
-    );
+                      </div>
+                    </div>
+                  </Popover.Panel>
+                </>
+              )}
+            </Popover>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
 }

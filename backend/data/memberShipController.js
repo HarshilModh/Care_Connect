@@ -2,7 +2,7 @@ import {Membership} from "../models/memberShip.model.js";
 import  {FamilyGroup}  from "../models/familyGroups.model.js";
 import User from "../models/user.model.js";
 import { isValidID } from "../utils/validation.utils.js";
-
+import mongoose from "mongoose";
 
 //need to update role values in create and update functions
 //Data Functions
@@ -18,11 +18,11 @@ export const createMembership = async (groupId, userId, role , status, permissio
     if (!groupId || !userId){
         throw new Error("Group ID and User ID are required");
     }
-    if (!isValidID(groupId)) {
-        throw new Error("Invalid group ID");
+    if(!mongoose.Types.ObjectId.isValid(groupId)){
+        throw new Error("Invalid Group ID");
     }
-    if (!isValidID(userId)) {
-        throw new Error("Invalid user ID");
+    if(!mongoose.Types.ObjectId.isValid(userId)){
+        throw new Error("Invalid User ID");
     }
 
     const validRoles = ["owner", "caregiver", "family", "readonly"];
@@ -48,8 +48,13 @@ export const createMembership = async (groupId, userId, role , status, permissio
     if (existing) {
         throw new Error("Membership already exists for this user in the group");
     }
+    //check if user is already in the group
+    const isMember = await Membership.findOne({ groupId, userId });
+    if (isMember) {
+      throw new Error("User is already a member of this group");
+    }
 
-    const created = await memberShipModel.create({
+    const created = await Membership.create({
       groupId,
       userId,
       role,
@@ -62,6 +67,55 @@ export const createMembership = async (groupId, userId, role , status, permissio
   }
 };
 
+//method to create multiple memberships at once
+export const createMultipleMemberships = async (membershipsData) => {
+    try {
+        //validation
+        if (!membershipsData || !Array.isArray(membershipsData) || membershipsData.length === 0) {
+            throw new Error("membershipsData must be a non-empty array");
+        }
+        for (const data of membershipsData) {
+            const groupId = data.groupId;
+            const userId = data.userId;
+            const role = data.role;
+            const status = data.status;
+            const permissions = data.permissions;
+            if (!groupId || !userId){
+                throw new Error("Group ID and User ID are required for all memberships");
+            }
+            if(!mongoose.Types.ObjectId.isValid(groupId)){
+                throw new Error("Invalid Group ID: " + groupId);
+            }
+            if(!mongoose.Types.ObjectId.isValid(userId)){
+                throw new Error("Invalid User ID: " + userId);
+            }
+
+            const validRoles = ["owner", "caregiver", "family", "readonly"];
+            const validStatuses = ["active", "pending", "removed"];
+            if (!validRoles.includes(role)) throw new Error("Invalid role value: " + role);
+            if (!validStatuses.includes(status)) throw new Error("Invalid status value: " + status);
+
+            if (permissions && typeof permissions !== "object") {
+              throw new Error("Permissions must be an object");
+            }
+            //check if user is already in the group
+            const isMember = await Membership.findOne({ groupId, userId });
+            if (isMember) {
+              throw new Error(`User ${userId} is already a member of group ${groupId}`);
+            }
+        }   
+        const createdMemberships = await Membership.insertMany(membershipsData);
+        return createdMemberships.map(membership => membership.toObject());
+    } catch (error) {
+        throw new Error('Error creating multiple memberships: ' + error.message);
+    }
+};
+
+//demo bulk data [{"groupId": "691505376e046bce1b1fb793", "userId": "691426987001f75596136611", "role": "family", "status": "pending"},
+//   {"groupId": "691505376e046bce1b1fb793", "userId": "691426a97001f7559613661c", "role": "family", "status": "pending"} 
+// ]
+
+
 export const getMembershipById = async (membershipId) => {
   try {
     if (!membershipId){
@@ -70,7 +124,7 @@ export const getMembershipById = async (membershipId) => {
     if (!isValidID(membershipId)) {
         throw new Error("Invalid membership ID");
     }
-    const membership = await memberShipModel.findById(membershipId).lean();
+    const membership = await Membership.findById(membershipId).lean();
     return membership;
   } catch (error) {
     throw new Error("Error fetching membership: " + error.message);
@@ -86,7 +140,7 @@ export const deleteMembership = async (membershipId) => {
     if (!isValidID(membershipId)) {
         throw new Error("Invalid membership ID");
     }
-    await memberShipModel.findByIdAndDelete(membershipId);
+    await Membership.findByIdAndDelete(membershipId);
     return { message: "Membership deleted successfully" };
   } catch (error) {
     throw new Error("Error deleting membership: " + error.message);
@@ -141,7 +195,7 @@ export const updateMembership = async (membershipId, groupId, userId, role, stat
         if(Object.keys(updateData).length === 0){
             throw new Error('No valid fields to update');
         }
-        const updatedMembership = await memberShipModel.findByIdAndUpdate(
+        const updatedMembership = await Membership.findByIdAndUpdate(
             membershipId,
             updateData,
             { new: true }
@@ -157,7 +211,7 @@ export const updateMembership = async (membershipId, groupId, userId, role, stat
 //Get All Memberships
 export const getAllMemberships = async () => {
     try {
-        const memberships = await memberShipModel.find();
+        const memberships = await Membership.find();
         return memberships;
     } catch (error) {
         throw new Error('Error fetching memberships: ' + error.message);
@@ -173,7 +227,7 @@ export const getMembershipsByUserId = async (userId) => {
         if(!isValidID(userId)){
             throw new Error('Invalid user ID');
         }
-        const memberships = await memberShipModel.find({ userId });
+        const memberships = await Membership.find({ userId });
         return memberships;
     } catch (error) {
         throw new Error('Error fetching memberships: ' + error.message);
@@ -186,13 +240,28 @@ export const getMembershipsByGroupId = async (groupId) => {
         if(!groupId){
             throw new Error('Group ID is required');
         }
-        if(!isValidID(groupId)){
+        if(!mongoose.Types.ObjectId.isValid(groupId)){
             throw new Error('Invalid group ID');
         }
-        const memberships = await memberShipModel.find({ groupId });
+        const memberships = await Membership.find({ groupId }).populate('userId', 'firstName lastName email');
         return memberships;
     } catch (error) {
         throw new Error('Error fetching memberships: ' + error.message);
+    }
+};
+//get members data by group id with user details populated
+export const getMembersWithUserDetailsByGroupId = async (groupId) => {
+    try {
+        if(!groupId){
+            throw new Error('Group ID is required');
+        }
+        if(!mongoose.Types.ObjectId.isValid(groupId)){
+            throw new Error('Invalid group ID');
+        }
+        const memberships = await Membership.find({ groupId }).populate('userId', 'name email');
+        return memberships;
+    } catch (error) {
+        throw new Error('Error fetching memberships with user details: ' + error.message);
     }
 };
 
@@ -208,7 +277,7 @@ export const updateMembershipRole = async (membershipId, role) => {
         if(!['owner','caregiver','family'].includes(role)){
             throw new Error('Invalid role value');
         }
-        const updatedMembership = await memberShipModel.findByIdAndUpdate(
+        const updatedMembership = await Membership.findByIdAndUpdate(
             membershipId,
             { role },
             { new: true }
@@ -231,7 +300,7 @@ export const updateMembershipStatus = async (membershipId, status) => {
         if(!['active','pending','removed'].includes(status)){
             throw new Error('Invalid status value');
         }
-        const updatedMembership = await memberShipModel.findByIdAndUpdate(
+        const updatedMembership = await Membership.findByIdAndUpdate(
             membershipId,
             { status },
             { new: true }
@@ -256,7 +325,7 @@ export const countMembershipsInGroup = async (groupId) => {
         if(!isValidID(groupId)){
             throw new Error('Invalid group ID');
         }
-        const count = await memberShipModel.countDocuments({ groupId });
+        const count = await Membership.countDocuments({ groupId });
         return count;
     } catch (error) {
         throw new Error('Error counting memberships: ' + error.message);
@@ -274,7 +343,7 @@ export const searchMemberships = async (searchTerm) => {};
 //Get Memberships by Role
 export const getMembershipsByRole = async (role) => {
     try{
-        const members=await memberShipModel.find({role})
+        const members=await Membership.find({role})
         return members
     }
     catch(error){
@@ -285,7 +354,7 @@ export const getMembershipsByRole = async (role) => {
 //Get Active Memberships
 export const getActiveMemberships = async () => {
     try{
-        const activeMemberships = await memberShipModel.find({ status: 'active' });
+        const activeMemberships = await Membership.find({ status: 'active' });
         return activeMemberships;
     } catch (error) {
         throw new Error('Error fetching active memberships: ' + error.message);
@@ -295,7 +364,7 @@ export const getActiveMemberships = async () => {
 //Get Pending Memberships
 export const getPendingMemberships = async () => {
     try{
-        const pendingMemberships = await memberShipModel.find({ status: 'pending' });
+        const pendingMemberships = await Membership.find({ status: 'pending' });
         return pendingMemberships;
     } catch (error) {
         throw new Error('Error fetching pending memberships: ' + error.message);
@@ -305,7 +374,7 @@ export const getPendingMemberships = async () => {
 //Get Removed Memberships
 export const getRemovedMemberships = async () => {
     try{
-        const removedMemberships = await memberShipModel.find({ status: 'removed' });
+        const removedMemberships = await Membership.find({ status: 'removed' });
         return removedMemberships;
     } catch (error) {
         throw new Error('Error fetching removed memberships: ' + error.message);
