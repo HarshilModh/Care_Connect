@@ -33,6 +33,7 @@ router.post('/login', async (req, res) => {
     if (email.trim() === "" || password.trim() === "") {
       throw new Error('Email and password cannot be empty');
     }
+
     email = email.trim().toLowerCase();
     password = password.trim();
     console.log("Attempting login for:", email);

@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { auth } from '../firebase';
+import React, { createContext, useState, useContext, useEffect } from "react";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { auth } from "../firebase";
 
 const AuthContext = createContext();
 
@@ -10,30 +10,37 @@ export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Helper to get stored data
-    const getStoredAuth = () => {
-        const storedUser = localStorage.getItem('user');
-        const storedToken = localStorage.getItem('accessToken');
-        const expiry = localStorage.getItem('tokenExpiry');
-        if (storedUser && storedToken && expiry) {
-            return { user: JSON.parse(storedUser), token: storedToken, expiry: Number(expiry) };
+
+    const loadStoredSession = () => {
+        const storedUser = localStorage.getItem("user");
+        const storedToken = localStorage.getItem("accessToken");
+        const storedExpiry = localStorage.getItem("tokenExpiry");
+
+        if (storedUser && storedToken && storedExpiry) {
+            const expiry = Number(storedExpiry);
+            if (Date.now() < expiry) {
+                return {
+                    user: JSON.parse(storedUser),
+                    token: storedToken,
+                    expiry,
+                };
+            }
         }
         return null;
     };
 
-    // Auto refresh Firebase token before it expires
-    const refreshAuthToken = async (currentUser) => {
-        try {
-            const idToken = await currentUser.getIdToken(true); // force refresh
-            const expiryTime = Date.now() + 60 * 60 * 1000; // 1 hour from now
-            localStorage.setItem('accessToken', idToken);
-            localStorage.setItem('tokenExpiry', expiryTime.toString());
-            setToken(idToken);
-        } catch (error) {
-            console.error("Error refreshing token:", error);
-        }
+
+    const storeSession = (userData, accessToken) => {
+        const expiry = Date.now() + 60 * 60 * 1000; // 1 hour
+        localStorage.setItem("user", JSON.stringify(userData));
+        localStorage.setItem("accessToken", accessToken);
+        localStorage.setItem("tokenExpiry", expiry.toString());
+
+        setUser(userData);
+        setToken(accessToken);
     };
 
+<<<<<<< HEAD
     // Monitor Firebase auth state
     useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -54,6 +61,59 @@ export const AuthProvider = ({ children }) => {
                 displayName: currentUser.displayName || '',
                 _id: storedUser._id || '', // optional: keep _id for backend
             };
+=======
+
+    const clearSession = () => {
+        localStorage.removeItem("user");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("tokenExpiry");
+        setUser(null);
+        setToken(null);
+    };
+
+
+    const login = (userData, accessToken) => {
+        if (!userData || !accessToken) return;
+        storeSession(userData, accessToken);
+    };
+
+
+    const logout = async () => {
+        try {
+            await signOut(auth); // Will logout Google if logged in
+        } catch {
+            // Ignore error
+        }
+        clearSession();
+    };
+
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            if (firebaseUser) {
+                // Firebase user logged in (Google)
+                const idToken = await firebaseUser.getIdToken();
+                const userData = {
+                    uid: firebaseUser.uid,
+                    email: firebaseUser.email,
+                    displayName: firebaseUser.displayName || "",
+                };
+
+                // Only overwrite if user isn't already logged in via backend
+                setUser((prev) => prev || userData);
+                setToken((prev) => prev || idToken);
+
+                // Store session if not already stored
+                if (!localStorage.getItem("user")) {
+                    storeSession(userData, idToken);
+                }
+            }
+
+
+
+            setLoading(false);
+        });
+>>>>>>> 72d4e6a (auth bug fix resetpassword and verfy email)
 
             setUser(userData);
             setToken(idToken);
@@ -70,31 +130,22 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     });
 
+<<<<<<< HEAD
     return () => unsubscribe();
 }, []);
     // Auto-refresh token every 55 minutes
+=======
+>>>>>>> 72d4e6a (auth bug fix resetpassword and verfy email)
     useEffect(() => {
-        if (!auth.currentUser) return;
-        const interval = setInterval(() => {
-            refreshAuthToken(auth.currentUser);
-        }, 55 * 60 * 1000); // 55 minutes
-        return () => clearInterval(interval);
-    }, [auth.currentUser]);
-
-    // Rehydrate session if not expired
-    useEffect(() => {
-        const stored = getStoredAuth();
-        if (stored && Date.now() < stored.expiry) {
+        const stored = loadStoredSession();
+        if (stored) {
             setUser(stored.user);
             setToken(stored.token);
-            setLoading(false);
-        } else {
-            localStorage.removeItem('user');
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('tokenExpiry');
         }
+        setLoading(false);
     }, []);
 
+<<<<<<< HEAD
     const login = (userData, accessToken) => {
         if (!userData || !accessToken) return;
         const expiryTime = Date.now() + 60 * 60 * 1000; // 1 hour
@@ -110,24 +161,31 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem('user', JSON.stringify(userData));
             localStorage.setItem('accessToken', accessToken);
             localStorage.setItem('tokenExpiry', expiryTime.toString());
+=======
+>>>>>>> 72d4e6a (auth bug fix resetpassword and verfy email)
 
-        }
+    useEffect(() => {
+        if (!auth.currentUser) return;
 
+        const interval = setInterval(async () => {
+            try {
+                const idToken = await auth.currentUser.getIdToken(true);
+                const currentUser = auth.currentUser;
 
-    };
+                const userData = {
+                    uid: currentUser.uid,
+                    email: currentUser.email,
+                    displayName: currentUser.displayName || "",
+                };
 
-    const logout = async () => {
-        try {
-            await signOut(auth);
-            localStorage.removeItem('user');
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('tokenExpiry');
-            setUser(null);
-            setToken(null);
-        } catch (error) {
-            console.error("Logout error:", error);
-        }
-    };
+                storeSession(userData, idToken);
+            } catch (err) {
+                console.error("Token refresh error:", err);
+            }
+        }, 55 * 60 * 1000);
+
+        return () => clearInterval(interval);
+    }, [auth.currentUser]);
 
     return (
         <AuthContext.Provider value={{ user, token, loading, login, logout }}>

@@ -218,7 +218,11 @@ export const authenticateUser = async (email, password) => {
     password = password.trim();
 
     const user = await User.findOne({ email });
-    console.log("user.password", user);
+    console.log("user", user);
+
+    if (user.isVerified === false) {
+      throw new Error('Email not verified. Please verify your email before logging in.');
+    };
     if (!user) {
       throw new Error('User not found');
     }
@@ -233,7 +237,7 @@ export const authenticateUser = async (email, password) => {
 
     return { user: loggedInUser, tokens: { accessToken, refreshToken } };
   } catch (error) {
-    throw new Error(`Error authenticating user: ${error.message}`);
+    throw new Error(error.message);
   }
 };
 
@@ -474,6 +478,19 @@ export const authenticateUserWithGoogle = async (idToken) => {
 
     // Add user in  MongoDB
     let user = await User.findOne({ uid: uid });
+    let userExistsWithEmail = await User.findOne({ email: email });
+    // If user exists with the same email but not with Google, link Google UID
+    if (!user && userExistsWithEmail) {
+      // Link Google UID to existing user
+      userExistsWithEmail.uid = uid;
+      userExistsWithEmail.googleId = uid;
+      userExistsWithEmail.isVerified = true;
+      userExistsWithEmail.profileImage = picture || "";
+      await userExistsWithEmail.save({ validateBeforeSave: false });
+      user = userExistsWithEmail;
+    }
+
+
     if (!user) {
       user = await User.create({
         uid: uid,

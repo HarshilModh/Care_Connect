@@ -3,11 +3,12 @@ import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from 'react-toastify';
-import { signInWithPopup } from "firebase/auth";
+import { sendEmailVerification, signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "../firebase";
 import { useAuth } from "../context/AuthContext";
-import { useTheme } from "../context/ThemeContext";
+// import { useTheme } from "../context/ThemeContext";
 import api from "../api/axios";
+
 
 function SignIn() {
 
@@ -15,8 +16,8 @@ function SignIn() {
 
 
     const { login } = useAuth();
-    const { theme } = useTheme();
-    console.log("first theme", theme);
+    // const { theme } = useTheme();
+    // console.log("first theme", theme);
     const [errors, setErrors] = useState({});
 
 
@@ -84,10 +85,10 @@ function SignIn() {
             password: formData.password,
         };
         try {
-            const { data } = await api.post("users/login", payload);
-            console.log("Login response:", data);
-            if (data?.user && data?.tokens?.accessToken) {
-                login(data.user, data.tokens.accessToken);
+            const res = await api.post("users/login", payload);
+            console.log("Login response:", res);
+            if (res.data?.user && res.data?.tokens?.accessToken) {
+                login(res.data.user, res.data.tokens?.accessToken);
                 toast.success("Login successful!");
                 setFormData({ email: "", password: "" });
                 // navigate("/home", { replace: true });
@@ -97,8 +98,16 @@ function SignIn() {
                 toast.error("Invalid server response");
             }
         } catch (error) {
-            console.error("Login error:", error);
-            toast.error(error.response?.data?.message || "Login failed. Try again.");
+            console.log(">>", error.response?.data?.error);
+            if (error.response?.data?.error === 'Email not verified. Please verify your email before logging in.') {
+                toast.error("Email not verified. Please check your inbox for the verification email.");
+                sendEmailVerification(auth.currentUser, {
+                    url: "http://localhost:5173/verify-success", // custom redirect URL
+                });
+                return;
+            }
+            console.error("Login error:", error.response?.data?.error || error.message);
+            toast.error(error.response?.data?.error || "Login failed. Try again.");
         }
     };
 

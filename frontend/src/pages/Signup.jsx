@@ -81,21 +81,46 @@ export default function Signup() {
             return;
         }
 
-        const userCredential = await createUserWithEmailAndPassword(
-            auth,
-            formData.email,
-            formData.password
-        );
-        const user = userCredential.user;
+        let user;
+        try {
+            const userCredential = await createUserWithEmailAndPassword(
+                auth,
+                formData.email,
+                formData.password
+            );
+            if (!userCredential) {
+                toast.error("Failed to create user. Try again.");
+                return;
+            }
+
+            user = userCredential.user;
+
+        } catch (error) {
+            // console.log(">>", error.errors.message);
+            if (error.code === 'auth/email-already-in-use') {
+                toast.error("Email already in use. Please use a different email.");
+                return;
+            } else {
+                toast.error(error.message);
+                return;
+            }
+        }
+
+        // toast.success("Verification email sent! Please check your inbox.");
+        //     console.log("Firebase signup error:", error);
+        //     toast.error(error.message);
+        //     return;
+        // }
+        await sendEmailVerification(user, {
+            url: "http://localhost:5173/verify-success", // custom redirect URL
+        });
+
         // console.log("User created:", user);
         // console.log("User created:", user.auth.currentUser.uid);
         // console.log("User UID:", user.uid);
 
         // Step 2: Send Firebase email verification
-        await sendEmailVerification(user, {
-            url: "http://localhost:5173/verify-success", // custom redirect URL
-        });
-        toast.success("Verification email sent! Please check your inbox.");
+
 
         const payload = {
             firstName: formData.firstName,
