@@ -10,7 +10,9 @@ export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(null);
     const [loading, setLoading] = useState(true);
 
-
+    // -----------------------------
+    // Helper: Load existing localStorage session
+    // -----------------------------
     const loadStoredSession = () => {
         const storedUser = localStorage.getItem("user");
         const storedToken = localStorage.getItem("accessToken");
@@ -29,7 +31,9 @@ export const AuthProvider = ({ children }) => {
         return null;
     };
 
-
+    // -----------------------------
+    // Store user+token
+    // -----------------------------
     const storeSession = (userData, accessToken) => {
         const expiry = Date.now() + 60 * 60 * 1000; // 1 hour
         localStorage.setItem("user", JSON.stringify(userData));
@@ -40,29 +44,9 @@ export const AuthProvider = ({ children }) => {
         setToken(accessToken);
     };
 
-<<<<<<< HEAD
-    // Monitor Firebase auth state
-    useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-        if (currentUser) {
-            const idToken = await currentUser.getIdToken();
-            const expiryTime = Date.now() + 60 * 60 * 1000; // 1 hour expiry
-
-            // Try to get _id from stored user
-            let storedUser = {};
-            try {
-                storedUser = JSON.parse(localStorage.getItem('user')) || {};
-            } catch { storedUser = {}; }
-
-            const userData = {
-                userId: storedUser._id || '', // restore _id if present
-                uid: currentUser.uid,
-                email: currentUser.email,
-                displayName: currentUser.displayName || '',
-                _id: storedUser._id || '', // optional: keep _id for backend
-            };
-=======
-
+    // -----------------------------
+    // Remove session
+    // -----------------------------
     const clearSession = () => {
         localStorage.removeItem("user");
         localStorage.removeItem("accessToken");
@@ -71,23 +55,28 @@ export const AuthProvider = ({ children }) => {
         setToken(null);
     };
 
-
+    // -----------------------------
+    // Backend Login (email/pass)
+    // -----------------------------
     const login = (userData, accessToken) => {
         if (!userData || !accessToken) return;
         storeSession(userData, accessToken);
     };
 
-
+    // -----------------------------
+    // Logout
+    // -----------------------------
     const logout = async () => {
         try {
             await signOut(auth); // Will logout Google if logged in
-        } catch {
-            // Ignore error
-        }
+        } catch (_) { }
         clearSession();
     };
 
-
+    // -----------------------------
+    // Firebase auth listener (Google Login)
+    // Never clear backend login when Firebase returns null
+    // -----------------------------
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
@@ -109,33 +98,18 @@ export const AuthProvider = ({ children }) => {
                 }
             }
 
-
+            // ❗ DO NOT CLEAR SESSION WHEN firebaseUser = null
+            // Backend login should persist
 
             setLoading(false);
         });
->>>>>>> 72d4e6a (auth bug fix resetpassword and verfy email)
 
-            setUser(userData);
-            setToken(idToken);
-            localStorage.setItem('user', JSON.stringify(userData));
-            localStorage.setItem('accessToken', idToken);
-            localStorage.setItem('tokenExpiry', expiryTime.toString());
-        } else {
-            localStorage.removeItem('user');
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('tokenExpiry');
-            setUser(null);
-            setToken(null);
-        }
-        setLoading(false);
-    });
+        return () => unsubscribe();
+    }, []);
 
-<<<<<<< HEAD
-    return () => unsubscribe();
-}, []);
-    // Auto-refresh token every 55 minutes
-=======
->>>>>>> 72d4e6a (auth bug fix resetpassword and verfy email)
+    // -----------------------------
+    // Try to load existing localStorage session at startup
+    // -----------------------------
     useEffect(() => {
         const stored = loadStoredSession();
         if (stored) {
@@ -145,25 +119,9 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     }, []);
 
-<<<<<<< HEAD
-    const login = (userData, accessToken) => {
-        if (!userData || !accessToken) return;
-        const expiryTime = Date.now() + 60 * 60 * 1000; // 1 hour
-        if (userData && accessToken) {
-            // Store user and token
-            setUser({
-                userId: userData._id || '',
-                uid: userData.firebaseUid || '',
-                email: userData.email,
-                displayName: userData.firstName || '',
-            });
-            setToken(accessToken);
-            localStorage.setItem('user', JSON.stringify(userData));
-            localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('tokenExpiry', expiryTime.toString());
-=======
->>>>>>> 72d4e6a (auth bug fix resetpassword and verfy email)
-
+    // -----------------------------
+    // Auto-refresh Firebase token every 55 min
+    // -----------------------------
     useEffect(() => {
         if (!auth.currentUser) return;
 
