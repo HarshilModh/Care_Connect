@@ -31,7 +31,9 @@ export const isValidID = (id) => {
   }
   return id;
 };
-
+export const isValidObjectId = (id) => {
+  return ObjectId.isValid(id);
+};
 export const isValidString = (strVal, varName) => {
   if (!strVal) {
     throw new Error(`Error: You must supply a ${varName}!`);
@@ -43,11 +45,6 @@ export const isValidString = (strVal, varName) => {
   if (strVal.length === 0) {
     throw new Error(
       `Error: ${varName} cannot be an empty string or string with just spaces`
-    );
-  }
-  if (!isNaN(strVal)) {
-    throw new Error(
-      `Error: ${strVal} is not a valid value for ${varName} as it only contains digits`
     );
   }
   return strVal;

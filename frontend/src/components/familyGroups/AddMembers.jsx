@@ -1,304 +1,586 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react"
+import axios from "axios"
+import { toast, ToastContainer } from "react-toastify"
+import { useNavigate } from "react-router-dom"
 
 /**
- * Endpoints used
- *  GET  /api/users/search?q=term
- *  GET  /api/memberships/group/:groupId
- *  POST /api/memberships           body { groupId, userId, role }
- *  POST /api/invitations           body { groupId, email, role }
- */
+ AddMembers.jsx
+ Improved UI + UX for adding members to a group.
+ - Debounced email search with cancel
+ - Shows existing members for selected group
+ - Prevent duplicates and simple validation
+ - Bulk submit to POST /api/memberships/bulk
+ - Invite form kept below
+*/
 
-async function api(path, opts = {}) {
-  const res = await fetch(path, {
-    method: "GET",
-    headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
-    credentials: "include",
-    ...opts,
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error || `Request failed ${res.status}`);
-  return data;
-}
-
-const ROLES = [
-  { value: "family", label: "Family" },
+const ROLE_OPTIONS = [
   { value: "caregiver", label: "Caregiver" },
-  { value: "owner", label: "Owner" },
-];
+  { value: "family", label: "Family" },
+  { value: "careRecipient", label: "Care recipient" }
+]
 
-export default function AddMembers() {
-  const { groupId } = useParams();
-  const navigate = useNavigate();
-  const { state } = useLocation();
-  const group = state?.group || null;
+const AddMembers = () => {
+  const navigate = useNavigate()
 
-  const [term, setTerm] = useState("");
-  const [results, setResults] = useState([]);
-  const [members, setMembers] = useState([]); // existing memberships
-  const [selected, setSelected] = useState([]); // items to add
-  const [roleForInvite, setRoleForInvite] = useState("family");
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [loadingSearch, setLoadingSearch] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState({ type: "", text: "" });
+  // core lists
+  const [groups, setGroups] = useState([])
+  const [existingMembers, setExistingMembers] = useState([])
 
-  // fetch existing members
+  // selected group
+  const [groupId, setGroupId] = useState("")
+
+  // search
+  const [email, setEmail] = useState("")
+  const [searchResults, setSearchResults] = useState([])
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchError, setSearchError] = useState(null)
+
+  // pending additions
+  const [pending, setPending] = useState([]) // items: { groupId, userId, email, role, status }
+
+  // submission states
+  const [submitting, setSubmitting] = useState(false)
+  const [isLoadingGroups, setIsLoadingGroups] = useState(false)
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false)
+
+  // invite form
+  const [inviteEmail, setInviteEmail] = useState("")
+  const [inviteFirstName, setInviteFirstName] = useState("")
+  const [inviteLastName, setInviteLastName] = useState("")
+  const [inviteRole, setInviteRole] = useState("family")
+  const [inviteSubmitting, setInviteSubmitting] = useState(false)
+
+  // load groups created by current user (from localStorage) once
   useEffect(() => {
-    let ignore = false;
-    async function load() {
+    const fetchGroups = async () => {
       try {
-        const data = await api(`/api/memberships/group/${groupId}`);
-        if (!ignore) setMembers(Array.isArray(data) ? data : []);
-      } catch {
-        // ignore if endpoint not ready
-      }
-    }
-    load();
-    return () => { ignore = true; };
-  }, [groupId]);
+        const userRaw = localStorage.getItem("user")
+        if (!userRaw) return
+        const user = JSON.parse(userRaw)
+        if (!user?._id) return
 
-  useEffect(() => {
-    if (!term.trim()) { setResults([]); return; }
-    const id = setTimeout(async () => {
-      setLoadingSearch(true);
-      try {
-        const data = await api(`/api/users/search?q=${encodeURIComponent(term.trim())}`);
-        setResults(Array.isArray(data) ? data : []);
-      } catch (e) {
-        setResults([]);
+        setIsLoadingGroups(true)
+        const res = await axios.get(
+          `http://localhost:3000/api/family-groups/creator/${user._id}`,
+          { withCredentials: true }
+        )
+        setGroups(Array.isArray(res.data) ? res.data : [])
+      } catch (err) {
+        console.error("Failed loading groups", err)
       } finally {
-        setLoadingSearch(false);
+        setIsLoadingGroups(false)
       }
-    }, 250);
-    return () => clearTimeout(id);
-  }, [term]);
-
-  const addExisting = (user, role = "family") => {
-    if (selected.some(s => s.kind === "user" && s.value._id === user._id)) return;
-    setSelected(prev => [...prev, { kind: "user", value: user, role }]);
-  };
-
-  const addInvite = () => {
-    const email = inviteEmail.trim().toLowerCase();
-    if (!email) return;
-    const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    if (!ok) { setMsg({ type: "error", text: "Enter a valid email" }); return; }
-    if (selected.some(s => s.kind === "invite" && s.value === email)) return;
-    setSelected(prev => [...prev, { kind: "invite", value: email, role: roleForInvite }]);
-    setInviteEmail("");
-  };
-
-  const removeSelected = (idx) => {
-    setSelected(prev => prev.filter((_, i) => i !== idx));
-  };
-
-  const saveAll = async () => {
-    if (selected.length === 0) return;
-    setSaving(true);
-    setMsg({ type: "", text: "" });
-    try {
-      // existing users
-      for (const s of selected.filter(x => x.kind === "user")) {
-        await api("/api/memberships", {
-          method: "POST",
-          body: JSON.stringify({ groupId, userId: s.value._id, role: s.role }),
-        });
-      }
-      // invitations
-      for (const s of selected.filter(x => x.kind === "invite")) {
-        await api("/api/invitations", {
-          method: "POST",
-          body: JSON.stringify({ groupId, email: s.value, role: s.role }),
-        });
-      }
-      setSelected([]);
-      setMsg({ type: "success", text: "Members added" });
-
-      // refresh members
-      try {
-        const data = await api(`/api/memberships/group/${groupId}`);
-        setMembers(Array.isArray(data) ? data : []);
-      } catch {}
-    } catch (e) {
-      setMsg({ type: "error", text: e.message || "Could not add members" });
-    } finally {
-      setSaving(false);
     }
-  };
+
+    fetchGroups()
+  }, [])
+
+  // when group changes, fetch existing memberships for that group
+  useEffect(() => {
+    if (!groupId) {
+      setExistingMembers([])
+      return
+    }
+
+    let canceled = false
+    const ctrl = new AbortController()
+
+    const fetchMembers = async () => {
+      try {
+        setIsLoadingMembers(true)
+        const res = await axios.get(
+          `http://localhost:3000/api/memberships/group/${groupId}`,
+          { withCredentials: true, signal: ctrl.signal }
+        )
+        if (canceled) return
+        const payload = Array.isArray(res.data) ? res.data : res.data?.members ?? []
+        setExistingMembers(payload)
+      } catch (err) {
+        if (axios.isCancel?.(err)) return
+        console.error("Error fetching members", err)
+        setExistingMembers([])
+      } finally {
+        setIsLoadingMembers(false)
+      }
+    }
+
+    fetchMembers()
+
+    return () => {
+      canceled = true
+      ctrl.abort()
+    }
+  }, [groupId])
+
+  // debounced search effect
+  useEffect(() => {
+    if (!email || !groupId) {
+      setSearchResults([])
+      setSearchError(null)
+      return
+    }
+
+    const controller = new AbortController()
+    let mounted = true
+    setSearchLoading(true)
+    setSearchError(null)
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await axios.get(`http://localhost:3000/api/users/search/${encodeURIComponent(email)}`, {
+          withCredentials: true,
+          signal: controller.signal
+        })
+        if (!mounted) return
+        // allow either array or { users: [...] } shapes
+        const payload = Array.isArray(res.data) ? res.data : res.data?.users ?? res.data ?? []
+        setSearchResults(payload)
+      } catch (err) {
+        if (axios.isCancel?.(err)) return
+        console.error("Search error", err)
+        setSearchError(err?.response?.data?.message ?? err.message ?? "Search failed")
+        setSearchResults([])
+      } finally {
+        if (mounted) setSearchLoading(false)
+      }
+    }, 400) // 400ms debounce
+
+    return () => {
+      mounted = false
+      controller.abort()
+      clearTimeout(timer)
+    }
+  }, [email, groupId])
+
+  // helper: check if a user is already in existingMembers
+  const isAlreadyMember = (userIdOrEmail) => {
+    if (!existingMembers?.length) return false
+    return existingMembers.some((m) => {
+      const uid = typeof m.userId === "object" ? m.userId._id ?? m.userId.id : m.userId
+      return uid === userIdOrEmail || m.userId?.email === userIdOrEmail || m.email === userIdOrEmail
+    })
+  }
+
+  // helper: check duplicate in pending
+  const pendingHas = (userIdOrEmail) => {
+    return pending.some((p) => p.userId === userIdOrEmail || p.email === userIdOrEmail)
+  }
+
+  // add search result to pending with validation
+  const handleAddFromSearch = (user) => {
+    if (!groupId) {
+      toast.error("Select a group first")
+      return
+    }
+
+    const uid = user._id || user.id
+    const emailVal = user.email
+
+    if (isAlreadyMember(uid) || isAlreadyMember(emailVal)) {
+      toast.error("User is already a member of this group")
+      return
+    }
+    if (pendingHas(uid) || pendingHas(emailVal)) {
+      toast.error("User already in pending list")
+      return
+    }
+
+    const newRow = {
+      groupId,
+      userId: uid,
+      email: emailVal,
+      role: "family",
+      status: "pending"
+    }
+    setPending((p) => [...p, newRow])
+    toast.success("Added to pending list")
+  }
+
+  // add a manual empty row
+  const handleAddRow = () => {
+    if (!groupId) {
+      toast.error("Select a group first")
+      return
+    }
+    setPending((p) => [...p, { groupId, userId: "", email: "", role: "family", status: "pending" }])
+  }
+
+  // remove row
+  const handleRemoveRow = (index) => {
+    setPending((p) => p.filter((_, i) => i !== index))
+  }
+
+  // set field for pending row
+  const handleUpdateRow = (index, patch) => {
+    setPending((rows) => {
+      const copy = [...rows]
+      copy[index] = { ...copy[index], ...patch }
+      return copy
+    })
+  }
+
+  // prepare payload and submit
+  const handleSubmit = async () => {
+    if (!groupId) {
+      toast.error("Select a group first")
+      return
+    }
+    if (pending.length === 0) {
+      toast.error("No pending members to submit")
+      return
+    }
+
+    // basic validation: each row must have either userId or valid email and a role
+    const invalid = pending.find((r) => !(r.userId || r.email) || !r.role)
+    if (invalid) {
+      toast.error("Every pending row must have an email or user and a role")
+      return
+    }
+
+    // avoid duplicates in payload
+    const uniques = []
+    for (const r of pending) {
+      const key = r.userId || r.email
+      if (!uniques.some((u) => u.key === key)) {
+        uniques.push({ key, payload: { groupId: r.groupId, userId: r.userId || null, email: r.email || null, role: r.role, status: "pending" } })
+      }
+    }
+
+    const memberships = uniques.map((u) => u.payload)
+
+    try {
+      setSubmitting(true)
+      const res = await axios.post("http://localhost:3000/api/memberships/bulk", { memberships }, { withCredentials: true })
+      toast.success("Members added")
+      // optimistic update: refresh existing members
+      setPending([])
+      // refetch members for that group
+      setIsLoadingMembers(true)
+      try {
+        const mm = await axios.get(`http://localhost:3000/api/memberships/group/${groupId}`, { withCredentials: true })
+        setExistingMembers(Array.isArray(mm.data) ? mm.data : mm.data?.members ?? [])
+      } catch (err) {
+        // ignore
+      } finally {
+        setIsLoadingMembers(false)
+      }
+      // navigate to family groups or stay — user preference; we'll stay and show updated list
+    } catch (err) {
+      console.error("Submit error", err)
+      const msg = err?.response?.data?.message ?? err?.response?.data?.error ?? err.message ?? "Submit failed"
+      toast.error(msg)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  // invite flow (placeholder: implement server invite endpoint)
+  const handleInviteSubmit = async (e) => {
+    e.preventDefault()
+    if (!inviteEmail) {
+      toast.error("Invite email required")
+      return
+    }
+    setInviteSubmitting(true)
+    try {
+      // Replace this with your real invite endpoint when ready
+      // await axios.post('/api/invitations', {...}, { withCredentials: true })
+      console.log("Invite payload", { inviteEmail, inviteFirstName, inviteLastName, inviteRole })
+      toast.success("Invitation sent (demo)")
+      setInviteEmail("")
+      setInviteFirstName("")
+      setInviteLastName("")
+      setInviteRole("family")
+    } catch (err) {
+      console.error("Invite error", err)
+      toast.error("Failed to send invite")
+    } finally {
+      setInviteSubmitting(false)
+    }
+  }
+
+  // derived UI helpers
+  const existingCount = existingMembers?.length ?? 0
+  const pendingCount = pending?.length ?? 0
+
+  const canSubmit = groupId && pendingCount > 0 && !submitting
 
   return (
     <main className="page">
       <div className="container-n">
-        <header className="text-center mb-8">
-          <h1 className="section-title">Add Members</h1>
-          <p className="section-sub">
-            {group?.groupName ? `Add people to ${group.groupName}` : "Search existing users or invite by email"}
-          </p>
+        <header className="text-center mb-6">
+          <h2 className="section-title">Add members</h2>
+          <p className="section-sub">Choose a group, search by email, add results to a pending list and submit in bulk</p>
         </header>
 
-        <div className="card mx-auto max-w-3xl">
-          <div className="card-pad">
-            {/* Search */}
-            <div className="field">
-              <div className={`floater ${term ? "filled" : ""}`}>
-                <label className="float-label">Search by name or email</label>
-                <input
-                  className="input"
-                  placeholder=" "
-                  value={term}
-                  onChange={(e) => setTerm(e.target.value)}
-                />
-              </div>
-              <p className="help">Start typing to search existing users</p>
-            </div>
-
-            {/* Results */}
-            <div className="field">
-              {loadingSearch && <div className="skeleton" style={{ height: 12, width: "40%" }} />}
-              {!loadingSearch && term && results.length === 0 && (
-                <div className="help">No users found. Invite by email below.</div>
-              )}
-              {!loadingSearch && results.length > 0 && (
-                <ul className="space-y-3">
-                  {results.map((u) => (
-                    <li key={u._id} className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-                      <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold">
-                          {u.firstName?.[0]?.toUpperCase() || "U"}
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            {u.firstName} {u.lastName}
-                          </div>
-                          <div className="text-sm text-gray-500">{u.email}</div>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button className="btn-ghost" onClick={() => addExisting(u, "family")}>Add as Family</button>
-                        <button className="btn-primary" onClick={() => addExisting(u, "caregiver")}>Add as Caregiver</button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            {/* Invite by email */}
-            <div className="field">
-              <div className="grid gap-3 sm:grid-cols-[1fr,10rem,9rem]">
-                <div className={`floater ${inviteEmail ? "filled" : ""}`}>
-                  <label className="float-label">Invite by email</label>
-                  <input
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* left column: group select and search */}
+          <div>
+            <div className="card mb-4">
+              <div className="card-pad">
+                <label className="card-sub font-semibold">Select group</label>
+                <div className="mt-2 flex items-center gap-3">
+                  <select
                     className="input"
-                    placeholder=" "
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                  />
+                    value={groupId}
+                    onChange={(e) => setGroupId(e.target.value)}
+                  >
+                    <option value="">-- choose group --</option>
+                    {groups.map((g) => (
+                      <option key={g._id || g.id} value={g._id || g.id}>
+                        {g.groupName}
+                      </option>
+                    ))}
+                  </select>
+
+                  <div className="text-sm text-slate-500">
+                    {isLoadingGroups ? "loading..." : `${groups.length || 0} group(s)`}
+                  </div>
                 </div>
-
-                <select
-                  className="input"
-                  value={roleForInvite}
-                  onChange={(e) => setRoleForInvite(e.target.value)}
-                >
-                  {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-                </select>
-
-                <button type="button" className="btn-primary" onClick={addInvite}>
-                  Add invite
-                </button>
               </div>
-              <p className="help">We will email an invite with a sign in link</p>
             </div>
 
-            {/* Pending additions */}
-            {selected.length > 0 && (
-              <div className="field">
-                <div className="card-sub font-semibold mb-2">Pending additions</div>
-                <div className="flex flex-wrap gap-2">
-                  {selected.map((s, i) => (
-                    <span
-                      key={`${s.kind}-${i}`}
-                      className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1 text-sm shadow-sm"
+            <div className="card mb-4">
+              <div className="card-pad">
+                <label className="card-sub font-semibold">Search existing users</label>
+                <div className="mt-3">
+                  <div className="flex gap-3">
+                    <input
+                      className="input"
+                      placeholder="Email to search (requires group selection)"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={!groupId}
+                      type="email"
+                    />
+                    <button
+                      className="btn-ghost"
+                      type="button"
+                      onClick={() => {
+                        setEmail("")
+                        setSearchResults([])
+                      }}
                     >
-                      {s.kind === "user"
-                        ? `${s.value.firstName} ${s.value.lastName}`
-                        : s.value}
-                      <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700">
-                        {s.role}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => removeSelected(i)}
-                        className="text-gray-500 hover:text-gray-700"
-                        aria-label="Remove"
-                        title="Remove"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-                <div className="mt-4 flex justify-end">
-                  <button className="btn-primary" disabled={saving} onClick={saveAll}>
-                    {saving ? "Saving…" : "Save all"}
-                  </button>
-                </div>
-              </div>
-            )}
+                      Clear
+                    </button>
+                  </div>
 
-            {/* Messages */}
-            {msg.type === "success" && <div className="alert-success">{msg.text}</div>}
-            {msg.type === "error" && <div className="alert-error">{msg.text}</div>}
+                  <div className="mt-3">
+                    {searchLoading ? (
+                      <div className="text-sm text-slate-500">Searching…</div>
+                    ) : searchError ? (
+                      <div className="alert-error">{searchError}</div>
+                    ) : searchResults?.length > 0 ? (
+                      <div className="space-y-2">
+                        {searchResults.map((u) => {
+                          const uid = u._id || u.id
+                          const already = isAlreadyMember(uid) || pendingHas(uid)
+                          return (
+                            <div
+                              key={uid || u.email}
+                              className="flex items-center justify-between gap-3 p-3 rounded-lg border border-slate-100"
+                            >
+                              <div>
+                                <div className="font-medium">{u.displayName || `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email}</div>
+                                <div className="text-sm text-slate-500">{u.email}</div>
+                              </div>
 
-            {/* Existing members */}
-            {members.length > 0 && (
-              <div className="field">
-                <div className="card-sub font-semibold mb-2">Current members</div>
-                <ul className="grid gap-3 sm:grid-cols-2">
-                  {members.map((m) => (
-                    <li key={m._id} className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-                      <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold">
-                          {m?.userId?.firstName?.[0]?.toUpperCase() || "U"}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-medium text-gray-900 truncate">
-                            {m?.userId?.firstName} {m?.userId?.lastName}
-                          </div>
-                          <div className="text-sm text-gray-500 truncate">{m?.userId?.email}</div>
-                        </div>
-                        <span className="ml-auto rounded-full bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700">
-                          {m.role}
-                        </span>
+                              <div className="flex items-center gap-2">
+                                <select
+                                  className="input"
+                                  value={pending.find((p) => p.userId === uid)?.role ?? "family"}
+                                  onChange={(e) => {
+                                    // if already pending, update; else create temporary pending preview (not saved)
+                                    const idx = pending.findIndex((p) => p.userId === uid)
+                                    if (idx >= 0) {
+                                      handleUpdateRow(idx, { role: e.target.value })
+                                    } else {
+                                      // add as pending with chosen role
+                                      setPending((p) => [...p, { groupId, userId: uid, email: u.email, role: e.target.value, status: "pending" }])
+                                    }
+                                  }}
+                                >
+                                  {ROLE_OPTIONS.map((r) => (
+                                    <option key={r.value} value={r.value}>{r.label}</option>
+                                  ))}
+                                </select>
+
+                                <button
+                                  className="btn-primary"
+                                  type="button"
+                                  onClick={() => handleAddFromSearch(u)}
+                                  disabled={already}
+                                >
+                                  {already ? "Added" : "Add"}
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
-                    </li>
-                  ))}
-                </ul>
+                    ) : email ? (
+                      <div className="text-sm text-slate-500">No users found</div>
+                    ) : (
+                      <div className="text-sm text-slate-400">Type an email to search existing users</div>
+                    )}
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
 
-            {/* Footer actions */}
-            <div className="mt-6 flex items-center justify-between">
-              <button className="btn-ghost" type="button" onClick={() => navigate(-1)}>
-                Back
-              </button>
-              <button
-                className="btn-primary"
-                type="button"
-                onClick={() => navigate(`/groups/${groupId}`)}
-              >
-                Finish
-              </button>
+            {/* Invite card */}
+            <div className="card">
+              <div className="card-pad">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <div className="card-title">Invite a new user</div>
+                    <div className="card-sub">Send an email invite when user not registered</div>
+                  </div>
+                </div>
+
+                <form onSubmit={handleInviteSubmit} className="grid gap-3">
+                  <input className="input" placeholder="Email" type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} required />
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <input className="input" placeholder="First name" value={inviteFirstName} onChange={(e) => setInviteFirstName(e.target.value)} />
+                    <input className="input" placeholder="Last name" value={inviteLastName} onChange={(e) => setInviteLastName(e.target.value)} />
+                  </div>
+
+                  <select className="input" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
+                    {ROLE_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                  </select>
+
+                  <div className="flex justify-end gap-3">
+                    <button type="submit" className="btn-primary" disabled={inviteSubmitting}>
+                      {inviteSubmitting ? "Sending…" : "Send invite"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          {/* right column: pending list and existing members */}
+          <div>
+            <div className="card mb-4">
+              <div className="card-pad">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="card-title">Pending additions</div>
+                    <div className="card-sub">{pendingCount} row(s)</div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button className="btn-ghost" type="button" onClick={() => setPending([])} disabled={pendingCount === 0}>Clear</button>
+                    <button className="btn-ghost" type="button" onClick={handleAddRow}>Add row</button>
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  {pendingCount === 0 ? (
+                    <div className="text-sm text-slate-500">No pending members. Add from search or create a row</div>
+                  ) : (
+                    pending.map((row, idx) => (
+                      <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 rounded-lg border border-slate-100">
+                        <div className="flex-1 w-full">
+                          <div className="flex items-center gap-3">
+                            <input
+                              className="input"
+                              placeholder="Email (optional if existing user)"
+                              value={row.email || ""}
+                              onChange={(e) => handleUpdateRow(idx, { email: e.target.value })}
+                              style={{ minWidth: 180 }}
+                            />
+
+                            <input
+                              className="input"
+                              placeholder="User id (optional)"
+                              value={row.userId || ""}
+                              onChange={(e) => handleUpdateRow(idx, { userId: e.target.value })}
+                              style={{ minWidth: 120 }}
+                            />
+
+                            <select
+                              className="input"
+                              value={row.role}
+                              onChange={(e) => handleUpdateRow(idx, { role: e.target.value })}
+                            >
+                              {ROLE_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                            </select>
+                          </div>
+
+                          <div className="mt-2 text-sm text-slate-500">
+                            Group: <span className="font-medium">{groups.find((g) => (g._id || g.id) === row.groupId)?.groupName || "none"}</span>
+                            {row.userId && <span className="ml-3">User id: <code className="text-xs">{row.userId}</code></span>}
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <button className="btn-ghost" type="button" onClick={() => handleRemoveRow(idx)}>Remove</button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="mt-4 flex items-center justify-between">
+                  <div className="text-sm text-slate-500">Existing members: {isLoadingMembers ? "loading..." : existingCount}</div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      className="btn-primary"
+                      onClick={handleSubmit}
+                      disabled={!canSubmit}
+                    >
+                      {submitting ? "Submitting…" : "Submit all"}
+                    </button>
+                  </div>
+                </div>
+
+                {submitting && <div className="mt-3 text-sm text-slate-500">Submitting memberships...</div>}
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card-pad">
+                <div className="card-title">Group members</div>
+                <div className="card-sub mb-3">Shows existing members for the selected group</div>
+
+                {groupId ? (
+                  isLoadingMembers ? (
+                    <div className="text-sm text-slate-500">Loading members…</div>
+                  ) : existingMembers.length === 0 ? (
+                    <div className="text-sm text-slate-500">No members yet</div>
+                  ) : (
+                    <ul className="space-y-2">
+                      {existingMembers.map((m) => {
+                        const user = typeof m.userId === "object" ? m.userId : null
+                        const name = user ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() : (m.userEmail || "Unknown")
+                        const emailVal = user?.email ?? m.userEmail ?? ""
+                        return (
+                          <li key={m._id || `${m.groupId}_${m.userId}`} className="flex items-center justify-between gap-3 p-2 rounded border border-slate-100">
+                            <div>
+                              <div className="font-medium">{name}</div>
+                              <div className="text-sm text-slate-500">{emailVal}</div>
+                            </div>
+                            <div className="text-sm text-slate-500">{m.role}</div>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  )
+                ) : (
+                  <div className="text-sm text-slate-400">Select a group to view members</div>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        <p className="mt-6 text-center text-sm text-gray-600">
-          You can return to add more members any time
-        </p>
+        {/* toast container */}
+        <ToastContainer position="top-right" autoClose={4000} />
       </div>
     </main>
-  );
+  )
 }
+
+export default AddMembers

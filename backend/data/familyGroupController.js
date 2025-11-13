@@ -7,6 +7,8 @@ import {
 import User from "../models/user.model.js";
 import { createMembership, deleteMembership, getMembershipsByGroupId, getMembershipsByUserId, } from "./memberShipController.js";
 import { Membership } from "../models/memberShip.model.js";
+import { isValidObjectId } from "mongoose";
+import mongoose from "mongoose";
 //Data Functions
 
 //changes made here by Harshil Modh
@@ -15,37 +17,38 @@ export const createFamilyGroup = async (
   groupName,
   description,
   createdBy,
-  timeZone,
   isPublic
 ) => {
-  if (!isValidString(groupName)) {
-    throw new Error("Group name is required and must be a valid string");
+ try {
+  if(!groupName || !createdBy){
+    throw new Error("groupName and createdBy are required to create a family group");
   }
-  if (!isValidID(createdBy)) {
-    throw new Error("Creator ID is required and must be valid");
+  if(typeof groupName !== "string"){
+    throw new Error("groupName must be a string");
+  }
+  if (typeof isPublic !== "boolean") {
+    throw new Error("isPublic must be a boolean value");
+  }
+  if(description){
+    description = isValidString(description, "description");
+  }
+  groupName = isValidString(groupName, "groupName");
+  if(!mongoose.Types.ObjectId.isValid(createdBy)){
+    throw new Error("createdBy must be a valid ObjectId");
   }
 
-  if (description && !isValidString(description)) {
-    throw new Error("Description must be a valid string");
-  }
-
-  if (timeZone && !isValidString(timeZone)) {
-    throw new Error("Time zone must be a valid string");
-  }
-  if (isPublic !== undefined && typeof isPublic !== "boolean") {
-    throw new Error("isPublic must be a boolean");
-  }
+  groupName = groupName.toLowerCase().trim();
+  description = description ? description.trim() : "";
 
   const familyGroupData = {
-    groupName: groupName.trim().toLowerCase(),
-    description: description ? description.trim() : "",
+    groupName,
+    description,
     createdBy,
-    timeZone: timeZone || "UTC",
-    isPublic: isPublic || false,
+    isPublic,
   };
 
-  const newFamilyGroup = new FamilyGroup(familyGroupData);
-  await newFamilyGroup.save();``
+ const newCreatedGroup = new FamilyGroup(familyGroupData);
+ const newFamilyGroup = await newCreatedGroup.save();
   //add creator as owner member
   const ownerMembership = await createMembership(
     newFamilyGroup._id,
@@ -61,6 +64,11 @@ export const createFamilyGroup = async (
  getCreatedGroup.members = activeMemberships.map(m => m.userId); //view only field
 
   return getCreatedGroup;
+  } catch (error) {
+    console.log(error);
+    
+    throw new Error("Error creating family group: " + error.message);
+  }
 };
 
 //Get Family Group by ID
@@ -331,15 +339,15 @@ export const updateFamilyGroupVisibility = async (groupId, isPublic) => {
 
 //Get Family Groups by Name
 export const getFamilyGroupsByName = async (groupName) => {
-  if (!isValidString(groupName)) {
-    throw new Error("Group name must be a valid string");
+  try {
+    groupName = isValidString(groupName, "groupName").toLowerCase().trim();
+
+    const familyGroups = await FamilyGroup.find({ groupName });
+
+    return familyGroups;
+  } catch (error) {
+    throw new Error("Error getting family groups by name: " + error.message);
   }
-
-  const familyGroups = await FamilyGroup.find({
-    groupName: groupName.trim().toLowerCase(),
-  }).sort({ createdAt: -1 });
-
-  return familyGroups;
 };
 
 //changes done here by Harshil Modh
@@ -421,15 +429,22 @@ export const getRecentFamilyGroups = async (limit) => {
 
 //Get Family Groups Created by User
 export const getFamilyGroupsCreatedByUser = async (userId) => {
-  if (!isValidID(userId)) {
-    throw new Error("Invalid user ID");
+  try{
+    if(!userId){
+      throw new Error("User ID is required");
+    }
+    if(!mongoose.Types.ObjectId.isValid(userId)){
+      throw new Error("Invalid user ID");
+    }
+    const familyGroups = await FamilyGroup.find({ createdBy: userId }).sort({
+      createdAt: -1,
+    });
+
+    return familyGroups;
   }
-
-  const familyGroups = await FamilyGroup.find({ createdBy: userId }).sort({
-    createdAt: -1,
-  });
-
-  return familyGroups;
+  catch(error){
+    throw new Error("Error getting family groups created by user: " + error.message);
+  }
 };
 
 //Get Family Groups with No Members

@@ -11,16 +11,18 @@ const familyGroupSchema = new mongoose.Schema(
       maxlength: 100
     },
     description: { type: String, trim: true, maxlength: 500, default: "" },
-    createdBy:   { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
     timeZone: {
       type: String,
-      default: "UTC",
-      match: [/^[A-Za-z_]+\/[A-Za-z_]+(?:\/[A-Za-z_]+)?$/, "Use a valid IANA timezone like America/New_York"]
+      default: "UTC"
+
     },
     isPublic: { type: Boolean, default: false, index: true }
   },
   { timestamps: true }
 );
+
+familyGroupSchema.index({ groupName: 1 }, { unique: true });
 
 
 export const FamilyGroup = mongoose.model("FamilyGroup", familyGroupSchema);

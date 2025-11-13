@@ -1,8 +1,9 @@
-import { createUser, authenticateUser, getUserById, updateUser, logoutUser, refreshToken, changeUserPassword, authenticateUserWithGoogle } from '../data/userController.js';
+import { createUser, authenticateUser, getUserById, updateUser, logoutUser, refreshToken, changeUserPassword, authenticateUserWithGoogle, searchUsersByEmail } from '../data/userController.js';
 import { requireAuth, verifyFirebaseToken } from '../middlewares/auth.js';
 import express from 'express';
 import admin from '../integrations/firebaseAdmin.js';
 import User from '../models/user.model.js';
+import { isValidEmail } from '../utils/validation.utils.js';
 
 
 const router = express.Router();
@@ -41,7 +42,30 @@ router.post('/login', async (req, res) => {
     res.status(401).json({ error: error.message });
   }
 });
-
+//search user by email
+router.get("/search/:email", async (req, res) => {
+  try {
+    let email = req.params.email;
+    if (!email) {
+      throw new Error("Email parameter is required");
+    }
+    if(typeof email !== "string") {
+      throw new Error("Email must be a string");
+    }
+    if(email.trim() === "") {
+      throw new Error("Email cannot be empty");
+    }
+    email = email.trim().toLowerCase();
+    // if(!isValidEmail(email)) {
+    //   throw new Error("Invalid email format");
+    // }
+    const users = await searchUsersByEmail(email);
+    res.status(200).json(users);
+  } catch (error) {
+    console.log("Error searching users by email:", error);
+    res.status(400).json({ error: error.message });
+  }
+});
 router.get('/me', requireAuth, async (req, res, next) => {
   try {
     const me = await getUserById(req.user._id);
