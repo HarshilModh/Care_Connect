@@ -10,9 +10,7 @@ export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // -----------------------------
-    // Helper: Load existing localStorage session
-    // -----------------------------
+
     const loadStoredSession = () => {
         const storedUser = localStorage.getItem("user");
         const storedToken = localStorage.getItem("accessToken");
@@ -31,9 +29,7 @@ export const AuthProvider = ({ children }) => {
         return null;
     };
 
-    // -----------------------------
-    // Store user+token
-    // -----------------------------
+
     const storeSession = (userData, accessToken) => {
         const expiry = Date.now() + 60 * 60 * 1000; // 1 hour
         localStorage.setItem("user", JSON.stringify(userData));
@@ -44,9 +40,7 @@ export const AuthProvider = ({ children }) => {
         setToken(accessToken);
     };
 
-    // -----------------------------
-    // Remove session
-    // -----------------------------
+
     const clearSession = () => {
         localStorage.removeItem("user");
         localStorage.removeItem("accessToken");
@@ -55,28 +49,23 @@ export const AuthProvider = ({ children }) => {
         setToken(null);
     };
 
-    // -----------------------------
-    // Backend Login (email/pass)
-    // -----------------------------
+
     const login = (userData, accessToken) => {
         if (!userData || !accessToken) return;
         storeSession(userData, accessToken);
     };
 
-    // -----------------------------
-    // Logout
-    // -----------------------------
+
     const logout = async () => {
         try {
             await signOut(auth); // Will logout Google if logged in
-        } catch (_) { }
+        } catch {
+            // Ignore signOut errors
+        }
         clearSession();
     };
 
-    // -----------------------------
-    // Firebase auth listener (Google Login)
-    // Never clear backend login when Firebase returns null
-    // -----------------------------
+
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
@@ -98,8 +87,7 @@ export const AuthProvider = ({ children }) => {
                 }
             }
 
-            // ❗ DO NOT CLEAR SESSION WHEN firebaseUser = null
-            // Backend login should persist
+
 
             setLoading(false);
         });
@@ -107,9 +95,7 @@ export const AuthProvider = ({ children }) => {
         return () => unsubscribe();
     }, []);
 
-    // -----------------------------
-    // Try to load existing localStorage session at startup
-    // -----------------------------
+
     useEffect(() => {
         const stored = loadStoredSession();
         if (stored) {
@@ -119,9 +105,7 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     }, []);
 
-    // -----------------------------
-    // Auto-refresh Firebase token every 55 min
-    // -----------------------------
+
     useEffect(() => {
         if (!auth.currentUser) return;
 
