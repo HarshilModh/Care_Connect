@@ -1,14 +1,25 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import mongoose from 'mongoose';
-import bcrypt from 'bcrypt';
-import User from '../models/user.model.js';
-import { isValidArray, isValidEmail, isValidID, isValidPassword, isValidString, isValidNumber, isValidPhone } from '../utils/validation.utils.js';
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+import bcrypt from "bcrypt";
+import User from "../models/user.model.js";
+import {
+  isValidArray,
+  isValidEmail,
+  isValidID,
+  isValidPassword,
+  isValidString,
+  isValidNumber,
+  isValidPhone,
+} from "../utils/validation.utils.js";
 //redisClient
-import { createClient } from 'redis';
-import { toSeconds } from '../helper.js'
-import jwt from 'jsonwebtoken';
+import { createClient } from "redis";
+import { toSeconds } from "../helper.js";
+import jwt from "jsonwebtoken";
+import { Membership } from "../models/memberShip.model.js";
+
+import { sendMail } from "../integrations/nodemailer.js";
 
 import admin from "../integrations/firebaseAdmin.js";
 
@@ -17,8 +28,8 @@ dotenv.config();
 const client = createClient({
   url: process.env.REDIS_URL,
 });
-client.on('error', (err) => {
-  console.error('Redis Client Error:', err);
+client.on("error", (err) => {
+  console.error("Redis Client Error:", err);
 });
 if (!client.isOpen) {
   await client.connect();
@@ -27,26 +38,24 @@ if (!client.isOpen) {
 //Data Functions
 const generateAccessAndRefereshTokens = async (userId) => {
   try {
-    const user = await User.findById(userId)
+    const user = await User.findById(userId);
     if (!user) {
-      throw new Error('User not found when generating tokens');
+      throw new Error("User not found when generating tokens");
     }
-    const accessToken = user.generateAccessToken()
-    const refreshToken = user.generateRefreshToken()
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
 
-    const refreshTTL = toSeconds(process.env.REFRESH_TOKEN_EXPIRY || '7d');
+    const refreshTTL = toSeconds(process.env.REFRESH_TOKEN_EXPIRY || "7d");
     await client.set(`refresh:${userId}`, refreshToken, { EX: refreshTTL });
 
-    user.refreshToken = refreshToken
-    await user.save({ validateBeforeSave: false })
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
 
-    return { accessToken, refreshToken }
-
-
+    return { accessToken, refreshToken };
   } catch (error) {
-    throw new Error(`Failed to generate tokens: ${error.message}`)
+    throw new Error(`Failed to generate tokens: ${error.message}`);
   }
-}
+};
 //Create User
 export const createUser = async (
   firstName,
@@ -54,19 +63,32 @@ export const createUser = async (
   email,
   password,
   confirmPassword,
-  phone,
+  role,
+  needPasswordReset,
   uid
 ) => {
   try {
     //validation
-    if (!firstName || !lastName || !email || !password || !confirmPassword || phone) {
-      throw new Error('All fields are required');
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
+      throw new Error("All fields are required");
     }
-    if (typeof firstName !== 'string' || typeof lastName !== 'string' || typeof email !== 'string' || typeof password !== 'string' || typeof confirmPassword !== 'string') {
-      throw new Error('All fields must be strings');
+    if (
+      typeof firstName !== "string" ||
+      typeof lastName !== "string" ||
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      typeof confirmPassword !== "string"
+    ) {
+      throw new Error("All fields must be strings");
     }
-    if (firstName.trim() === "" || lastName.trim() === "" || email.trim() === "" || password.trim() === "" || confirmPassword.trim() === "") {
-      throw new Error('Fields cannot be empty');
+    if (
+      firstName.trim() === "" ||
+      lastName.trim() === "" ||
+      email.trim() === "" ||
+      password.trim() === "" ||
+      confirmPassword.trim() === ""
+    ) {
+      throw new Error("Fields cannot be empty");
     }
     if (
       !isValidString(firstName, "firstName") ||
@@ -75,7 +97,7 @@ export const createUser = async (
       !isValidPassword(password) ||
       !isValidPassword(confirmPassword)
     ) {
-      throw new Error('Invalid input data');
+      throw new Error("Invalid input data");
     }
     // if (phone) {
     //   if (!isValidPhone(phone)) {
@@ -83,22 +105,34 @@ export const createUser = async (
     //   }
     // }
     if (password !== confirmPassword) {
-      throw new Error('Passwords do not match');
+      throw new Error("Passwords do not match");
     }
 
-    const normEmail = email.trim().toLowerCase()
+    const normEmail = email.trim().toLowerCase();
     //check if user already exists
     const existingUser = await User.findOne({ email: normEmail });
     if (existingUser) {
-      throw new Error('User with this email already exists');
+      throw new Error("User with this email already exists");
+    }
+
+    if (needPasswordReset == true) {
+      const response = await sendMail({
+        to: normEmail,
+        subject: "Congrats! Your Account Has Been Created",
+        text: `Hello ${firstName},\n\nYour account has been successfully created. Please log in and change your password at your earliest convenience.\n\nBest regards,\nCare Connect Team`,
+        html: `<p>Hello ${firstName},</p><p>Your account has been successfully created. Please log in and change your password at your earliest convenience.</p><p>Best regards,<br/>Care Connect Team</p>`,
+      });
+      console.log("Account creation email sent, message ID:", response);
     }
     //create new user
     const newUser = await User.create({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      displayName: firstName,// 
+      displayName: firstName, //
       email: normEmail,
       password: password.trim(),
+      needPasswordReset: needPasswordReset || false,
+      role: role || null,
       uid: uid || null,
     });
 
@@ -106,11 +140,10 @@ export const createUser = async (
     return safe;
   } catch (error) {
     if (error?.code === 11000 && error?.keyPattern?.email) {
-      throw new Error('User with this email already exists');
+      throw new Error("User with this email already exists");
     }
     throw new Error(`Error creating user: ${error.message}`);
   }
-
 };
 //demo sample data for user creation
 
@@ -119,12 +152,12 @@ export const createUser = async (
 //Get User by ID
 export const getUserById = async (userId) => {
   try {
-    if (!isValidID(userId, 'userId')) throw new Error('Invalid user id');
+    if (!isValidID(userId, "userId")) throw new Error("Invalid user id");
 
-    const user = await User.findById(userId).select('-password -refreshToken');
-    if (!user) throw new Error('User not found');
+    const user = await User.findById(userId).select("-password -refreshToken");
+    if (!user) throw new Error("User not found");
 
-    return user
+    return user;
   } catch (error) {
     throw new Error(`Error fetching user: ${error.message}`);
   }
@@ -133,40 +166,39 @@ export const getUserById = async (userId) => {
 //Update User
 export const updateUser = async (userId, updateData) => {
   try {
-    if (!isValidID(userId, 'userId')) throw new Error('Invalid user id');
-    if (!updateData || typeof updateData !== 'object') {
-      throw new Error('No update data provided');
+    if (!isValidID(userId, "userId")) throw new Error("Invalid user id");
+    if (!updateData || typeof updateData !== "object") {
+      throw new Error("No update data provided");
     }
 
     const { firstName, lastName, phone, profilePicture } = updateData;
-    const safe = {}
+    const safe = {};
 
-    if (typeof firstName === 'string' && firstName.trim()) {
-      safe.firstName = isValidString(firstName, 'firstName');
+    if (typeof firstName === "string" && firstName.trim()) {
+      safe.firstName = isValidString(firstName, "firstName");
     }
-    if (typeof lastName === 'string' && lastName.trim()) {
-      safe.lastName = isValidString(lastName, 'lastName');
+    if (typeof lastName === "string" && lastName.trim()) {
+      safe.lastName = isValidString(lastName, "lastName");
     }
-    if (typeof profilePicture === 'string' && profilePicture.trim()) safe.profilePicture = profilePicture.trim();
-    if (typeof phone === 'string' && phone.trim()) {
-      if (!isValidPhone(phone)) throw new Error('Invalid phone');
+    if (typeof profilePicture === "string" && profilePicture.trim())
+      safe.profilePicture = profilePicture.trim();
+    if (typeof phone === "string" && phone.trim()) {
+      if (!isValidPhone(phone)) throw new Error("Invalid phone");
       safe.phone = phone.trim();
     }
 
-
     if (Object.keys(safe).length === 0) {
-      throw new Error('No valid fields to update');
+      throw new Error("No valid fields to update");
     }
 
     const updated = await User.findByIdAndUpdate(
       userId,
       { $set: safe },
       { new: true, runValidators: true }
-    ).select('-password');
+    ).select("-password");
 
-    if (!updated) throw new Error('User not found');
+    if (!updated) throw new Error("User not found");
     return updated;
-
   } catch (error) {
     throw new Error(`Error updating user: ${error.message}`);
   }
@@ -175,10 +207,10 @@ export const updateUser = async (userId, updateData) => {
 //Delete User
 export const deleteUser = async (userId) => {
   try {
-    if (!isValidID(userId, 'userId')) throw new Error('Invalid user id');
+    if (!isValidID(userId, "userId")) throw new Error("Invalid user id");
 
     const deleted = await User.findByIdAndDelete(userId);
-    if (!deleted) throw new Error('User not found');
+    if (!deleted) throw new Error("User not found");
 
     await client.del(`refresh:${userId}`);
     return { ok: true };
@@ -190,7 +222,7 @@ export const deleteUser = async (userId) => {
 //Get All Users
 export const getAllUsers = async () => {
   try {
-    const users = await User.find({}).select('-password');
+    const users = await User.find({}).select("-password");
     return users;
   } catch (error) {
     throw new Error(`Error fetching users: ${error.message}`);
@@ -201,16 +233,16 @@ export const getAllUsers = async () => {
 export const authenticateUser = async (email, password) => {
   try {
     if (!email || !password) {
-      throw new Error('Email and password are required');
+      throw new Error("Email and password are required");
     }
-    if (typeof email !== 'string' || typeof password !== 'string') {
-      throw new Error('Email and password must be strings');
+    if (typeof email !== "string" || typeof password !== "string") {
+      throw new Error("Email and password must be strings");
     }
     if (email.trim() === "" || password.trim() === "") {
-      throw new Error('Email and password cannot be empty');
+      throw new Error("Email and password cannot be empty");
     }
     if (!isValidEmail(email) || !isValidPassword(password)) {
-      throw new Error('Invalid email or password format');
+      throw new Error("Invalid email or password format");
     }
     //console.log(password);
 
@@ -224,16 +256,20 @@ export const authenticateUser = async (email, password) => {
       throw new Error('Email not verified. Please verify your email before logging in.');
     };
     if (!user) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
     // console.log(user.password);
 
     const isPasswordValid = await user.isPasswordCorrect(password);
     if (!isPasswordValid) {
-      throw new Error('Invalid password');
+      throw new Error("Invalid password");
     }
-    const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(user._id);
-    let loggedInUser = await User.findOne({ email }).select('-password -refreshToken');
+    const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
+      user._id
+    );
+    let loggedInUser = await User.findOne({ email }).select(
+      "-password -refreshToken"
+    );
 
     return { user: loggedInUser, tokens: { accessToken, refreshToken } };
   } catch (error) {
@@ -244,19 +280,28 @@ export const authenticateUser = async (email, password) => {
 //Change User Password
 export const changeUserPassword = async (userId, newPassword) => {
   try {
-    if (!isValidID(userId, 'userId')) throw new Error('Invalid user id');
-    if (!newPassword) throw new Error(' password is required');
-    if (typeof newPassword !== 'string')
-      throw new Error('Passwords must be strings');
+    if (!isValidID(userId, "userId")) throw new Error("Invalid user id");
+    if (!newPassword) throw new Error(" password is required");
+    if (typeof newPassword !== "string")
+      throw new Error("Passwords must be strings");
 
     const newP = newPassword.trim();
 
     if (!isValidPassword(newP))
-      throw new Error('Password does not meet policy');
+      throw new Error("Password does not meet policy");
     // if (oldP === newP) throw new Error('New password must be different');
 
     const user = await User.findById(userId);
-    if (!user) throw new Error('User not found');
+    if (!user) throw new Error("User not found");
+
+    if (user.needPasswordReset === true) {
+      user.needPasswordReset = false;
+      const response = await Membership.updateOne(
+        { userId: userId },
+        { $set: { needPasswordReset: false } }
+      );
+      console.log("Updated membership needPasswordReset:", response);
+    }
 
     user.password = newP;
     await user.save();
@@ -272,16 +317,18 @@ export const changeUserPassword = async (userId, newPassword) => {
 //Reset User Password
 export const resetUserPassword = async (email, newPassword) => {
   try {
-    if (!email || typeof email !== 'string') throw new Error('Email is required');
-    if (!newPassword || typeof newPassword !== 'string') throw new Error('New password is required');
+    if (!email || typeof email !== "string")
+      throw new Error("Email is required");
+    if (!newPassword || typeof newPassword !== "string")
+      throw new Error("New password is required");
 
     const normEmail = email.trim().toLowerCase();
     if (!isValidEmail(normEmail) || !isValidPassword(newPassword.trim())) {
-      throw new Error('Invalid email or password format');
+      throw new Error("Invalid email or password format");
     }
 
     const user = await User.findOne({ email: normEmail });
-    if (!user) throw new Error('User not found');
+    if (!user) throw new Error("User not found");
 
     user.password = newPassword.trim();
     await user.save();
@@ -289,32 +336,31 @@ export const resetUserPassword = async (email, newPassword) => {
     await client.del(`refresh:${user._id}`); // force re-login
 
     return { ok: true };
-
   } catch (error) {
     throw new Error(`Error resetting password: ${error.message}`);
   }
 };
 
 //Verify User Email
-export const verifyUserEmail = async (userId, verificationCode) => { };
+export const verifyUserEmail = async (userId, verificationCode) => {};
 
 //Send Password Reset Email
-export const sendPasswordResetEmail = async (email) => { };
+export const sendPasswordResetEmail = async (email) => {};
 
 //Update User Profile Picture
 export const updateUserProfilePicture = async (userId, profilePictureUrl) => {
   try {
-    if (!isValidID(userId, 'userId')) throw new Error('Invalid user id');
-    if (typeof profilePictureUrl !== 'string' || !profilePictureUrl.trim())
-      throw new Error('Invalid profile picture URL');
+    if (!isValidID(userId, "userId")) throw new Error("Invalid user id");
+    if (typeof profilePictureUrl !== "string" || !profilePictureUrl.trim())
+      throw new Error("Invalid profile picture URL");
 
     const updated = await User.findByIdAndUpdate(
       userId,
       { $set: { profilePicture: profilePictureUrl.trim() } },
       { new: true, runValidators: true }
-    ).select('-password');
+    ).select("-password");
 
-    if (!updated) throw new Error('User not found');
+    if (!updated) throw new Error("User not found");
     return updated;
   } catch (error) {
     throw new Error(`Error updating profile picture: ${error.message}`);
@@ -324,25 +370,25 @@ export const updateUserProfilePicture = async (userId, profilePictureUrl) => {
 //Add User Role
 export const addUserRole = async (userId, role) => {
   try {
-    if (!isValidID(userId, 'userId')) throw new Error('Invalid user id');
-    if (typeof role !== 'string') throw new Error('Role required');
+    if (!isValidID(userId, "userId")) throw new Error("Invalid user id");
+    if (typeof role !== "string") throw new Error("Role required");
 
     const r = role.trim().toLowerCase();
     const map = {
-      admin: 'admin',
-      familymember: 'familyMember',
-      caregiver: 'careGiver',
-      carerecipient: 'careRecipient',
+      admin: "admin",
+      familymember: "familyMember",
+      caregiver: "careGiver",
+      carerecipient: "careRecipient",
     };
     const normalized = map[r];
-    if (!normalized) throw new Error('Invalid role');
+    if (!normalized) throw new Error("Invalid role");
     const updated = await User.findByIdAndUpdate(
       userId,
       { $set: { role: normalized } },
       { new: true, runValidators: true }
-    ).select('-password');
+    ).select("-password");
 
-    if (!updated) throw new Error('User not found');
+    if (!updated) throw new Error("User not found");
     return updated;
   } catch (error) {
     throw new Error(`Error adding role: ${error.message}`);
@@ -352,15 +398,15 @@ export const addUserRole = async (userId, role) => {
 //Remove User Role
 export const removeUserRole = async (userId, role) => {
   try {
-    if (!isValidID(userId, 'userId')) throw new Error('Invalid user id');
+    if (!isValidID(userId, "userId")) throw new Error("Invalid user id");
 
     const updated = await User.findByIdAndUpdate(
       userId,
-      { $set: { role: 'familyMember' } },
+      { $set: { role: "familyMember" } },
       { new: true, runValidators: true }
-    ).select('-password');
+    ).select("-password");
 
-    if (!updated) throw new Error('User not found');
+    if (!updated) throw new Error("User not found");
     return updated;
   } catch (error) {
     throw new Error(`Error removing role: ${error.message}`);
@@ -370,18 +416,18 @@ export const removeUserRole = async (userId, role) => {
 //Get Users by Role
 export const getUsersByRole = async (role) => {
   try {
-    if (typeof role !== 'string') throw new Error('Role required');
+    if (typeof role !== "string") throw new Error("Role required");
     const r = role.trim().toLowerCase();
-    if (!r) throw new Error('Role cannot be empty');
+    if (!r) throw new Error("Role cannot be empty");
     const map = {
-      admin: 'admin',
-      familymember: 'familyMember',
-      caregiver: 'careGiver',
-      carerecipient: 'careRecipient',
+      admin: "admin",
+      familymember: "familyMember",
+      caregiver: "careGiver",
+      carerecipient: "careRecipient",
     };
     const normalized = map[r];
-    if (!normalized) throw new Error('Invalid role');
-    const users = await User.find({ role: normalized }).select('-password');
+    if (!normalized) throw new Error("Invalid role");
+    const users = await User.find({ role: normalized }).select("-password");
     return users;
   } catch (error) {
     throw new Error(`Error fetching users by role: ${error.message}`);
@@ -391,14 +437,14 @@ export const getUsersByRole = async (role) => {
 //Search Users
 export const searchUsers = async (searchTerm) => {
   try {
-    if (typeof searchTerm !== 'string') throw new Error('Search term required');
+    if (typeof searchTerm !== "string") throw new Error("Search term required");
     const q = searchTerm.trim();
-    if (!q) throw new Error('Search term cannot be empty');
+    if (!q) throw new Error("Search term cannot be empty");
 
-    const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
     const users = await User.find({
       $or: [{ firstName: rx }, { lastName: rx }, { email: rx }, { phone: rx }],
-    }).select('-password');
+    }).select("-password");
 
     return users;
   } catch (error) {
@@ -408,32 +454,32 @@ export const searchUsers = async (searchTerm) => {
 
 export const logoutUser = async (userId) => {
   try {
-    if (!isValidID(userId, 'userId')) throw new Error('Invalid user id');
+    if (!isValidID(userId, "userId")) throw new Error("Invalid user id");
     await client.del(`refresh:${userId}`);
     await User.findByIdAndUpdate(userId, { $set: { refreshToken: null } });
     return { ok: true };
   } catch (error) {
     throw new Error(`Error logging out: ${error.message}`);
   }
-}
+};
 
 export const refreshToken = async (oldRefreshToken) => {
   try {
-    if (!oldRefreshToken || typeof oldRefreshToken !== 'string') {
-      throw new Error('Refresh token required');
+    if (!oldRefreshToken || typeof oldRefreshToken !== "string") {
+      throw new Error("Refresh token required");
     }
     let payload;
     try {
       payload = jwt.verify(oldRefreshToken, process.env.REFRESH_TOKEN_SECRET);
     } catch (e) {
-      throw new Error('Invalid or expired refresh token');
+      throw new Error("Invalid or expired refresh token");
     }
     const userId = payload?._id;
-    if (!isValidID(userId, 'userId')) throw new Error('Invalid token payload');
+    if (!isValidID(userId, "userId")) throw new Error("Invalid token payload");
 
     const stored = await client.get(`refresh:${userId}`);
     if (!stored || stored !== oldRefreshToken) {
-      throw new Error('Refresh token not recognized');
+      throw new Error("Refresh token not recognized");
     }
 
     const { accessToken, refreshToken: newRefreshToken } =
@@ -443,7 +489,7 @@ export const refreshToken = async (oldRefreshToken) => {
   } catch (error) {
     throw new Error(`Error refreshing token: ${error.message}`);
   }
-}
+};
 
 export const authenticateUserWithGoogle = async (idToken) => {
   try {
@@ -451,22 +497,21 @@ export const authenticateUserWithGoogle = async (idToken) => {
       throw new Error("Firebase ID token required");
     }
 
-
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     console.log("Decoded Firebase token<<>>", decodedToken);
-
 
     if (!decodedToken || !decodedToken.uid) {
       throw new Error("Invalid Firebase ID token");
     }
 
-
     const checkUser = await User.findOne({ uid: decodedToken.uid });
     if (checkUser) {
+      const { accessToken, refreshToken } =
+        await generateAccessAndRefereshTokens(checkUser._id);
 
-      const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(checkUser._id);
-
-      const loggedInUser = await User.findById(checkUser._id).select("-password -refreshToken");
+      const loggedInUser = await User.findById(checkUser._id).select(
+        "-password -refreshToken"
+      );
 
       return { user: loggedInUser, tokens: { accessToken, refreshToken } };
     }
@@ -496,7 +541,7 @@ export const authenticateUserWithGoogle = async (idToken) => {
         uid: uid,
         firstName,
         lastName,
-        displayName: firstName,// 
+        displayName: firstName, //
         email,
         isVerified: true,
         googleId: uid,
@@ -505,31 +550,35 @@ export const authenticateUserWithGoogle = async (idToken) => {
       });
     }
 
+    const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
+      user._id
+    );
 
-    const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(user._id);
-
-
-    const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
+    const loggedInUser = await User.findById(user._id).select(
+      "-password -refreshToken"
+    );
 
     return { user: loggedInUser, tokens: { accessToken, refreshToken } };
   } catch (error) {
     console.error("Error authenticating with Firebase Google:", error);
     throw new Error(`Error verifying Firebase ID token: ${error.message}`);
   }
-}
+};
 export const searchUsersByEmail = async (email) => {
   try {
-    if (typeof email !== 'string'){
-      throw new Error('Email required');
+    if (typeof email !== "string") {
+      throw new Error("Email required");
     }
-    if (!email.trim().length>0){
-      throw new Error('Email cannot be empty');
+    if (!email.trim().length > 0) {
+      throw new Error("Email cannot be empty");
     }
     let cleanedEmail = email.trim().toLowerCase();
     // if (!isValidEmail(cleanedEmail)){
     //   throw new Error('Invalid email format');
     // }
-    const users = await User.find({ email: { $regex: cleanedEmail, $options: 'i' } }).select('-password -refreshToken');
+    const users = await User.find({
+      email: { $regex: cleanedEmail, $options: "i" },
+    }).select("-password -refreshToken");
     return users;
   } catch (error) {
     throw new Error(`Error searching users by email: ${error.message}`);
