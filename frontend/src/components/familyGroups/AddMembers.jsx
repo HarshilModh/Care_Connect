@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import { auth } from "../../firebase.js";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { createRandomPassword } from "../../../../backend/utils/randomGenerator.js";
+
 /**
  AddMembers.jsx
  Improved UI + UX for adding members to a group.
@@ -12,7 +13,7 @@ import { createRandomPassword } from "../../../../backend/utils/randomGenerator.
  - Shows existing members for selected group
  - Prevent duplicates and simple validation
  - Bulk submit to POST /api/memberships/bulk
- - Invite form kept below
+ - Invite form disabled until a group is selected
 */
 
 const ROLE_OPTIONS = [
@@ -139,7 +140,6 @@ const AddMembers = () => {
           }
         );
         if (!mounted) return;
-        // allow either array or { users: [...] } shapes
         const payload = Array.isArray(res.data)
           ? res.data
           : res.data?.users ?? res.data ?? [];
@@ -154,7 +154,7 @@ const AddMembers = () => {
       } finally {
         if (mounted) setSearchLoading(false);
       }
-    }, 400); // 400ms debounce
+    }, 400);
 
     return () => {
       mounted = false;
@@ -251,14 +251,12 @@ const AddMembers = () => {
       return;
     }
 
-    // basic validation: each row must have either userId or valid email and a role
     const invalid = pending.find((r) => !(r.userId || r.email) || !r.role);
     if (invalid) {
       toast.error("Every pending row must have an email or user and a role");
       return;
     }
 
-    // avoid duplicates in payload
     const uniques = [];
     for (const r of pending) {
       const key = r.userId || r.email;
@@ -280,15 +278,13 @@ const AddMembers = () => {
 
     try {
       setSubmitting(true);
-      const res = await axios.post(
+      await axios.post(
         "http://localhost:3000/api/memberships/bulk",
         { memberships },
         { withCredentials: true }
       );
       toast.success("Members added");
-      // optimistic update: refresh existing members
       setPending([]);
-      // refetch members for that group
       setIsLoadingMembers(true);
       try {
         const mm = await axios.get(
@@ -303,7 +299,6 @@ const AddMembers = () => {
       } finally {
         setIsLoadingMembers(false);
       }
-      // navigate to family groups or stay — user preference; we'll stay and show updated list
     } catch (err) {
       console.error("Submit error", err);
       const msg =
@@ -317,26 +312,23 @@ const AddMembers = () => {
     }
   };
 
-  // invite flow (placeholder: implement server invite endpoint)
+  // invite flow
   const handleInviteSubmit = async (e) => {
     e.preventDefault();
     if (!inviteEmail || !inviteFirstName || !inviteLastName) {
       toast.error("All fields are required");
       return;
     }
-    if (!inviteEmail) {
-      toast.error("Invite email required");
-      return;
-    }
+
     const password = createRandomPassword();
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      inviteEmail,
-      password
-    );
     setInviteSubmitting(true);
-    const user = userCredential.user;
     try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        inviteEmail,
+        password
+      );
+      const user = userCredential.user;
       const payload = {
         firstName: inviteFirstName,
         lastName: inviteLastName,
@@ -367,12 +359,7 @@ const AddMembers = () => {
       } catch (error) {
         console.error("User creation error", error);
       }
-      console.log("Invite payload", {
-        inviteEmail,
-        inviteFirstName,
-        inviteLastName,
-        inviteRole,
-      });
+
       toast.success("Invitation sent (demo)");
       setInviteEmail("");
       setInviteFirstName("");
@@ -386,10 +373,8 @@ const AddMembers = () => {
     }
   };
 
-  // derived UI helpers
   const existingCount = existingMembers?.length ?? 0;
   const pendingCount = pending?.length ?? 0;
-
   const canSubmit = groupId && pendingCount > 0 && !submitting;
 
   return (
@@ -496,7 +481,6 @@ const AddMembers = () => {
                                       ?.role ?? "family"
                                   }
                                   onChange={(e) => {
-                                    // if already pending, update; else create temporary pending preview (not saved)
                                     const idx = pending.findIndex(
                                       (p) => p.userId === uid
                                     );
@@ -505,7 +489,6 @@ const AddMembers = () => {
                                         role: e.target.value,
                                       });
                                     } else {
-                                      // add as pending with chosen role
                                       setPending((p) => [
                                         ...p,
                                         {
@@ -566,50 +549,61 @@ const AddMembers = () => {
                 </div>
 
                 <form onSubmit={handleInviteSubmit} className="grid gap-3">
-                  <input
-                    className="input"
-                    placeholder="Email"
-                    type="email"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    required
-                  />
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <input
-                      className="input"
-                      placeholder="First name"
-                      value={inviteFirstName}
-                      onChange={(e) => setInviteFirstName(e.target.value)}
-                    />
-                    <input
-                      className="input"
-                      placeholder="Last name"
-                      value={inviteLastName}
-                      onChange={(e) => setInviteLastName(e.target.value)}
-                    />
-                  </div>
-
-                  <select
-                    className="input"
-                    value={inviteRole}
-                    onChange={(e) => setInviteRole(e.target.value)}
+                  <fieldset
+                    disabled={!groupId}
+                    className={!groupId ? "opacity-50" : ""}
                   >
-                    {ROLE_OPTIONS.map((r) => (
-                      <option key={r.value} value={r.value}>
-                        {r.label}
-                      </option>
-                    ))}
-                  </select>
+                    {!groupId && (
+                      <div className="text-sm text-slate-400 mb-2">
+                        Select a group first to invite a new user
+                      </div>
+                    )}
 
-                  <div className="flex justify-end gap-3">
-                    <button
-                      type="submit"
-                      className="btn-primary"
-                      disabled={inviteSubmitting}
+                    <input
+                      className="input"
+                      placeholder="Email"
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      required
+                    />
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <input
+                        className="input"
+                        placeholder="First name"
+                        value={inviteFirstName}
+                        onChange={(e) => setInviteFirstName(e.target.value)}
+                      />
+                      <input
+                        className="input"
+                        placeholder="Last name"
+                        value={inviteLastName}
+                        onChange={(e) => setInviteLastName(e.target.value)}
+                      />
+                    </div>
+
+                    <select
+                      className="input"
+                      value={inviteRole}
+                      onChange={(e) => setInviteRole(e.target.value)}
                     >
-                      {inviteSubmitting ? "Sending…" : "Send invite"}
-                    </button>
-                  </div>
+                      {ROLE_OPTIONS.map((r) => (
+                        <option key={r.value} value={r.value}>
+                          {r.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    <div className="flex justify-end gap-3">
+                      <button
+                        type="submit"
+                        className="btn-primary"
+                        disabled={inviteSubmitting}
+                      >
+                        {inviteSubmitting ? "Sending…" : "Send invite"}
+                      </button>
+                    </div>
+                  </fieldset>
                 </form>
               </div>
             </div>
@@ -620,180 +614,94 @@ const AddMembers = () => {
             <div className="card mb-4">
               <div className="card-pad">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <div className="card-title">Pending additions</div>
-                    <div className="card-sub">{pendingCount} row(s)</div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      className="btn-ghost"
-                      type="button"
-                      onClick={() => setPending([])}
-                      disabled={pendingCount === 0}
-                    >
-                      Clear
-                    </button>
-                    <button
-                      className="btn-ghost"
-                      type="button"
-                      onClick={handleAddRow}
-                    >
-                      Add row
-                    </button>
-                  </div>
+                  <div className="font-semibold">Pending members</div>
+                  <button className="btn-ghost" onClick={handleAddRow}>
+                    + Add row
+                  </button>
                 </div>
 
-                <div className="mt-4 space-y-3">
-                  {pendingCount === 0 ? (
-                    <div className="text-sm text-slate-500">
-                      No pending members. Add from search or create a row
-                    </div>
-                  ) : (
-                    pending.map((row, idx) => (
+                {pending.length === 0 ? (
+                  <div className="text-sm text-slate-400 mt-2">
+                    No pending members
+                  </div>
+                ) : (
+                  <div className="mt-2 space-y-2">
+                    {pending.map((p, idx) => (
                       <div
                         key={idx}
-                        className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 rounded-lg border border-slate-100"
+                        className="flex items-center gap-3 p-2 border rounded"
                       >
-                        <div className="flex-1 w-full">
-                          <div className="flex items-center gap-3">
-                            <input
-                              className="input"
-                              placeholder="Email (optional if existing user)"
-                              value={row.email || ""}
-                              onChange={(e) =>
-                                handleUpdateRow(idx, { email: e.target.value })
-                              }
-                              style={{ minWidth: 180 }}
-                            />
-
-                            <input
-                              className="input"
-                              placeholder="User id (optional)"
-                              value={row.userId || ""}
-                              onChange={(e) =>
-                                handleUpdateRow(idx, { userId: e.target.value })
-                              }
-                              style={{ minWidth: 120 }}
-                            />
-
-                            <select
-                              className="input"
-                              value={row.role}
-                              onChange={(e) =>
-                                handleUpdateRow(idx, { role: e.target.value })
-                              }
-                            >
-                              {ROLE_OPTIONS.map((r) => (
-                                <option key={r.value} value={r.value}>
-                                  {r.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div className="mt-2 text-sm text-slate-500">
-                            Group:{" "}
-                            <span className="font-medium">
-                              {groups.find(
-                                (g) => (g._id || g.id) === row.groupId
-                              )?.groupName || "none"}
-                            </span>
-                            {row.userId && (
-                              <span className="ml-3">
-                                User id:{" "}
-                                <code className="text-xs">{row.userId}</code>
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2">
-                          <button
-                            className="btn-ghost"
-                            type="button"
-                            onClick={() => handleRemoveRow(idx)}
-                          >
-                            Remove
-                          </button>
-                        </div>
+                        <input
+                          className="input flex-1"
+                          placeholder="Email"
+                          value={p.email}
+                          onChange={(e) =>
+                            handleUpdateRow(idx, { email: e.target.value })
+                          }
+                        />
+                        <select
+                          className="input"
+                          value={p.role}
+                          onChange={(e) =>
+                            handleUpdateRow(idx, { role: e.target.value })
+                          }
+                        >
+                          {ROLE_OPTIONS.map((r) => (
+                            <option key={r.value} value={r.value}>
+                              {r.label}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          className="btn-danger"
+                          onClick={() => handleRemoveRow(idx)}
+                        >
+                          Remove
+                        </button>
                       </div>
-                    ))
-                  )}
-                </div>
-
-                <div className="mt-4 flex items-center justify-between">
-                  <div className="text-sm text-slate-500">
-                    Existing members:{" "}
-                    {isLoadingMembers ? "loading..." : existingCount}
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <button
-                      className="btn-primary"
-                      onClick={handleSubmit}
-                      disabled={!canSubmit}
-                    >
-                      {submitting ? "Submitting…" : "Submit all"}
-                    </button>
-                  </div>
-                </div>
-
-                {submitting && (
-                  <div className="mt-3 text-sm text-slate-500">
-                    Submitting memberships...
+                    ))}
                   </div>
                 )}
+
+                <div className="flex justify-end mt-3">
+                  <button
+                    className="btn-primary"
+                    disabled={!canSubmit}
+                    onClick={handleSubmit}
+                  >
+                    {submitting ? "Submitting…" : "Submit Pending"}
+                  </button>
+                </div>
               </div>
             </div>
 
+            {/* existing members */}
             <div className="card">
               <div className="card-pad">
-                <div className="card-title">Group members</div>
-                <div className="card-sub mb-3">
-                  Shows existing members for the selected group
+                <div className="font-semibold">
+                  Existing members ({existingCount})
                 </div>
-
-                {groupId ? (
-                  isLoadingMembers ? (
-                    <div className="text-sm text-slate-500">
-                      Loading members…
-                    </div>
-                  ) : existingMembers.length === 0 ? (
-                    <div className="text-sm text-slate-500">No members yet</div>
-                  ) : (
-                    <ul className="space-y-2">
-                      {existingMembers.map((m) => {
-                        const user =
-                          typeof m.userId === "object" ? m.userId : null;
-                        const name = user
-                          ? `${user.firstName ?? ""} ${
-                              user.lastName ?? ""
-                            }`.trim()
-                          : m.userEmail || "Unknown";
-                        const emailVal = user?.email ?? m.userEmail ?? "";
-                        return (
-                          <li
-                            key={m._id || `${m.groupId}_${m.userId}`}
-                            className="flex items-center justify-between gap-3 p-2 rounded border border-slate-100"
-                          >
-                            <div>
-                              <div className="font-medium">{name}</div>
-                              <div className="text-sm text-slate-500">
-                                {emailVal}
-                              </div>
-                            </div>
-                            <div className="text-sm text-slate-500">
-                              {m.role}
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )
+                {isLoadingMembers ? (
+                  <div className="text-sm text-slate-500 mt-2">Loading…</div>
+                ) : existingMembers.length === 0 ? (
+                  <div className="text-sm text-slate-400 mt-2">
+                    No members in this group yet
+                  </div>
                 ) : (
-                  <div className="text-sm text-slate-400">
-                    Select a group to view members
+                  <div className="mt-2 space-y-2">
+                    {existingMembers.map((m) => (
+                      <div
+                        key={m._id || m.id || m.email}
+                        className="p-2 border rounded flex justify-between"
+                      >
+                        <div>
+                          {m.userId?.firstName
+                            ? `${m.userId.firstName} ${m.userId.lastName}`
+                            : m.email || m.userId?.email || "Unknown"}
+                        </div>
+                        <div className="text-sm text-slate-500">{m.role}</div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -801,8 +709,7 @@ const AddMembers = () => {
           </div>
         </div>
 
-        {/* toast container */}
-        <ToastContainer position="top-right" autoClose={4000} />
+        <ToastContainer position="top-right" autoClose={3000} />
       </div>
     </main>
   );
