@@ -17,6 +17,7 @@ import CreateGroup from "./components/familyGroups/CreateGroup"
 import AddMembers from "./components/familyGroups/AddMembers"
 import FamilyGroups from "./components/familyGroups/FamilyGroups"
 import GroupMembers from "./components/familyGroups/GroupMembers"
+import ActionHandler from "./pages/ActionHandler";
 
 import "./App.css" // keep your css imports
 
@@ -34,9 +35,8 @@ function App() {
 
       {!hideLayout && (
         <div
-          className={`fixed inset-0 bg-black/40 z-30 transition-opacity md:hidden ${
-            sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-          }`}
+          className={`fixed inset-0 bg-black/40 z-30 transition-opacity md:hidden ${sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+            }`}
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -77,6 +77,7 @@ function App() {
             <div className="max-w-6xl mx-auto">
               <Routes>
                 <Route path="/" element={<Landing />} />
+                <Route path="/action" element={<ActionHandler />} />
                 <Route path="/verify-success" element={<VerifySuccess />} />
                 <Route path="/home" element={<Home />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -95,9 +96,8 @@ function App() {
         {/* Mobile sliding sidebar */}
         {!hideLayout && (
           <div
-            className={`fixed z-40 top-0 left-0 h-full w-64 transform bg-white border-r shadow-lg transition-transform md:hidden ${
-              sidebarOpen ? "translate-x-0" : "-translate-x-full"
-            }`}
+            className={`fixed z-40 top-0 left-0 h-full w-64 transform bg-white border-r shadow-lg transition-transform md:hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+              }`}
           >
             <div className="p-4">
               <div className="flex items-center justify-between mb-4">
