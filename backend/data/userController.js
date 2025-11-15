@@ -59,7 +59,7 @@ export const createUser = async (
 ) => {
   try {
     //validation
-    if (!firstName || !lastName || !email || !password || !confirmPassword || phone) {
+    if (!firstName || !lastName || !email || !password || !confirmPassword || !phone) {
       throw new Error('All fields are required');
     }
     if (typeof firstName !== 'string' || typeof lastName !== 'string' || typeof email !== 'string' || typeof password !== 'string' || typeof confirmPassword !== 'string') {
