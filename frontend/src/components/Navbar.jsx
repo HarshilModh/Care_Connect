@@ -10,6 +10,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { toast } from "react-toastify";
+import NotificationBell from "./NotificationBell";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -93,6 +94,9 @@ export default function Navbar() {
               )}
             </button>
 
+            {/* notification bell */}
+            <NotificationBell />
+
             {/* authenticated view desktop */}
             <div className="hidden lg:flex lg:items-center lg:gap-3">
               {user ? (
@@ -167,6 +171,15 @@ export default function Navbar() {
                       >
                         Contact
                       </Link>
+
+                      {user && (
+                        <Link
+                          to="/notifications"
+                          className="text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-indigo-600 transition"
+                        >
+                          Notifications
+                        </Link>
+                      )}
 
                       <div className="border-t border-slate-100 dark:border-slate-800 pt-3 mt-2 flex flex-col gap-2">
                         {user ? (
