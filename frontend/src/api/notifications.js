@@ -34,12 +34,18 @@ export const sendJoinRequest = async (
   senderId,
   message = ""
 ) => {
-  const response = await api.post("/notifications/join-request", {
-    groupId,
-    recipientId,
-    senderId,
-    message,
-  });
+  const response = await api.post(
+    "/notifications/join-request",
+    {
+      groupId,
+      recipientId, // <-- correct backend field
+      senderId,
+      message,
+    },
+    {
+      withCredentials: true, // <-- REQUIRED
+    }
+  );
   return response.data;
 };
 

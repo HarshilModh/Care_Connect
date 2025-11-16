@@ -48,6 +48,20 @@ export const createNotification = async (notificationData) => {
       throw new Error("Message is required");
     }
 
+    console.log("[DEBUG] Creating notification with data:", {
+      type,
+      recipientId,
+      senderId,
+      groupId,
+      membershipId,
+      taskId,
+      title,
+      message,
+      metadata,
+      expiresAt,
+      actionStatus: type === "join_request" ? "pending" : null,
+    });
+
     const notification = new Notification({
       type,
       recipientId,
@@ -67,6 +81,7 @@ export const createNotification = async (notificationData) => {
     const returnNotification = await Notification.findById(
       savedNotification._id
     ).lean();
+    console.log("[DEBUG] Notification created:", returnNotification);
     return returnNotification;
   } catch (error) {
     console.log(error);
@@ -508,59 +523,83 @@ export const sendJoinRequest = async (
       throw new Error("Only group creator can send join requests");
     }
 
-    // Check if user is already a member
-    if (group.members && group.members.includes(recipientId)) {
-      throw new Error("User is already a member of this group");
-    }
+    // Membership check removed: FamilyGroup does not have a members array
 
     // Check if there's already a pending membership
-    const existingMembership = await Membership.findOne({
+    let membership = await Membership.findOne({
       groupId,
       userId: recipientId,
       status: "pending",
     });
 
-    if (existingMembership) {
-      throw new Error("A pending join request already exists for this user");
+    let notification;
+    if (membership) {
+      // Check if notification already exists for this pending membership
+      notification = await Notification.findOne({
+        type: "join_request",
+        recipientId,
+        senderId,
+        groupId,
+        membershipId: membership._id,
+      });
+      if (!notification) {
+        // Set expiration date (7 days from now)
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 7);
+        notification = await createNotification({
+          type: "join_request",
+          recipientId,
+          senderId,
+          groupId,
+          membershipId: membership._id,
+          title: "Group Invitation",
+          message:
+            message || `You have been invited to join ${group.groupName}`,
+          metadata: {
+            groupName: group.groupName,
+            inviterName: "Group Admin",
+          },
+          expiresAt,
+        });
+      }
+      return {
+        notification,
+        membership,
+        message: "Join request already pending, notification ensured.",
+      };
+    } else {
+      // Create membership with pending status
+      membership = new Membership({
+        groupId,
+        userId: recipientId,
+        role: "family",
+        status: "pending",
+      });
+      await membership.save();
+      // Set expiration date (7 days from now)
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+      notification = await createNotification({
+        type: "join_request",
+        recipientId,
+        senderId,
+        groupId,
+        membershipId: membership._id,
+        title: "Group Invitation",
+        message: message || `You have been invited to join ${group.groupName}`,
+        metadata: {
+          groupName: group.groupName,
+          inviterName: "Group Admin",
+        },
+        expiresAt,
+      });
+      const savedMembership = await Membership.findById(membership._id).lean();
+      return {
+        notification,
+        membership: savedMembership,
+        message: "Join request sent successfully",
+      };
     }
-
-    // Create membership with pending status
-    const membership = new Membership({
-      groupId,
-      userId: recipientId,
-      role: "family",
-      status: "pending",
-    });
-
-    await membership.save();
-
-    // Set expiration date (7 days from now)
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
-
-    // Create notification
-    const notification = await createNotification({
-      type: "join_request",
-      recipientId,
-      senderId,
-      groupId,
-      membershipId: membership._id,
-      title: "Group Invitation",
-      message: message || `You have been invited to join ${group.groupName}`,
-      metadata: {
-        groupName: group.groupName,
-        inviterName: "Group Admin", // You can populate this with actual user data
-      },
-      expiresAt,
-    });
-
-    const savedMembership = await Membership.findById(membership._id).lean();
-
-    return {
-      notification,
-      membership: savedMembership,
-      message: "Join request sent successfully",
-    };
   } catch (error) {
     console.log(error);
     throw new Error("Error sending join request: " + error.message);

@@ -17,6 +17,7 @@ import CreateGroup from "./components/familyGroups/CreateGroup";
 import AddMembers from "./components/familyGroups/AddMembers";
 import FamilyGroups from "./components/familyGroups/FamilyGroups";
 import GroupMembers from "./components/familyGroups/GroupMembers";
+import ActionHandler from "./pages/ActionHandler";
 import Notifications from "./components/notifications/Notifications";
 
 import "./App.css"; // keep your css imports
@@ -90,6 +91,7 @@ function App() {
             <div className="max-w-6xl mx-auto">
               <Routes>
                 <Route path="/" element={<Landing />} />
+                <Route path="/action" element={<ActionHandler />} />
                 <Route path="/verify-success" element={<VerifySuccess />} />
                 <Route path="/home" element={<Home />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />

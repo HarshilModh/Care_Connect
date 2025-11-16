@@ -1,45 +1,59 @@
-import React, { useEffect, useState } from "react";
+/* eslint-disable no-unused-vars */
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
-import { confirmPasswordReset, verifyPasswordResetCode } from "firebase/auth";
+import { verifyPasswordResetCode, confirmPasswordReset } from "firebase/auth";
 import { auth } from "../firebase";
 import { toast } from "react-toastify";
 
 export default function ResetPassword() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const executed = useRef(false);
 
+    const [loading, setLoading] = useState(true);
+    const [verified, setVerified] = useState(false);
+    const [email, setEmail] = useState(null);
+    const [oobCode, setOobCode] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    const [verifiedCode, setVerifiedCode] = useState(false);
-    const [loading, setLoading] = useState(true);
-    const [oobCode, setOobCode] = useState(null);
 
     useEffect(() => {
-        const code = searchParams.get("oobCode");
-        const mode = searchParams.get("mode");
+        const verifyCode = async () => {
+            if (executed.current) return;
+            executed.current = true;
 
-        if (!code || mode !== "resetPassword") {
-            toast.error("Invalid or expired link.");
-            setLoading(false);
-            return;
-        }
+            const code = searchParams.get("oobCode");
+            const mode = searchParams.get("mode");
 
-        setOobCode(code);
+            if (!code || mode !== "resetPassword") {
+                toast.error("Invalid password reset link.");
+                setLoading(false);
+                return;
+            }
 
-        verifyPasswordResetCode(auth, code)
-            .then(() => {
-                setVerifiedCode(true);
-            })
-            .catch(() => {
+            setOobCode(code);
+
+            try {
+                const email = await verifyPasswordResetCode(auth, code);
+
+                setEmail(email);
+                setVerified(true);
+            } catch {
                 toast.error("Reset link is invalid or expired.");
-            })
-            .finally(() => setLoading(false));
+                setVerified(false);
+            }
+
+            setLoading(false);
+        };
+
+        verifyCode();
     }, [searchParams]);
 
     const handleReset = async (e) => {
         e.preventDefault();
-        if (password.trim().length < 6) {
-            toast.error("Password must be at least 6 characters long.");
+
+        if (password.length < 6) {
+            toast.error("Password must be at least 6 characters.");
             return;
         }
         if (password !== confirmPassword) {
@@ -49,93 +63,73 @@ export default function ResetPassword() {
 
         try {
             await confirmPasswordReset(auth, oobCode, password);
-            // update the backend about password change 
-            const user = auth.currentUser;
-            if (user) {
-                const idToken = await user.getIdToken();
-                await fetch(`${import.meta.env.VITE_API_URL}/users/updatePassword`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${idToken}`,
-                    },
-                    body: JSON.stringify({ newPassword: password }),
-                });
-            }
 
-            toast.success("Password has been reset successfully!");
+            toast.success("Password updated! Please log in.");
             navigate("/signin");
-        } catch (error) {
-            console.error("Error resetting password:", error);
-            toast.error("Failed to reset password. Please try again.");
+
+        } catch (err) {
+            toast.error("Failed to reset password.");
+            console.error(err);
         }
     };
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <p className="text-gray-700 dark:text-gray-300">Verifying link...</p>
+            <div className="flex justify-center items-center min-h-screen">
+                <p className="text-gray-700">Verifying reset link...</p>
             </div>
         );
     }
 
-    if (!verifiedCode) {
+    if (!verified) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <p className="text-red-500">Invalid or expired password reset link.</p>
+            <div className="flex justify-center items-center min-h-screen">
+                <p className="text-red-500">Invalid or expired reset link</p>
             </div>
         );
     }
 
     return (
-        <div className="flex justify-center items-center min-h-screen bg-white dark:bg-gray-900">
-            <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg w-[90%] max-w-md">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-                    Reset Your Password
+        <div className="flex justify-center items-center min-h-screen bg-gray-50 p-4">
+            <div className="bg-white p-8 rounded-xl shadow-md max-w-md w-full">
+
+                <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+                    Reset Password
                 </h1>
+
                 <form onSubmit={handleReset} className="space-y-5">
+
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            New Password
-                        </label>
+                        <label className="block mb-2 text-gray-700">New Password</label>
                         <input
                             type="password"
+                            className="w-full px-4 py-3 border rounded-lg"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                            placeholder="Enter new password"
-                            required
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Confirm Password
-                        </label>
+                        <label className="block mb-2 text-gray-700">Confirm Password</label>
                         <input
                             type="password"
+                            className="w-full px-4 py-3 border rounded-lg"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
-                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                            placeholder="Confirm new password"
-                            required
                         />
                     </div>
 
                     <button
+                        className="w-full bg-orange-600 text-white py-3 rounded-lg hover:bg-orange-700"
                         type="submit"
-                        className="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-lg transition-all"
                     >
                         Reset Password
                     </button>
                 </form>
 
-                <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-6">
+                <p className="text-center text-sm text-gray-600 mt-4">
                     Remembered it?{" "}
-                    <Link
-                        to="/signin"
-                        className="text-orange-600 dark:text-orange-400 hover:underline"
-                    >
+                    <Link to="/signin" className="text-orange-600 hover:underline">
                         Back to Login
                     </Link>
                 </p>
