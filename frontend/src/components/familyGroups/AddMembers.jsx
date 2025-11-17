@@ -5,6 +5,7 @@ import { auth } from "../../firebase.js";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { createRandomPassword } from "../../../../backend/utils/randomGenerator.js";
+import { sendJoinRequest } from "../../api/notifications";
 
 /**
  AddMembers.jsx
@@ -140,6 +141,7 @@ const AddMembers = () => {
           }
         );
         if (!mounted) return;
+        // allow either array or { users: [...] } shapes
         const payload = Array.isArray(res.data)
           ? res.data
           : res.data?.users ?? res.data ?? [];
@@ -154,7 +156,7 @@ const AddMembers = () => {
       } finally {
         if (mounted) setSearchLoading(false);
       }
-    }, 400);
+    }, 400); // 400ms debounce
 
     return () => {
       mounted = false;
@@ -286,18 +288,50 @@ const AddMembers = () => {
       toast.success("Members added");
       setPending([]);
       setIsLoadingMembers(true);
+      let updatedMembers = [];
       try {
         const mm = await axios.get(
           `http://localhost:3000/api/memberships/group/${groupId}`,
           { withCredentials: true }
         );
-        setExistingMembers(
-          Array.isArray(mm.data) ? mm.data : mm.data?.members ?? []
-        );
+        updatedMembers = Array.isArray(mm.data)
+          ? mm.data
+          : mm.data?.members ?? [];
+        setExistingMembers(updatedMembers);
       } catch (err) {
         // ignore
       } finally {
         setIsLoadingMembers(false);
+      }
+
+      // Send notifications to each new member
+      const senderId = (() => {
+        const userRaw = localStorage.getItem("user");
+        if (!userRaw) return null;
+        try {
+          const user = JSON.parse(userRaw);
+          return user?._id || user?.userId || user?.uid || null;
+        } catch {
+          return null;
+        }
+      })();
+
+      const selectedGroup = groups.find((g) => g._id === groupId);
+      const groupName = selectedGroup?.groupName || "the group";
+
+      for (const member of memberships) {
+        // only notify real users (not just email-only rows)
+        if (!member.userId) continue;
+        try {
+          await sendJoinRequest(
+            groupId,
+            member.userId, // recipientId on backend
+            senderId,
+            `You have been invited to join ${groupName}`
+          );
+        } catch (notifErr) {
+          console.error("Notification error for user", member.userId, notifErr);
+        }
       }
     } catch (err) {
       console.error("Submit error", err);
@@ -322,45 +356,68 @@ const AddMembers = () => {
 
     const password = createRandomPassword();
     setInviteSubmitting(true);
+
     try {
+      // 1. Create Firebase user
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         inviteEmail,
         password
       );
       const user = userCredential.user;
-      const payload = {
-        firstName: inviteFirstName,
-        lastName: inviteLastName,
-        email: inviteEmail,
-        password: password,
-        confirmPassword: password,
-        phone: null,
-        role: inviteRole,
-        needPasswordReset: true,
-        uid: user.uid,
-      };
-      try {
-        const resp = await axios.post(
-          "http://localhost:3000/api/users/signUp",
-          payload
-        );
-        const membershipPayload = {
+
+      // 2. Create user in backend
+      const resp = await axios.post(
+        "http://localhost:3000/api/users/signUp",
+        {
+          firstName: inviteFirstName,
+          lastName: inviteLastName,
+          email: inviteEmail,
+          password,
+          confirmPassword: password,
+          phone: null,
+          role: inviteRole,
+          needPasswordReset: true,
+          uid: user.uid,
+        },
+        { withCredentials: true }
+      );
+
+      // 3. Create membership (single create, not bulk)
+      await axios.post(
+        "http://localhost:3000/api/memberships/",
+        {
           groupId,
           userId: resp.data.user._id,
           role: inviteRole,
           status: "pending",
-        };
-        await axios.post(
-          "http://localhost:3000/api/memberships/",
-          { memberships: [membershipPayload] },
-          { withCredentials: true }
-        );
-      } catch (error) {
-        console.error("User creation error", error);
-      }
+        },
+        { withCredentials: true }
+      );
 
-      toast.success("Invitation sent (demo)");
+      // 4. Send join-request notification
+      const senderId = (() => {
+        const userRaw = localStorage.getItem("user");
+        if (!userRaw) return null;
+        try {
+          const user = JSON.parse(userRaw);
+          return user?._id || user?.userId || user?.uid || null;
+        } catch {
+          return null;
+        }
+      })();
+
+      const selectedGroup = groups.find((g) => g._id === groupId);
+      const groupName = selectedGroup?.groupName || "the group";
+
+      await sendJoinRequest(
+        groupId,
+        resp.data.user._id, // recipientId
+        senderId,
+        `You have been invited to join ${groupName}`
+      );
+
+      toast.success("Invitation sent");
       setInviteEmail("");
       setInviteFirstName("");
       setInviteLastName("");
