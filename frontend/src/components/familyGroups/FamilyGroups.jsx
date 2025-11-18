@@ -1,7 +1,7 @@
-import axios from 'axios';
-import React from 'react';
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import axios from "axios";
+import React from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const FamilyGroups = () => {
   const [familyGroups, setFamilyGroups] = useState([]);
@@ -14,7 +14,7 @@ const FamilyGroups = () => {
     setLoading(true);
     setError(null);
     try {
-      const userRaw = localStorage.getItem('user') || "";
+      const userRaw = localStorage.getItem("user") || "";
       const user = userRaw ? JSON.parse(userRaw) : null;
       const userId = user?._id || "";
       if (!userId) {
@@ -23,12 +23,18 @@ const FamilyGroups = () => {
         return;
       }
 
-      const response = await axios.get(`http://localhost:3000/api/family-groups/creator/${userId}`);
+      const response = await axios.get(
+        `http://localhost:3000/api/family-groups/creator/${userId}`
+      );
       // support both { familyGroups: [...] } and raw array responses
       const groups = response.data.familyGroups ?? response.data ?? [];
       setFamilyGroups(Array.isArray(groups) ? groups : []);
     } catch (err) {
-      setError(err.response?.data?.error || err.message || "Error fetching family groups");
+      setError(
+        err.response?.data?.error ||
+          err.message ||
+          "Error fetching family groups"
+      );
     } finally {
       setLoading(false);
     }
@@ -45,34 +51,46 @@ const FamilyGroups = () => {
 
   // Delete with confirmation and optimistic UI update
   const handleDelete = async (groupId) => {
-    const ok = window.confirm("Are you sure you want to delete this group? This cannot be undone.");
+    const ok = window.confirm(
+      "Are you sure you want to delete this group? This cannot be undone."
+    );
     if (!ok) return;
 
     try {
       // call backend delete endpoint. adjust path if your API differs
-      await axios.delete(`http://localhost:3000/api/family-groups/${groupId}`);
+      await axios.delete(
+        `http://localhost:3000/api/family-groups/group/${groupId}`,
+        { withCredentials: true }
+      );
       // remove from UI
-      setFamilyGroups(prev => prev.filter(g => (g._id || g.id) !== groupId));
+      setFamilyGroups((prev) =>
+        prev.filter((g) => (g._id || g.id) !== groupId)
+      );
     } catch (err) {
       console.error("Failed to delete group:", err);
-      setError(err.response?.data?.error || err.message || "Failed to delete group");
+      setError(
+        err.response?.data?.error || err.message || "Failed to delete group"
+      );
     }
   };
 
   return (
     <main className="page">
       <div className="container-n">
-
         {/* Page Header */}
         <header className="text-center mb-8">
           <h1 className="section-title">Your Family Groups</h1>
-          <p className="section-sub">Manage and organize all caregiving groups you created.</p>
+          <p className="section-sub">
+            Manage and organize all caregiving groups you created.
+          </p>
         </header>
 
         {/* Loading + Error States */}
         {loading && (
           <div className="text-center mt-6">
-            <p className="text-slate-600 dark:text-slate-300">Loading family groups…</p>
+            <p className="text-slate-600 dark:text-slate-300">
+              Loading family groups…
+            </p>
           </div>
         )}
 
@@ -95,7 +113,10 @@ const FamilyGroups = () => {
               familyGroups.map((group) => {
                 const id = group._id || group.id;
                 return (
-                  <div key={id} className="card p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div
+                    key={id}
+                    className="card p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+                  >
                     <div>
                       <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-1">
                         {group.groupName}
@@ -114,7 +135,9 @@ const FamilyGroups = () => {
                         </p>
                         <p>
                           <span className="font-semibold">Created:</span>{" "}
-                          {group.createdAt ? new Date(group.createdAt).toLocaleString() : "—"}
+                          {group.createdAt
+                            ? new Date(group.createdAt).toLocaleString()
+                            : "—"}
                         </p>
                       </div>
                     </div>

@@ -22,7 +22,7 @@ import {
   getFamilyGroupsWithNoMembers,
   getFamilyGroupsByCreationDateRange,
 } from "../data/familyGroupController.js";
-import { isValidString} from "../utils/validation.utils.js";
+import { isValidString } from "../utils/validation.utils.js";
 import mongoose from "mongoose";
 
 const router = express.Router();
@@ -30,20 +30,22 @@ const router = express.Router();
 router.post("/", async (req, res) => {
   try {
     console.log("here in the post route");
-    
-    let { groupName, description, createdBy, isPublic } =req.body;
+
+    let { groupName, description, createdBy, isPublic } = req.body;
     console.log("groupName: ", groupName);
     console.log("createdBy: ", createdBy);
-    console.log("isPublic",isPublic);
-    
+    console.log("isPublic", isPublic);
+
     if (!groupName || !createdBy) {
       console.log("groupName and createdBy are required");
-      
-      return res.status(400).json({ error: "groupName and createdBy are required" });
+
+      return res
+        .status(400)
+        .json({ error: "groupName and createdBy are required" });
     }
-    if(typeof groupName !== "string" ) {
+    if (typeof groupName !== "string") {
       console.log("groupName is not a string");
-      return  res.status(400).json({ error: "groupName must be a string" });
+      return res.status(400).json({ error: "groupName must be a string" });
     }
     if (!isPublic) {
       isPublic = false;
@@ -53,14 +55,15 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "isPublic must be a boolean" });
     }
     groupName = isValidString(groupName, "groupName");
-    if(!mongoose.Types.ObjectId.isValid(createdBy)){
+    if (!mongoose.Types.ObjectId.isValid(createdBy)) {
       console.log("createdby is not proper objectID");
-      
-      return res.status(400).json({ error: "createdBy must be a valid ObjectId" });
+
+      return res
+        .status(400)
+        .json({ error: "createdBy must be a valid ObjectId" });
     }
     if (description) {
       description = isValidString(description, "description");
-
     }
     groupName = groupName.toLowerCase().trim();
     description = description ? description.trim() : "";
@@ -69,10 +72,11 @@ router.post("/", async (req, res) => {
     const existingGroups = await getFamilyGroupsByName(groupName);
     if (existingGroups.length > 0) {
       //throw error with status code 409 - conflict
-      res.status(409).json({ error: "Family group with the same name already exists" });
+      res
+        .status(409)
+        .json({ error: "Family group with the same name already exists" });
       return;
     }
-
 
     const newGroup = await createFamilyGroup(
       groupName,
@@ -125,10 +129,10 @@ router.get("/public/all", async (req, res) => {
 router.get("/user/:userId", async (req, res) => {
   try {
     let userId = req.params.userId;
-    if(!userId ){
+    if (!userId) {
       throw new Error("User ID is required");
     }
-    if(!mongoose.Types.ObjectId.isValid(userId)){
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
       throw new Error("User ID must be a valid ObjectId");
     }
     const familyGroups = await getFamilyGroupsByUserId(userId);
@@ -141,10 +145,10 @@ router.get("/user/:userId", async (req, res) => {
 router.get("/creator/:userId", async (req, res) => {
   try {
     let userId = req.params.userId;
-    if(!userId ){
+    if (!userId) {
       throw new Error("User ID is required");
     }
-    if(!mongoose.Types.ObjectId.isValid(userId)){
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
       throw new Error("User ID must be a valid ObjectId");
     }
     const familyGroups = await getFamilyGroupsCreatedByUser(userId);
@@ -220,10 +224,10 @@ router.get("/filter/date-range", async (req, res) => {
 router.get("/group/:id", async (req, res) => {
   try {
     const id = req.params.id;
-    if(!id){
+    if (!id) {
       throw new Error("Group ID is required");
     }
-    if(!mongoose.Types.ObjectId.isValid(id)){
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new Error("Group ID must be a valid ObjectId");
     }
     const familyGroup = await getFamilyGroupById(id);
@@ -236,10 +240,10 @@ router.get("/group/:id", async (req, res) => {
 router.put("/group/:id", async (req, res) => {
   try {
     const id = req.params.id;
-    if(!id){
+    if (!id) {
       throw new Error("Group ID is required");
     }
-    if(!mongoose.Types.ObjectId.isValid(id)){
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new Error("Group ID must be a valid ObjectId");
     }
     const updateData = { ...req.body };
@@ -270,17 +274,21 @@ router.put("/group/:id", async (req, res) => {
 router.delete("/group/:id", async (req, res) => {
   try {
     const id = req.params.id;
-    if(!id){
+
+    if (!id) {
       throw new Error("Group ID is required");
     }
-    if(!mongoose.Types.ObjectId.isValid(id)){
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new Error("Group ID must be a valid ObjectId");
     }
-    await deleteFamilyGroup(id);
+
+    const result = await deleteFamilyGroup(id);
+
     res
       .status(200)
       .json({ message: `Family group with ID ${id} deleted successfully` });
   } catch (error) {
+    console.error(`DELETE /group/${id} error:`, error.message);
     res.status(400).json({ error: error.message });
   }
 });
@@ -288,10 +296,10 @@ router.delete("/group/:id", async (req, res) => {
 router.post("/group/:id/members", async (req, res) => {
   try {
     const groupId = req.params.id;
-    if(!groupId){
+    if (!groupId) {
       throw new Error("Group ID is required");
     }
-    if(!mongoose.Types.ObjectId.isValid(groupId)){
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
       throw new Error("Group ID must be a valid ObjectId");
     }
     const { memberId } = req.body;
@@ -317,17 +325,17 @@ router.post("/group/:id/members", async (req, res) => {
 router.delete("/group/:id/members/:memberId", async (req, res) => {
   try {
     const id = req.params.id;
-    if(!id){
+    if (!id) {
       throw new Error("Group ID is required");
     }
-    if(!mongoose.Types.ObjectId.isValid(id)){
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new Error("Group ID must be a valid ObjectId");
     }
     const memberId = req.params.memberId;
-    if(!memberId){
+    if (!memberId) {
       throw new Error("Member ID is required");
     }
-    if(!mongoose.Types.ObjectId.isValid(memberId)){
+    if (!mongoose.Types.ObjectId.isValid(memberId)) {
       throw new Error("Member ID must be a valid ObjectId");
     }
 
@@ -344,10 +352,10 @@ router.delete("/group/:id/members/:memberId", async (req, res) => {
 router.get("/group/:id/members", async (req, res) => {
   try {
     const id = req.params.id;
-    if(!id){
+    if (!id) {
       throw new Error("Group ID is required");
     }
-    if(!mongoose.Types.ObjectId.isValid(id)){
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new Error("Group ID must be a valid ObjectId");
     }
     const members = await getFamilyGroupMembers(id);
@@ -360,12 +368,12 @@ router.get("/group/:id/members", async (req, res) => {
 router.get("/group/:id/stats/members-count", async (req, res) => {
   try {
     const id = req.params.id;
-    if(!id){
+    if (!id) {
       throw new Error("Group ID is required");
     }
-    if(!mongoose.Types.ObjectId.isValid(id)){
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new Error("Group ID must be a valid ObjectId");
-    } 
+    }
     const count = await countMembersInFamilyGroup(id);
     res.status(200).json(count);
   } catch (error) {
@@ -384,12 +392,12 @@ router.get("/timezone/:timeZone", async (req, res) => {
 });
 
 router.patch("/group/:id/visibility", async (req, res) => {
-    try {
-      const  id = req.params.id;
-    if(!id){
+  try {
+    const id = req.params.id;
+    if (!id) {
       throw new Error("Group ID is required");
     }
-    if(!mongoose.Types.ObjectId.isValid(id)){
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new Error("Group ID must be a valid ObjectId");
     }
     const { isPublic } = req.body;
@@ -406,10 +414,10 @@ router.patch("/group/:id/visibility", async (req, res) => {
 router.patch("/group/:id/timezone", async (req, res) => {
   try {
     const id = req.params.id;
-    if(!id){
+    if (!id) {
       throw new Error("Group ID is required");
     }
-    if(!mongoose.Types.ObjectId.isValid(id)){
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new Error("Group ID must be a valid ObjectId");
     }
     const timeZone = isValidString(req.body.timeZone, "time zone");
@@ -423,7 +431,7 @@ router.patch("/group/:id/timezone", async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 });
-//all routes for testing 
+//all routes for testing
 //http://localhost:3000/api/family-groups/
 //http://localhost:3000/api/family-groups/public/all
 //http://localhost:3000/api/family-groups/user/:userId
