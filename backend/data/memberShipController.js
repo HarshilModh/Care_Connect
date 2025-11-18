@@ -1,7 +1,7 @@
 import {Membership} from "../models/memberShip.model.js";
 import  {FamilyGroup}  from "../models/familyGroups.model.js";
 import User from "../models/user.model.js";
-import { isValidID } from "../utils/validation.utils.js";
+
 import mongoose from "mongoose";
 
 //need to update role values in create and update functions
@@ -121,9 +121,10 @@ export const getMembershipById = async (membershipId) => {
     if (!membershipId){
         throw new Error("Membership ID is required");
     }
-    if (!isValidID(membershipId)) {
-        throw new Error("Invalid membership ID");
+   if(!mongoose.Types.ObjectId.isValid(membershipId)){
+        throw new Error("Invalid Membership ID");
     }
+
     const membership = await Membership.findById(membershipId).lean();
     return membership;
   } catch (error) {
@@ -137,8 +138,8 @@ export const deleteMembership = async (membershipId) => {
     if (!membershipId) {
         throw new Error("Membership ID is required");
     }
-    if (!isValidID(membershipId)) {
-        throw new Error("Invalid membership ID");
+    if(!mongoose.Types.ObjectId.isValid(membershipId)){
+        throw new Error("Invalid Membership ID");
     }
     await Membership.findByIdAndDelete(membershipId);
     return { message: "Membership deleted successfully" };
@@ -153,18 +154,18 @@ export const updateMembership = async (membershipId, groupId, userId, role, stat
         if(!membershipId){
             throw new Error('Membership ID is required');
         }
-        if(!isValidID(membershipId)){
+        if(!mongoose.Types.ObjectId.isValid(membershipId)){
             throw new Error('Invalid membership ID');
         }
         const updateData = {};
         if(groupId){
-            if(!isValidID(groupId)){
+            if(!mongoose.Types.ObjectId.isValid(groupId)){
                 throw new Error('Invalid group ID');
             }
             updateData.groupId = groupId;
         }
         if(userId){
-            if(!isValidID(userId)){
+            if(!mongoose.Types.ObjectId.isValid(userId)){
                 throw new Error('Invalid user ID');
             }
             updateData.userId = userId;
@@ -224,7 +225,7 @@ export const getMembershipsByUserId = async (userId) => {
         if(!userId){
             throw new Error('User ID is required');
         }
-        if(!isValidID(userId)){
+        if(!mongoose.Types.ObjectId.isValid(userId)){
             throw new Error('Invalid user ID');
         }
         const memberships = await Membership.find({ userId });
@@ -271,7 +272,7 @@ export const updateMembershipRole = async (membershipId, role) => {
         if(!membershipId){
             throw new Error('Membership ID is required');
         }
-        if(!isValidID(membershipId)){
+        if(!mongoose.Types.ObjectId.isValid(membershipId)){
             throw new Error('Invalid membership ID');
         }
         if(!['owner','caregiver','family'].includes(role)){
@@ -294,7 +295,7 @@ export const updateMembershipStatus = async (membershipId, status) => {
         if(!membershipId){
             throw new Error('Membership ID is required');
         }
-        if(!isValidID(membershipId)){
+        if(!mongoose.Types.ObjectId.isValid(membershipId)){
             throw new Error('Invalid membership ID');
         }
         if(!['active','pending','removed'].includes(status)){
@@ -322,7 +323,7 @@ export const countMembershipsInGroup = async (groupId) => {
         if(!groupId){
             throw new Error('Group ID is required');
         }
-        if(!isValidID(groupId)){
+        if(!mongoose.Types.ObjectId.isValid(groupId)){
             throw new Error('Invalid group ID');
         }
         const count = await Membership.countDocuments({ groupId });
