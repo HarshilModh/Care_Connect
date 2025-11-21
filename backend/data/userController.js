@@ -69,7 +69,7 @@ export const createUser = async (
 ) => {
   try {
     //validation
-    if (!firstName || !lastName || !email || !password || !confirmPassword || !phone) {
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
       throw new Error('All fields are required');
     }
     if (
@@ -115,6 +115,7 @@ export const createUser = async (
       throw new Error("User with this email already exists");
     }
 
+    console.log("needPasswordReset value", needPasswordReset);
     if (needPasswordReset == true) {
       const response = await sendMail({
         to: normEmail,
@@ -342,10 +343,10 @@ export const resetUserPassword = async (email, newPassword) => {
 };
 
 //Verify User Email
-export const verifyUserEmail = async (userId, verificationCode) => {};
+export const verifyUserEmail = async (userId, verificationCode) => { };
 
 //Send Password Reset Email
-export const sendPasswordResetEmail = async (email) => {};
+export const sendPasswordResetEmail = async (email) => { };
 
 //Update User Profile Picture
 export const updateUserProfilePicture = async (userId, profilePictureUrl) => {

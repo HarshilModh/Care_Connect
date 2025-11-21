@@ -13,13 +13,15 @@ import mongoose from "mongoose";
 // status string [enum: active, pending, removed]
 
 export const createMembership = async (
-  groupId,
-  userId,
-  role,
-  status,
-  permissions
+  { groupId,
+    userId,
+    role,
+    status,
+    permissions }
 ) => {
   try {
+    console.log("groupId>>>", groupId);
+    console.log("userId", userId)
     if (!groupId || !userId) {
       throw new Error("Group ID and User ID are required");
     }
@@ -30,7 +32,7 @@ export const createMembership = async (
       throw new Error("Invalid User ID");
     }
 
-    const validRoles = ["owner", "caregiver", "family", "readonly"];
+    const validRoles = ["owner", "careGiver", "family", "readonly"];
     const validStatuses = ["active", "pending", "removed"];
     if (!validRoles.includes(role)) throw new Error("Invalid role value");
     if (!validStatuses.includes(status))
@@ -357,7 +359,7 @@ export const updateMembershipStatus = async (membershipId, status) => {
 export const updateMembershipPermissions = async (
   membershipId,
   permissions
-) => {};
+) => { };
 
 //Count Memberships in Group
 export const countMembershipsInGroup = async (groupId) => {
@@ -376,10 +378,10 @@ export const countMembershipsInGroup = async (groupId) => {
 };
 
 //Get Recent Memberships
-export const getRecentMemberships = async (limit) => {};
+export const getRecentMemberships = async (limit) => { };
 
 //Search Memberships
-export const searchMemberships = async (searchTerm) => {};
+export const searchMemberships = async (searchTerm) => { };
 
 //Get Memberships by Role
 export const getMembershipsByRole = async (role) => {
@@ -424,4 +426,4 @@ export const getRemovedMemberships = async () => {
 export const getMembershipsWithPermission = async (
   permissionKey,
   permissionValue
-) => {};
+) => { };

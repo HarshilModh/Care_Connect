@@ -34,6 +34,8 @@ const SideBar = () => {
         {link("/createGroup", PlusCircleIcon, "Create group")}
         {link("/family-groups", UsersIcon, "My groups")}
         {link("/addMember", UserPlusIcon, "Add members")}
+        {link("/caregiver", UserPlusIcon, "CareGiver")}
+        {link("/carerecipients", UserPlusIcon, "careRecipients")}
 
         {insideGroup && (
           <NavLink

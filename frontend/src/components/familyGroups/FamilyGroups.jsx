@@ -17,6 +17,7 @@ const FamilyGroups = () => {
       const userRaw = localStorage.getItem("user") || "";
       const user = userRaw ? JSON.parse(userRaw) : null;
       const userId = user?._id || "";
+      console.log("userId", userId)
       if (!userId) {
         setFamilyGroups([]);
         setLoading(false);
@@ -26,14 +27,15 @@ const FamilyGroups = () => {
       const response = await axios.get(
         `http://localhost:3000/api/family-groups/creator/${userId}`
       );
+      console.log("get user groups", response);
       // support both { familyGroups: [...] } and raw array responses
       const groups = response.data.familyGroups ?? response.data ?? [];
       setFamilyGroups(Array.isArray(groups) ? groups : []);
     } catch (err) {
       setError(
         err.response?.data?.error ||
-          err.message ||
-          "Error fetching family groups"
+        err.message ||
+        "Error fetching family groups"
       );
     } finally {
       setLoading(false);

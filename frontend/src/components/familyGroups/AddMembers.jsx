@@ -18,7 +18,7 @@ import { sendJoinRequest } from "../../api/notifications";
 */
 
 const ROLE_OPTIONS = [
-  { value: "caregiver", label: "Caregiver" },
+  { value: "careGiver", label: "careGiver" },
   { value: "family", label: "Family" },
   { value: "careRecipient", label: "Care recipient" },
 ];
@@ -364,7 +364,11 @@ const AddMembers = () => {
         inviteEmail,
         password
       );
+
+      console.log("user added in firebase", userCredential)
       const user = userCredential.user;
+      console.log("user>>>", user);
+      console.log("inviteRole", inviteRole);
 
       // 2. Create user in backend
       const resp = await axios.post(
@@ -383,6 +387,9 @@ const AddMembers = () => {
         { withCredentials: true }
       );
 
+      console.log("user added in db", resp)
+      console.log(">>>")
+
       // 3. Create membership (single create, not bulk)
       await axios.post(
         "http://localhost:3000/api/memberships/",
@@ -394,13 +401,16 @@ const AddMembers = () => {
         },
         { withCredentials: true }
       );
+      console.log("user added in membership")
 
       // 4. Send join-request notification
       const senderId = (() => {
         const userRaw = localStorage.getItem("user");
+        console.log("userRaw", userRaw)
         if (!userRaw) return null;
         try {
           const user = JSON.parse(userRaw);
+          console.log("user parse", user);
           return user?._id || user?.userId || user?.uid || null;
         } catch {
           return null;
@@ -410,12 +420,19 @@ const AddMembers = () => {
       const selectedGroup = groups.find((g) => g._id === groupId);
       const groupName = selectedGroup?.groupName || "the group";
 
+      console.log("<><>");
+      console.log("groupName", groupName, groupId)
+      console.log("resp.data.user._id", resp.data.user._id)
+
       await sendJoinRequest(
         groupId,
         resp.data.user._id, // recipientId
         senderId,
         `You have been invited to join ${groupName}`
       );
+
+      console.log("sednd the join request notification")
+
 
       toast.success("Invitation sent");
       setInviteEmail("");
@@ -520,9 +537,8 @@ const AddMembers = () => {
                               <div>
                                 <div className="font-medium">
                                   {u.displayName ||
-                                    `${u.firstName || ""} ${
-                                      u.lastName || ""
-                                    }`.trim() ||
+                                    `${u.firstName || ""} ${u.lastName || ""
+                                      }`.trim() ||
                                     u.email}
                                 </div>
                                 <div className="text-sm text-slate-500">

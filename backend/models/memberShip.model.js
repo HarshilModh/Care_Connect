@@ -16,7 +16,7 @@ const membershipSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["owner", "caregiver", "family", "readonly"],
+      enum: ["admin", "careGiver", "familyMember", "readonly"],
       default: "readonly",
     },
     status: {
