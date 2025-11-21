@@ -70,7 +70,7 @@ export const createUser = async (
   try {
     //validation
     if (!firstName || !lastName || !email || !password || !confirmPassword) {
-      throw new Error('All fields are required');
+      throw new Error("All fields are required");
     }
     if (
       typeof firstName !== "string" ||
@@ -120,18 +120,21 @@ export const createUser = async (
       const response = await sendMail({
         to: normEmail,
         subject: "Congrats! Your Account Has Been Created",
-        text: `Hello ${firstName},\n\nYour account has been successfully created. Please log in and change your password at your earliest convenience.\n\nBest regards,\nCare Connect Team`,
-        html: `<p>Hello ${firstName},</p><p>Your account has been successfully created. Please log in and change your password at your earliest convenience.</p><p>Best regards,<br/>Care Connect Team</p>`,
+        text: `Hello ${firstName},\n\nYour account has been successfully created. \n\nHere is your password: ${password} \n\nPlease log in and change your password at your earliest convenience.\n\nBest regards,\nCare Connect Team`,
+        html: `<p>Hello ${firstName},</p><p>Your account has been successfully created. Here is your password: ${password} </p><p>Please log in and change your password at your earliest convenience.</p><p>Best regards,<br/>Care Connect Team</p>`,
       });
       console.log("Account creation email sent, message ID:", response);
     }
+
+    const hashedPassword = await bcrypt.hash(password.trim(), 10);
+
     //create new user
     const newUser = await User.create({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      displayName: firstName, //
+      displayName: `${firstName.trim()} ${lastName.trim()}`,
       email: normEmail,
-      password: password.trim(),
+      password: hashedPassword,
       needPasswordReset: needPasswordReset || false,
       role: role || null,
       uid: uid || null,
@@ -254,8 +257,10 @@ export const authenticateUser = async (email, password) => {
     console.log("user", user);
 
     if (user.isVerified === false) {
-      throw new Error('Email not verified. Please verify your email before logging in.');
-    };
+      throw new Error(
+        "Email not verified. Please verify your email before logging in."
+      );
+    }
     if (!user) {
       throw new Error("User not found");
     }
@@ -535,7 +540,6 @@ export const authenticateUserWithGoogle = async (idToken) => {
       await userExistsWithEmail.save({ validateBeforeSave: false });
       user = userExistsWithEmail;
     }
-
 
     if (!user) {
       user = await User.create({
