@@ -147,7 +147,7 @@ export const createUser = async (
         type: "system",
         recipientId: newUser._id.toString(),
         title: "Welcome to CareConnect!",
-        message: `Hi ${firstName}, welcome to CareConnect! We're glad to have you.`,
+        message: `Hi ${firstName}, welcome to CareConnect!`,
         metadata: {},
       });
     } catch (notifErr) {
@@ -581,7 +581,7 @@ export const authenticateUserWithGoogle = async (idToken) => {
         type: "system",
         recipientId: user._id.toString(),
         title: "Welcome to CareConnect!",
-        message: `Hi ${firstName}, welcome to CareConnect! We're glad to have you.`,
+        message: `Hi ${firstName}, welcome to CareConnect!`,
         metadata: {},
       });
     } catch (notificationError) {
