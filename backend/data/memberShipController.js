@@ -3,6 +3,7 @@ import { FamilyGroup } from "../models/familyGroups.model.js";
 import User from "../models/user.model.js";
 import { Notification } from "../models/notification.model.js";
 import { isValidID } from "../utils/validation.utils.js";
+import { createNotification } from "./notificationController.js";
 import mongoose from "mongoose";
 
 //need to update role values in create and update functions
@@ -21,7 +22,7 @@ export const createMembership = async (
 ) => {
   try {
     console.log("groupId - createMembership", groupId);
-    console.log("userId", userId)
+    console.log("userId", userId);
     console.log("roles", role);
     if (!groupId || !userId) {
       throw new Error("Group ID and User ID are required");
@@ -33,7 +34,13 @@ export const createMembership = async (
       throw new Error("Invalid User ID");
     }
 
-    const validRoles = ["admin", "careGiver", "familyMember", "readonly", "careRecipient"];
+    const validRoles = [
+      "admin",
+      "careGiver",
+      "familyMember",
+      "readonly",
+      "careRecipient",
+    ];
     const validStatuses = ["active", "pending", "removed"];
     if (!validRoles.includes(role)) throw new Error("Invalid role value");
     if (!validStatuses.includes(status))
@@ -105,7 +112,13 @@ export const createMultipleMemberships = async (membershipsData) => {
         throw new Error("Invalid User ID: " + userId);
       }
 
-      const validRoles = ["admin", "careGiver", "familyMember", "readonly", "careRecipient"];
+      const validRoles = [
+        "admin",
+        "careGiver",
+        "familyMember",
+        "readonly",
+        "careRecipient",
+      ];
       const validStatuses = ["active", "pending", "removed"];
       if (!validRoles.includes(role))
         throw new Error("Invalid role value: " + role);
@@ -239,6 +252,22 @@ export const updateMembership = async (
       updateData,
       { new: true }
     );
+
+    // Send notification if status changed to 'active'
+    if (updateData.status === "active" && updatedMembership) {
+      try {
+        await createNotification({
+          type: "member_added",
+          recipientId: updatedMembership.userId.toString(),
+          groupId: updatedMembership.groupId.toString(),
+          title: "Welcome to your Family Group!",
+          message: "You have been added to the family group.",
+          metadata: {},
+        });
+      } catch (notifErr) {
+        console.error("Failed to create member added notification:", notifErr);
+      }
+    }
     return updatedMembership;
   } catch (error) {
     throw new Error("Error updating membership: " + error.message);
@@ -360,7 +389,7 @@ export const updateMembershipStatus = async (membershipId, status) => {
 export const updateMembershipPermissions = async (
   membershipId,
   permissions
-) => { };
+) => {};
 
 //Count Memberships in Group
 export const countMembershipsInGroup = async (groupId) => {
@@ -379,10 +408,10 @@ export const countMembershipsInGroup = async (groupId) => {
 };
 
 //Get Recent Memberships
-export const getRecentMemberships = async (limit) => { };
+export const getRecentMemberships = async (limit) => {};
 
 //Search Memberships
-export const searchMemberships = async (searchTerm) => { };
+export const searchMemberships = async (searchTerm) => {};
 
 //Get Memberships by Role
 export const getMembershipsByRole = async (role) => {
@@ -427,4 +456,4 @@ export const getRemovedMemberships = async () => {
 export const getMembershipsWithPermission = async (
   permissionKey,
   permissionValue
-) => { };
+) => {};
