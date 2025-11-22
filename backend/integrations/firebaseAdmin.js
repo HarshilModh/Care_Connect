@@ -26,4 +26,6 @@ if (!admin.apps.length) {
   console.log("Firebase Admin initialized successfully");
 }
 
+const firebaseAuth = admin.auth();
+export { firebaseAuth };
 export default admin;

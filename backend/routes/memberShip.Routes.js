@@ -10,6 +10,7 @@ import {
     from "../data/memberShipController.js";
 import { Membership } from "../models/memberShip.model.js";
 import express from "express";
+import { CareRecipient } from "../models/careRecipients.model.js";
 const router = express.Router();
 
 
@@ -44,7 +45,7 @@ router.post("/", async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(userId)) {
             return res.status(400).json({ error: 'Invalid User ID' });
         }
-        if (!["owner", "careGiver", "family", "readonly"].includes(role)) {
+        if (!["admin", "careGiver", "familyMember", "readonly", "careRecipient"].includes(role)) {
             return res.status(400).json({ error: "Invalid role value" });
         }
         if (!["active", "pending", "removed"].includes(status)) {
@@ -79,6 +80,7 @@ router.post("/", async (req, res) => {
 router.post("/bulk", async (req, res) => {
     try {
         const memberships = req.body.memberships;
+        console.log("memberships", memberships)
         if (!memberships || !Array.isArray(memberships) || memberships.length === 0) {
             return res.status(400).json({ error: "Memberships array is required" });
         }
@@ -100,7 +102,7 @@ router.post("/bulk", async (req, res) => {
             if (!status) {
                 status = "pending";
             }
-            if (!["owner", "caregiver", "family"].includes(role)) {
+            if (!["admin", "careGiver", "familyMember", "readonly", "careRecipient"].includes(role)) {
                 return res.status(400).json({ error: "Invalid role value in one of the memberships" });
             }
             if (!["active", "pending", "removed"].includes(status)) {
@@ -180,7 +182,7 @@ router.put("/:membershipId/role", async (req, res) => {
         if (!role || typeof role !== "string" || role.trim().length === 0) {
             return res.status(400).json({ error: 'Invalid role' });
         }
-        if (!["owner", "caregiver", "family"].includes(role)) {
+        if (!["admin", "careGiver", "familyMember", "readonly", "careRecipient"].includes(role)) {
             return res.status(400).json({ error: 'Role must be one of owner, caregiver, family' });
         }
 
@@ -311,7 +313,7 @@ router.get("/role/:role", async (req, res) => {
         if (!role) {
             return res.status(400).json({ error: 'Role is required' });
         }
-        if (!["owner", "caregiver", "family"].includes(role)) {
+        if (!["admin", "careGiver", "familyMember", "readonly", "careRecipient"].includes(role)) {
             return res.status(400).json({ error: 'Role must be one of owner, caregiver, family' });
         }
         const memberships = await getMembershipsByRole(role);
@@ -343,7 +345,7 @@ router.put("/:membershipId", async (req, res) => {
             updateData.userId = userId;
         }
         if (role) {
-            if (!["owner", "caregiver", "family"].includes(role)) {
+            if (!["admin", "careGiver", "familyMember", "readonly", "careRecipient"].includes(role)) {
                 return res.status(400).json({ error: 'Role must be one of owner, caregiver, family' });
             }
             updateData.role = role;

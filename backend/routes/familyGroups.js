@@ -32,6 +32,7 @@ router.post("/", async (req, res) => {
     console.log("here in the post route");
 
     let { groupName, description, createdBy, isPublic } = req.body;
+    console.log("create group route")
     console.log("groupName: ", groupName);
     console.log("createdBy: ", createdBy);
     console.log("isPublic", isPublic);
@@ -70,6 +71,7 @@ router.post("/", async (req, res) => {
 
     //check if family group with same name already exists
     const existingGroups = await getFamilyGroupsByName(groupName);
+    console.log("existingGroups", existingGroups);
     if (existingGroups.length > 0) {
       //throw error with status code 409 - conflict
       res

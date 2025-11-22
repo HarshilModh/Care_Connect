@@ -13,15 +13,16 @@ import mongoose from "mongoose";
 // status string [enum: active, pending, removed]
 
 export const createMembership = async (
-  { groupId,
-    userId,
-    role,
-    status,
-    permissions }
+  groupId,
+  userId,
+  role,
+  status,
+  permissions
 ) => {
   try {
-    console.log("groupId>>>", groupId);
+    console.log("groupId - createMembership", groupId);
     console.log("userId", userId)
+    console.log("roles", role);
     if (!groupId || !userId) {
       throw new Error("Group ID and User ID are required");
     }
@@ -32,7 +33,7 @@ export const createMembership = async (
       throw new Error("Invalid User ID");
     }
 
-    const validRoles = ["owner", "careGiver", "family", "readonly"];
+    const validRoles = ["admin", "careGiver", "familyMember", "readonly", "careRecipient"];
     const validStatuses = ["active", "pending", "removed"];
     if (!validRoles.includes(role)) throw new Error("Invalid role value");
     if (!validStatuses.includes(status))
@@ -104,7 +105,7 @@ export const createMultipleMemberships = async (membershipsData) => {
         throw new Error("Invalid User ID: " + userId);
       }
 
-      const validRoles = ["owner", "caregiver", "family", "readonly"];
+      const validRoles = ["admin", "careGiver", "familyMember", "readonly", "careRecipient"];
       const validStatuses = ["active", "pending", "removed"];
       if (!validRoles.includes(role))
         throw new Error("Invalid role value: " + role);

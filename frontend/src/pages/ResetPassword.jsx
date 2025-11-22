@@ -4,6 +4,7 @@ import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { verifyPasswordResetCode, confirmPasswordReset } from "firebase/auth";
 import { auth } from "../firebase";
 import { toast } from "react-toastify";
+import api from "../api/axios";
 
 export default function ResetPassword() {
     const [searchParams] = useSearchParams();
@@ -63,6 +64,9 @@ export default function ResetPassword() {
 
         try {
             await confirmPasswordReset(auth, oobCode, password);
+
+            const resetpass = await api.patch("users/me/reset_passoword", { email, password });
+            console.log("resetpass", resetpass);
 
             toast.success("Password updated! Please log in.");
             navigate("/signin");

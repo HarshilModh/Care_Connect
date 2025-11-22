@@ -18,8 +18,8 @@ import { sendJoinRequest } from "../../api/notifications";
 */
 
 const ROLE_OPTIONS = [
-  { value: "careGiver", label: "careGiver" },
-  { value: "family", label: "Family" },
+  { value: "careGiver", label: "Care Giver" },
+  { value: "familyMember", label: "Family Member" },
   { value: "careRecipient", label: "Care recipient" },
 ];
 

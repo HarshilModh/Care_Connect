@@ -55,13 +55,16 @@ export const createFamilyGroup = async (
       isPublic,
     };
 
+    console.log("familyGroupData", familyGroupData)
+
     const newCreatedGroup = new FamilyGroup(familyGroupData);
     const newFamilyGroup = await newCreatedGroup.save();
+    console.log("newFamilyGroup from createFamilyGroup", newFamilyGroup);
     //add creator as owner member
     const ownerMembership = await createMembership(
       newFamilyGroup._id,
       createdBy,
-      "owner",
+      "admin",
       "active"
     );
 

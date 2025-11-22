@@ -8,6 +8,7 @@ import {
   changeUserPassword,
   authenticateUserWithGoogle,
   searchUsersByEmail,
+  resetUserPassword
 } from "../data/userController.js";
 import { requireAuth, verifyFirebaseToken } from "../middlewares/auth.js";
 import express from "express";
@@ -148,6 +149,20 @@ router.patch("/me/password", requireAuth, async (req, res, next) => {
     next(e);
   }
 });
+
+router.patch("/me/reset_passoword", async (req, res) => {
+  try {
+    console.log("<>><>")
+    const { email, password } = req.body || {};
+    console.log("email?>>>", email, password);
+    const result = await resetUserPassword(email, password);
+    res.json(result);
+    console.log("password",)
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+
+  }
+})
 
 router.post("/google", verifyFirebaseToken, async (req, res, next) => {
   try {
