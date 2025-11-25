@@ -10,12 +10,10 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState("all"); // all, unread, join_requests
+  const [filter, setFilter] = useState("all");
 
-  // Get user ID (try userId first, then _id)
   const userId = user?.userId || user?._id;
 
-  // Load notifications
   const loadNotifications = async () => {
     if (!userId) {
       setLoading(false);
@@ -53,26 +51,23 @@ const Notifications = () => {
     loadNotifications();
   }, [user, filter]);
 
-  // Handle mark all as read
   const handleMarkAllRead = async () => {
     if (!userId) return;
 
     try {
       await markAllAsRead(userId);
       toast.success("All notifications marked as read");
-      loadNotifications(); // Refresh
+      loadNotifications();
     } catch (err) {
       toast.error("Failed to mark all as read");
     }
   };
 
-  // Count unread
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
     <main className="page">
       <div className="container-n">
-        {/* Page Header */}
         <header className="mb-8">
           <div className="flex items-center justify-between">
             <div>
@@ -101,7 +96,6 @@ const Notifications = () => {
           </div>
         </header>
 
-        {/* Filter Tabs */}
         <div className="flex gap-2 mb-6 border-b border-slate-200 dark:border-slate-700">
           <button
             onClick={() => setFilter("all")}
@@ -159,7 +153,6 @@ const Notifications = () => {
           </button>
         </div>
 
-        {/* Loading State */}
         {loading && (
           <div className="text-center py-12">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-indigo-600 border-r-transparent"></div>
@@ -169,7 +162,6 @@ const Notifications = () => {
           </div>
         )}
 
-        {/* Error State */}
         {error && (
           <div className="max-w-xl mx-auto mb-4">
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
@@ -178,7 +170,6 @@ const Notifications = () => {
           </div>
         )}
 
-        {/* Notifications List */}
         {!loading && !error && (
           <div className="space-y-3">
             {notifications.length === 0 ? (
