@@ -284,7 +284,9 @@ export const deleteNotification = async (notificationId, userId) => {
   }
 };
 
-// Handle join request acceptance
+// Handle join request acceptance 
+
+//TODO check this route working
 export const acceptJoinRequest = async (notificationId, userId) => {
   try {
     if (!isValidID(notificationId)) {
@@ -314,46 +316,74 @@ export const acceptJoinRequest = async (notificationId, userId) => {
       );
     }
 
-    // Update membership status to active
-    const membership = await Membership.findByIdAndUpdate(
-      notification.membershipId,
-      { $set: { status: "active" } },
-      { new: true }
-    );
-
+    // 1️⃣ Load membership doc
+    const membership = await Membership.findById(notification.membershipId);
     if (!membership) {
       throw new Error("Membership not found");
     }
 
-    // Add user to group's members array
+    // Make sure this membership is for this user
+    if (membership.userId.toString() !== userId.toString()) {
+      throw new Error("Not allowed to accept this membership");
+    }
+
+    // Mark as active
+    membership.status = "active";
+
+    // 2️⃣ Decide onboardingStatus based on role + existing profiles
+    let onboardingStatus = "not_required";
+    const role = membership.role;
+    const groupId = notification.groupId;
+
+    if (ROLES_REQUIRING_ONBOARDING.includes(role)) {
+      if (role === "careGiver") {
+        // Global caregiver profile (per user)
+        const caregiverProfile = await CaregiverProfile.findOne({ userId });
+        onboardingStatus = caregiverProfile ? "completed" : "required";
+      } else if (role === "careRecipient") {
+        // Per group + user
+        const recipientProfile = await CareRecipientProfile.findOne({
+          userId,
+          groupId,
+        });
+        onboardingStatus = recipientProfile ? "completed" : "required";
+      }
+    }
+
+    membership.onboardingStatus = onboardingStatus;
+    await membership.save();
+
+    // 3️⃣ Add user to group.members array if not already there
     const group = await FamilyGroup.findById(notification.groupId);
     if (!group) {
       throw new Error("Group not found");
     }
 
-    // Ensure members array exists
-    if (!group.members) {
+    if (!Array.isArray(group.members)) {
       group.members = [];
     }
 
-    if (!group.members.includes(userId)) {
+    // IMPORTANT: members is usually ObjectId[], so use equals()
+    const alreadyMember = group.members.some(
+      (m) => m.toString() === userId.toString()
+    );
+    if (!alreadyMember) {
       group.members.push(userId);
       await group.save();
     }
 
-    // Update notification status
+    // 4️⃣ Update notification status
     notification.actionStatus = "accepted";
     notification.isRead = true;
     await notification.save();
 
-    const updatedNotification = await Notification.findById(
-      notification._id
-    ).lean();
+    // 5️⃣ Return updated docs
+    const updatedNotification = await Notification.findById(notification._id).lean();
     const updatedMembership = await Membership.findById(membership._id).lean();
 
     return {
       notification: updatedNotification,
-      membership: updatedMembership,
+      membership: updatedMembership, // includes onboardingStatus now
       message: "Join request accepted successfully",
     };
   } catch (error) {

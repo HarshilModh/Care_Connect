@@ -7,6 +7,7 @@ const FamilyGroups = () => {
   const [familyGroups, setFamilyGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState("");
 
   const navigate = useNavigate();
 
@@ -18,6 +19,8 @@ const FamilyGroups = () => {
       const user = userRaw ? JSON.parse(userRaw) : null;
       const userId = user?._id || "";
       console.log("userId", userId)
+
+      setCurrentUserId(userId);
       if (!userId) {
         setFamilyGroups([]);
         setLoading(false);
@@ -25,7 +28,7 @@ const FamilyGroups = () => {
       }
 
       const response = await axios.get(
-        `http://localhost:3000/api/family-groups/creator/${userId}`
+        `http://localhost:3000/api/family-groups/user/${userId}`
       );
       console.log("get user groups", response);
       // support both { familyGroups: [...] } and raw array responses
@@ -114,6 +117,11 @@ const FamilyGroups = () => {
             ) : (
               familyGroups.map((group) => {
                 const id = group._id || group.id;
+                const createdById =
+                  group.createdBy || group.createdById || group.createdBy;
+                console.log("createdBy", createdById);
+
+                const isOwner = createdById === currentUserId;
                 return (
                   <div
                     key={id}
@@ -145,23 +153,27 @@ const FamilyGroups = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => handleEdit(id)}
-                        className="btn-ghost"
-                        title="Edit group"
-                      >
-                        Edit
-                      </button>
+                      {isOwner && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(id)}
+                            className="btn-ghost"
+                            title="Edit group"
+                          >
+                            Edit
+                          </button>
 
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(id)}
-                        className="btn-ghost text-red-600 border-red-200 hover:bg-red-50"
-                        title="Delete group"
-                      >
-                        Delete
-                      </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(id)}
+                            className="btn-ghost text-red-600 border-red-200 hover:bg-red-50"
+                            title="Delete group"
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
                       {/* group-members/:groupId */}
                       <button
                         type="button"
