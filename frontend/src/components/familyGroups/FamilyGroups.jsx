@@ -3,6 +3,8 @@ import React from "react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
+const ROLES_REQUIRING_ONBOARDING = ["careGiver", "careRecipient"];
+
 const FamilyGroups = () => {
   const [familyGroups, setFamilyGroups] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -79,6 +81,34 @@ const FamilyGroups = () => {
     }
   };
 
+  const handleOpenGroup = (group) => {
+    const groupId = group._id || group.id;
+    const membership = group.membership || {};
+    const role = membership.role;
+    const membershipStatus = membership.status;
+    const onboardingStatus = membership.onboardingStatus;
+
+    const needsOnboarding =
+      membershipStatus === "active" &&
+      ROLES_REQUIRING_ONBOARDING.includes(role) &&
+      onboardingStatus === "required";
+
+    if (needsOnboarding) {
+      // redirect to right onboarding flow
+      if (role === "careGiver") {
+        navigate("/onboarding/caregiver");
+      } else if (role === "careRecipient") {
+        navigate(`/onboarding/recipient/${groupId}`);
+      } else {
+        // fallback: just go to members
+        navigate(`/group-members/${groupId}`);
+      }
+    } else {
+      // normal behavior
+      navigate(`/group-members/${groupId}`);
+    }
+  };
+
   return (
     <main className="page">
       <div className="container-n">
@@ -86,7 +116,7 @@ const FamilyGroups = () => {
         <header className="text-center mb-8">
           <h1 className="section-title">Your Family Groups</h1>
           <p className="section-sub">
-            Manage and organize all caregiving groups you created.
+            Manage and access the caregiving groups you&apos;re part of.
           </p>
         </header>
 
@@ -111,17 +141,34 @@ const FamilyGroups = () => {
             {familyGroups.length === 0 ? (
               <div className="card p-6 text-center">
                 <p className="text-slate-500 dark:text-slate-400">
-                  You have not created any family groups yet.
+                  You are not a member of any family groups yet.
                 </p>
               </div>
             ) : (
               familyGroups.map((group) => {
+                console.log("group", group);
                 const id = group._id || group.id;
                 const createdById =
-                  group.createdBy || group.createdById || group.createdBy;
-                console.log("createdBy", createdById);
+                  group.createdBy?._id ||
+                  group.createdById ||
+                  group.createdBy ||
+                  "";
+
+                const membership = group.membership || {};
+                const role = membership.role || "member";
+                const membershipStatus = membership.status || "pending";
+                const onboardingStatus =
+                  membership.onboardingStatus || "not_required";
 
                 const isOwner = createdById === currentUserId;
+
+                const needsOnboarding =
+                  membershipStatus === "active" &&
+                  ROLES_REQUIRING_ONBOARDING.includes(role) &&
+                  onboardingStatus === "required";
+
+                console.log("needsOnboarding", needsOnboarding)
+
                 return (
                   <div
                     key={id}
@@ -137,6 +184,27 @@ const FamilyGroups = () => {
                           {group.description}
                         </p>
                       )}
+
+                      <div className="flex flex-wrap items-center gap-2 text-xs mb-2">
+                        <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-slate-700">
+                          Role: {role}
+                        </span>
+                        <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-slate-700">
+                          Membership: {membershipStatus}
+                        </span>
+                        {ROLES_REQUIRING_ONBOARDING.includes(role) && (
+                          <span
+                            className={`inline-flex items-center rounded-full px-3 py-1 ${onboardingStatus === "completed"
+                              ? "bg-emerald-100 text-emerald-700"
+                              : onboardingStatus === "required"
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-slate-100 text-slate-700"
+                              }`}
+                          >
+                            Onboarding: {onboardingStatus}
+                          </span>
+                        )}
+                      </div>
 
                       <div className="mt-2 grid gap-2 text-sm text-slate-700 dark:text-slate-300">
                         <p>
@@ -174,14 +242,18 @@ const FamilyGroups = () => {
                           </button>
                         </>
                       )}
-                      {/* group-members/:groupId */}
+
                       <button
                         type="button"
-                        onClick={() => navigate(`/group-members/${id}`)}
+                        onClick={() => handleOpenGroup(group)}
                         className="btn-primary"
-                        title="View group members"
+                        title={
+                          needsOnboarding
+                            ? "Complete onboarding to access this group"
+                            : "View group members"
+                        }
                       >
-                        View Members
+                        {needsOnboarding ? "Complete onboarding" : "View Members"}
                       </button>
                     </div>
                   </div>

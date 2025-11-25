@@ -300,20 +300,61 @@ export const getFamilyGroupsByUserId = async (userId) => {
       throw new Error("Invalid user ID");
     }
 
-    const memberships = await getMembershipsByUserId(userId);
-    console.log("memberships data from group controller", memberships)
-    const groupIds = memberships.map((m) => m.groupId);
-    console.log("groupIds", groupIds);
+    // 1) memberships for this user
+    const myMemberships = await Membership.find({
+      userId,
+      status: { $ne: "removed" },
+    }).lean();
 
+    if (!myMemberships.length) return [];
+
+    const groupIds = myMemberships.map((m) => m.groupId);
+
+    // 2) all groups where this user is a member
     const familyGroups = await FamilyGroup.find({
       _id: { $in: groupIds },
-    }).sort({
-      createdAt: -1,
+    })
+      .populate("createdBy", "_id firstName lastName email")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // 3) all memberships for those groups (to show all members)
+    const allMemberships = await Membership.find({
+      groupId: { $in: groupIds },
+      status: { $ne: "removed" },
+    })
+      .populate("userId", "_id firstName lastName email")
+      .lean();
+
+    // map: groupId -> memberships[]
+    const myMembershipByGroupId = {};
+    const groupMembersByGroupId = {};
+
+    for (const m of myMemberships) {
+      myMembershipByGroupId[m.groupId.toString()] = m;
+    }
+
+    for (const m of allMemberships) {
+      const key = m.groupId.toString();
+      if (!groupMembersByGroupId[key]) groupMembersByGroupId[key] = [];
+      groupMembersByGroupId[key].push(m);
+    }
+
+    const enrichedGroups = familyGroups.map((group) => {
+      const key = group._id.toString();
+
+      return {
+        ...group,
+        membership: myMembershipByGroupId[key] || null,      // this user's membership
+        members: groupMembersByGroupId[key] || [],           // all memberships + userId populated
+      };
     });
 
-    return familyGroups;
+    return enrichedGroups;
   } catch (error) {
-    throw new Error("Error getting family groups by user ID: " + error.message);
+    throw new Error(
+      "Error getting family groups by user ID: " + error.message
+    );
   }
 };
 

@@ -16,6 +16,8 @@ import GroupMembers from "../components/familyGroups/GroupMembers";
 import ActionHandler from "../pages/ActionHandler";
 import Notifications from "../components/notifications/Notifications";
 import PrivateRoute from "./PrivateRoutes.jsx";
+import CaregiverOnboarding from "../pages/CaregiverOnboarding.jsx"
+
 
 const AppRoutes = () => {
     return (
@@ -48,6 +50,9 @@ const AppRoutes = () => {
             </PrivateRoute>} />
             <Route path="/group-members/:groupId" element={<PrivateRoute>
                 <GroupMembers />
+            </PrivateRoute>} />
+            <Route path="/onboarding/caregiver" element={<PrivateRoute>
+                <CaregiverOnboarding />
             </PrivateRoute>} />
 
 
