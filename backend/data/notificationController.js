@@ -98,7 +98,6 @@ export const getUserNotifications = async (userId, filters = {}) => {
 
     const query = { recipientId: userId };
 
-    // Apply filters
     if (filters.isRead !== undefined) {
       query.isRead = filters.isRead;
     }
@@ -111,7 +110,6 @@ export const getUserNotifications = async (userId, filters = {}) => {
       query.actionStatus = filters.actionStatus;
     }
 
-    // Don't show marked for deletion
     query.markedForDeletion = false;
 
     const notifications = await Notification.find(query)
@@ -128,7 +126,6 @@ export const getUserNotifications = async (userId, filters = {}) => {
   }
 };
 
-// Get single notification by ID
 export const getNotificationById = async (notificationId) => {
   try {
     if (!isValidID(notificationId)) {
@@ -152,7 +149,6 @@ export const getNotificationById = async (notificationId) => {
   }
 };
 
-// Get unread count for a user
 export const getUnreadCount = async (userId) => {
   try {
     if (!isValidID(userId)) {
@@ -172,7 +168,6 @@ export const getUnreadCount = async (userId) => {
   }
 };
 
-// Mark notification as read
 export const markAsRead = async (notificationId, userId) => {
   try {
     if (!isValidID(notificationId)) {
@@ -203,7 +198,6 @@ export const markAsRead = async (notificationId, userId) => {
   }
 };
 
-// Mark all notifications as read for a user
 export const markAllAsRead = async (userId) => {
   try {
     if (!isValidID(userId)) {
@@ -224,7 +218,6 @@ export const markAllAsRead = async (userId) => {
   }
 };
 
-// Mark notification for deletion
 export const markForDeletion = async (notificationId, userId) => {
   try {
     if (!isValidID(notificationId)) {
@@ -257,7 +250,6 @@ export const markForDeletion = async (notificationId, userId) => {
   }
 };
 
-// Delete notification permanently
 export const deleteNotification = async (notificationId, userId) => {
   try {
     if (!isValidID(notificationId)) {
@@ -284,7 +276,6 @@ export const deleteNotification = async (notificationId, userId) => {
   }
 };
 
-// Handle join request acceptance
 export const acceptJoinRequest = async (notificationId, userId) => {
   try {
     if (!isValidID(notificationId)) {
@@ -314,7 +305,6 @@ export const acceptJoinRequest = async (notificationId, userId) => {
       );
     }
 
-    // Update membership status to active
     const membership = await Membership.findByIdAndUpdate(
       notification.membershipId,
       { $set: { status: "active" } },
@@ -325,13 +315,11 @@ export const acceptJoinRequest = async (notificationId, userId) => {
       throw new Error("Membership not found");
     }
 
-    // Add user to group's members array
     const group = await FamilyGroup.findById(notification.groupId);
     if (!group) {
       throw new Error("Group not found");
     }
 
-    // Ensure members array exists
     if (!group.members) {
       group.members = [];
     }
@@ -341,7 +329,6 @@ export const acceptJoinRequest = async (notificationId, userId) => {
       await group.save();
     }
 
-    // Update notification status
     notification.actionStatus = "accepted";
     notification.isRead = true;
     await notification.save();
@@ -362,7 +349,6 @@ export const acceptJoinRequest = async (notificationId, userId) => {
   }
 };
 
-// Handle join request rejection
 export const rejectJoinRequest = async (notificationId, userId) => {
   try {
     if (!isValidID(notificationId)) {
@@ -390,7 +376,6 @@ export const rejectJoinRequest = async (notificationId, userId) => {
       throw new Error("Invalid join request: missing membership reference");
     }
 
-    // Update membership status to removed
     const membership = await Membership.findByIdAndUpdate(
       notification.membershipId,
       { $set: { status: "removed" } },
@@ -401,7 +386,6 @@ export const rejectJoinRequest = async (notificationId, userId) => {
       throw new Error("Membership not found");
     }
 
-    // Update notification status
     notification.actionStatus = "rejected";
     notification.isRead = true;
     await notification.save();
@@ -422,7 +406,6 @@ export const rejectJoinRequest = async (notificationId, userId) => {
   }
 };
 
-// Cleanup expired notifications (for cron job or manual cleanup)
 export const cleanupExpiredNotifications = async () => {
   try {
     const now = new Date();
@@ -443,7 +426,6 @@ export const cleanupExpiredNotifications = async () => {
   }
 };
 
-// Cleanup notifications marked for deletion (older than X days)
 export const cleanupMarkedNotifications = async (daysOld = 30) => {
   try {
     const cutoffDate = new Date();
@@ -464,18 +446,15 @@ export const cleanupMarkedNotifications = async (daysOld = 30) => {
   }
 };
 
-// Delete notifications by groupId
 export const deleteNotificationsByGroupId = async (groupId) => {
   try {
     if (!isValidID(groupId)) {
       throw new Error("Valid group ID is required");
     }
 
-    // Find all memberships for this group
     const memberships = await Membership.find({ groupId: groupId });
     const membershipIds = memberships.map((m) => m._id);
 
-    // Delete all notifications related to this group by groupId OR by membershipId
     const result = await Notification.deleteMany({
       $or: [{ groupId: groupId }, { membershipId: { $in: membershipIds } }],
     });
@@ -492,7 +471,6 @@ export const deleteNotificationsByGroupId = async (groupId) => {
   }
 };
 
-// Send join request (admin invites user to group)
 export const sendJoinRequest = async (
   groupId,
   recipientId,
@@ -512,20 +490,15 @@ export const sendJoinRequest = async (
       throw new Error("Valid sender ID is required");
     }
 
-    // Check if group exists
     const group = await FamilyGroup.findById(groupId);
     if (!group) {
       throw new Error("Group not found");
     }
 
-    // Check if sender is the group creator
     if (group.createdBy.toString() !== senderId.toString()) {
       throw new Error("Only group creator can send join requests");
     }
 
-    // Membership check removed: FamilyGroup does not have a members array
-
-    // Check if there's already a pending membership
     let membership = await Membership.findOne({
       groupId,
       userId: recipientId,
@@ -534,7 +507,6 @@ export const sendJoinRequest = async (
 
     let notification;
     if (membership) {
-      // Check if notification already exists for this pending membership
       notification = await Notification.findOne({
         type: "join_request",
         recipientId,
@@ -543,7 +515,6 @@ export const sendJoinRequest = async (
         membershipId: membership._id,
       });
       if (!notification) {
-        // Set expiration date (7 days from now)
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 7);
         notification = await createNotification({
@@ -568,7 +539,6 @@ export const sendJoinRequest = async (
         message: "Join request already pending, notification ensured.",
       };
     } else {
-      // Create membership with pending status
       membership = new Membership({
         groupId,
         userId: recipientId,
@@ -576,7 +546,6 @@ export const sendJoinRequest = async (
         status: "pending",
       });
       await membership.save();
-      // Set expiration date (7 days from now)
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7);
       notification = await createNotification({

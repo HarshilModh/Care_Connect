@@ -20,14 +20,13 @@ const NotificationItem = ({ notification, onUpdate, userId }) => {
   const [showAcceptConfirm, setShowAcceptConfirm] = useState(false);
   const [showRejectConfirm, setShowRejectConfirm] = useState(false);
 
-  // Handle accept join request
   const handleAccept = async () => {
     setIsProcessing(true);
     try {
       await acceptJoinRequest(notification._id, userId);
       toast.success("Join request accepted!");
       setShowAcceptConfirm(false);
-      onUpdate(); // Refresh notifications
+      onUpdate();
     } catch (error) {
       toast.error(error.response?.data?.error || "Failed to accept request");
     } finally {
@@ -35,14 +34,13 @@ const NotificationItem = ({ notification, onUpdate, userId }) => {
     }
   };
 
-  // Handle reject join request
   const handleReject = async () => {
     setIsProcessing(true);
     try {
       await rejectJoinRequest(notification._id, userId);
       toast.success("Join request rejected");
       setShowRejectConfirm(false);
-      onUpdate(); // Refresh notifications
+      onUpdate();
     } catch (error) {
       toast.error(error.response?.data?.error || "Failed to reject request");
     } finally {
@@ -50,30 +48,27 @@ const NotificationItem = ({ notification, onUpdate, userId }) => {
     }
   };
 
-  // Handle mark as read
   const handleMarkRead = async () => {
     if (notification.isRead) return;
 
     try {
       await markAsRead(notification._id, userId);
-      onUpdate(); // Refresh notifications
+      onUpdate();
     } catch (error) {
       console.error("Failed to mark as read:", error);
     }
   };
 
-  // Handle dismiss (mark for deletion)
   const handleDismiss = async () => {
     try {
       await markForDeletion(notification._id, userId);
       toast.success("Notification dismissed");
-      onUpdate(); // Refresh notifications
+      onUpdate();
     } catch (error) {
       toast.error("Failed to dismiss notification");
     }
   };
 
-  // Get icon based on notification type
   const getIcon = () => {
     switch (notification.type) {
       case "join_request":
@@ -90,7 +85,6 @@ const NotificationItem = ({ notification, onUpdate, userId }) => {
     }
   };
 
-  // Format timestamp
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -106,7 +100,6 @@ const NotificationItem = ({ notification, onUpdate, userId }) => {
     return date.toLocaleDateString();
   };
 
-  // Check if notification has expired
   const isExpired =
     notification.expiresAt && new Date(notification.expiresAt) < new Date();
 
@@ -123,18 +116,12 @@ const NotificationItem = ({ notification, onUpdate, userId }) => {
         hover:shadow-md
       `}
     >
-      {/* Unread indicator */}
       {!notification.isRead && (
         <div className="absolute top-4 left-0 w-1 h-12 bg-indigo-500 rounded-r"></div>
       )}
-
       <div className="flex gap-3">
-        {/* Icon */}
         <div className="flex-shrink-0 mt-1">{getIcon()}</div>
-
-        {/* Content */}
         <div className="flex-1 min-w-0">
-          {/* Title and time */}
           <div className="flex items-start justify-between gap-2 mb-1">
             <h3 className="font-semibold text-slate-900 dark:text-slate-100">
               {notification.title}
@@ -144,12 +131,10 @@ const NotificationItem = ({ notification, onUpdate, userId }) => {
             </span>
           </div>
 
-          {/* Message */}
           <p className="text-sm text-slate-600 dark:text-slate-300 mb-3">
             {notification.message}
           </p>
 
-          {/* Group name if available */}
           {(notification.groupId?.groupName ||
             notification.metadata?.groupName) && (
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
@@ -159,14 +144,12 @@ const NotificationItem = ({ notification, onUpdate, userId }) => {
             </p>
           )}
 
-          {/* Expiration warning */}
           {isExpired && notification.type === "join_request" && (
             <p className="text-xs text-red-500 mb-2">
               This invitation has expired
             </p>
           )}
 
-          {/* Action buttons for join request */}
           {notification.type === "join_request" &&
             notification.actionStatus === "pending" &&
             !isExpired && (
@@ -208,7 +191,6 @@ const NotificationItem = ({ notification, onUpdate, userId }) => {
               </div>
             )}
 
-          {/* Status indicator for processed requests */}
           {notification.type === "join_request" &&
             notification.actionStatus !== "pending" && (
               <div className="mt-2">
@@ -227,8 +209,6 @@ const NotificationItem = ({ notification, onUpdate, userId }) => {
               </div>
             )}
         </div>
-
-        {/* Dismiss button */}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -243,8 +223,6 @@ const NotificationItem = ({ notification, onUpdate, userId }) => {
           <TrashIcon className="h-5 w-5" />
         </button>
       </div>
-
-      {/* Accept Confirmation Modal */}
       {showAcceptConfirm && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
@@ -299,8 +277,6 @@ const NotificationItem = ({ notification, onUpdate, userId }) => {
           </div>
         </div>
       )}
-
-      {/* Reject Confirmation Modal */}
       {showRejectConfirm && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
