@@ -29,10 +29,19 @@ export default function CreateTask() {
   useEffect(() => {
     if (!userId) return;
     async function fetchGroups() {
+      const adminGroups = [];
       try {
-        const res = await fetch(`/api/groups/user/${userId}`);
+        const res = await fetch(
+          `http://localhost:3000/api/family-groups/user/${userId}`
+        );
         const data = await res.json();
-        setGroups(data);
+        console.log("Fetched groups:", data);
+        for (const item of data) {
+          if (item.createdBy === userId) {
+            adminGroups.push(item);
+          }
+        }
+        setGroups(adminGroups);
       } catch (err) {
         console.error("Error fetching groups:", err);
         toast.error("Failed to fetch groups.");
@@ -151,7 +160,7 @@ export default function CreateTask() {
                 <option value="">Select Group</option>
                 {groups.map((g) => (
                   <option key={g._id} value={g._id}>
-                    {g.name || g._id}
+                    {g.groupName || g._id}
                   </option>
                 ))}
               </select>

@@ -5,33 +5,13 @@ import "react-toastify/dist/ReactToastify.css";
 
 import NavbarTwo from "./components/Navbar";
 import SideBar from "./components/SideBar";
-<<<<<<< HEAD
-
-import Home from "./pages/Home";
-import Landing from "./pages/Landing";
-import SignUp from "./pages/Signup";
-import SignIn from "./pages/SignIn";
-import VerifySuccess from "./pages/VerifySuccess";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import CreateGroup from "./components/familyGroups/CreateGroup";
-import AddMembers from "./components/familyGroups/AddMembers";
-import FamilyGroups from "./components/familyGroups/FamilyGroups";
-import GroupMembers from "./components/familyGroups/GroupMembers";
-import ActionHandler from "./pages/ActionHandler";
-import Notifications from "./components/notifications/Notifications";
-import Tasks from "./pages/tasksPage";
-import CreateTask from "./pages/CreateTask";
-=======
-import AppRoutes from "./routes/AppRoutes"
->>>>>>> fd4957860762fdd0911e2cc09a2243d42dbbdbc8
+import AppRoutes from "./routes/AppRoutes";
 
 import "./App.css"; // keep your css imports
 
 // const hideLayoutRoutes = ["/signin", "/signup",];
 const hideSidebarRoutes = ["/", "/signin", "/signup"]; // ⬅️ hide sidebar on Landing too
-const hideNavbarRoutes = ["/signin", "/signup"];       // ⬅️ only auth pages hide navbar
-
+const hideNavbarRoutes = ["/signin", "/signup"]; // ⬅️ only auth pages hide navbar
 
 function App() {
   const location = useLocation();
@@ -46,14 +26,14 @@ function App() {
 
       {!hideSidebar && (
         <div
-          className={`fixed inset-0 bg-black/40 z-30 transition-opacity md:hidden ${sidebarOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
-            }`}
+          className={`fixed inset-0 bg-black/40 z-30 transition-opacity md:hidden ${
+            sidebarOpen
+              ? "opacity-100 pointer-events-auto"
+              : "opacity-0 pointer-events-none"
+          }`}
           onClick={() => setSidebarOpen(false)}
         />
       )}
-
 
       <div className="flex">
         {/* Sidebar for md and up */}
@@ -66,9 +46,7 @@ function App() {
         <div className="flex-1 min-h-screen flex flex-col">
           {/* Mobile header with toggle */}
           {!hideSidebar && (
-            <div className="md:hidden bg-white border-b">
-              {/* … */}
-            </div>
+            <div className="md:hidden bg-white border-b">{/* … */}</div>
           )}
 
           {/* Navbar */}
@@ -76,30 +54,7 @@ function App() {
 
           <main className="flex-1 p-4 md:p-6">
             <div className="max-w-6xl mx-auto">
-<<<<<<< HEAD
-              <Routes>
-                <Route path="/" element={<Landing />} />
-                <Route path="/action" element={<ActionHandler />} />
-                <Route path="/verify-success" element={<VerifySuccess />} />
-                <Route path="/home" element={<Home />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/createGroup" element={<CreateGroup />} />
-                <Route path="/addMember" element={<AddMembers />} />
-                <Route path="/family-groups" element={<FamilyGroups />} />
-                <Route
-                  path="/group-members/:groupId"
-                  element={<GroupMembers />}
-                />
-                <Route path="/notifications" element={<Notifications />} />
-                <Route path="/signin" element={<SignIn />} />
-                <Route path="/signup" element={<SignUp />} />
-                <Route path="/tasks" element={<Tasks />} />
-                <Route path="/tasks/create" element={<CreateTask />} />
-              </Routes>
-=======
               <AppRoutes />
->>>>>>> fd4957860762fdd0911e2cc09a2243d42dbbdbc8
             </div>
           </main>
         </div>
@@ -107,8 +62,9 @@ function App() {
         {/* Mobile sliding sidebar */}
         {!hideSidebar && (
           <div
-            className={`fixed z-40 top-0 left-0 h-full w-64 transform bg-white border-r shadow-lg transition-transform md:hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
-              }`}
+            className={`fixed z-40 top-0 left-0 h-full w-64 transform bg-white border-r shadow-lg transition-transform md:hidden ${
+              sidebarOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
           >
             {/* … */}
           </div>
