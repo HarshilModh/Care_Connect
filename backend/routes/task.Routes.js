@@ -1,10 +1,11 @@
 import {createTask,deleteTask,getTaskById,listGroupTasks,markTaskCompleted,reassignTask,updateTask} from "../data/taskController.js";
-import { isValidID,isValidString } from "../utils/validation.utils.js";
+import {isValidString } from "../utils/validation.utils.js";
 import { FamilyGroup } from "../models/familyGroups.model.js";
 import User from "../models/user.model.js";
 import taskModel from "../models/task.model.js";
 import express from "express";
 import { Membership } from "../models/memberShip.model.js";
+import mongoose from "mongoose";
 const router = express.Router();
 
 //fix values if needed in future
@@ -34,11 +35,19 @@ router.post("/", async (req, res) => {
         if(!createdBy ){
             return res.status(400).json({ error: "Created By ID is required" });
         }
-        groupId = isValidID(groupId);
-        recipientId = isValidID(recipientId);
-        createdBy = isValidID(createdBy);
+        if(!mongoose.Types.ObjectId.isValid(groupId)){
+            return res.status(400).json({ error: "Invalid Group ID" });
+        }
+        if(!mongoose.Types.ObjectId.isValid(recipientId)){
+            return res.status(400).json({ error: "Invalid Recipient ID" });
+        }
+        if(!mongoose.Types.ObjectId.isValid(createdBy)){
+            return res.status(400).json({ error: "Invalid Created By ID" });
+        }
         if(assignedTo){
-            assignedTo = isValidID(assignedTo);
+            if(!mongoose.Types.ObjectId.isValid(assignedTo)){
+                return res.status(400).json({ error: "Invalid Assigned To ID" });
+            }
         }
         if(type && !['task', 'medication', 'event', 'note'].includes(type)){
             return res.status(400).json({ error: "Invalid type value" });
@@ -133,7 +142,9 @@ router.get("/:taskId", async (req, res) => {
         if(!taskId){
             return res.status(400).json({ error: "Task ID is required" });
         }
-        taskId = isValidID(taskId); 
+        if(!mongoose.Types.ObjectId.isValid(taskId)){
+            return res.status(400).json({ error: "Invalid Task ID" });
+        }
         //check if task exists
         const taskExists = await getTaskById(taskId);
         if(!taskExists){
@@ -163,12 +174,22 @@ router.put("/:taskId", async (req, res) => {
         if(!createdBy ){
             return res.status(400).json({ error: "Created By ID is required" });
         }
-        taskId = isValidID(taskId);
-        groupId = isValidID(groupId);
-        recipientId = isValidID(recipientId);
-        createdBy = isValidID(createdBy);
+      if(!mongoose.Types.ObjectId.isValid(taskId)){
+            return res.status(400).json({ error: "Invalid Task ID" });
+        }
+        if(!mongoose.Types.ObjectId.isValid(groupId)){
+            return res.status(400).json({ error: "Invalid Group ID" });
+        }
+        if(!mongoose.Types.ObjectId.isValid(recipientId)){
+            return res.status(400).json({ error: "Invalid Recipient ID" });
+        }
+        if(!mongoose.Types.ObjectId.isValid(createdBy)){
+            return res.status(400).json({ error: "Invalid Created By ID" });
+        }
         if(assignedTo){
-            assignedTo = isValidID(assignedTo);
+            if(!mongoose.Types.ObjectId.isValid(assignedTo)){
+                return res.status(400).json({ error: "Invalid Assigned To ID" });
+            }
         }
         if(type && !['task', 'medication', 'event', 'note'].includes(type)){
             return res.status(400).json({ error: "Invalid type value" });
@@ -261,7 +282,9 @@ router.delete("/:taskId", async (req, res) => {
         if(!taskId){
             return res.status(400).json({ error: "Task ID is required" });
         }
-        taskId = isValidID(taskId);
+        if(!mongoose.Types.ObjectId.isValid(taskId)){
+            return res.status(400).json({ error: "Invalid Task ID" });
+        }
         //check if task exists
         const taskExists = await getTaskById(taskId);
         if(!taskExists){
@@ -280,7 +303,9 @@ router.get("/group/:groupId", async (req, res) => {
         if(!groupId){
             return res.status(400).json({ error: "Group ID is required" });
         }
-        groupId = isValidID(groupId);
+        if(!mongoose.Types.ObjectId.isValid(groupId)){
+            return res.status(400).json({ error: "Invalid Group ID" });
+        }
         //check if group exists
         const groupExists = await FamilyGroup.findById(groupId);
         if(!groupExists){
@@ -304,8 +329,12 @@ router.post("/:taskId/complete", async (req, res) => {
         if(!completedBy){
             return res.status(400).json({ error: "Completed By ID is required" });
         }
-        taskId = isValidID(taskId);
-        completedBy = isValidID(completedBy);
+        if(!mongoose.Types.ObjectId.isValid(taskId)){
+            return res.status(400).json({ error: "Invalid Task ID" });
+        }
+        if(!mongoose.Types.ObjectId.isValid(completedBy)){
+            return res.status(400).json({ error: "Invalid Completed By ID" });
+        }
         //check if task exists
         const taskExists = await getTaskById(taskId);
         if(!taskExists){
@@ -338,8 +367,12 @@ router.post("/:taskId/reassign", async (req, res) => {
         if(!newAssignee){
             return res.status(400).json({ error: "New Assignee ID is required" });
         }
-        taskId = isValidID(taskId);
-        newAssignee = isValidID(newAssignee);
+        if(!mongoose.Types.ObjectId.isValid(taskId)){
+            return res.status(400).json({ error: "Invalid Task ID" });
+        }
+        if(!mongoose.Types.ObjectId.isValid(newAssignee)){
+            return res.status(400).json({ error: "Invalid New Assignee ID" });
+        }
 
         //check if task exists
         const taskExists = await getTaskById(taskId);
