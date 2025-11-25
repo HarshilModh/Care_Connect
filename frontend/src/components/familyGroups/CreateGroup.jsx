@@ -14,7 +14,7 @@ const CreateGroup = () => {
 
   let createdBy = localStorage.getItem("user") || "";
 
-  
+
   createdBy = JSON.parse(createdBy)._id || "";
 
   const resetForm = () => {
@@ -42,11 +42,12 @@ const CreateGroup = () => {
         createdBy,
       });
       console.log(response);
-      
+
       const data = response.data;
+      console.log("data", data);
       toast.success("Family group created successfully!");
       resetForm();
-      
+
       // Optionally, navigate to Add Members page with the new group ID
       // navigate(`/addMember`, { state: { groupId: data.familyGroup._id } });
     } catch (err) {
@@ -152,21 +153,21 @@ const CreateGroup = () => {
           You can add members after creating the group.
         </p>
       </div>
-            <ToastContainer
-                      position="top-right"
-                      autoClose={3000}
-                      hideProgressBar={false}
-                      newestOnTop={false}
-                      closeOnClick
-                      rtl={false}
-                      pauseOnFocusLoss
-                      draggable
-                      pauseOnHover
-                      theme="colored"
-      
-                  />
-      
-      
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+
+      />
+
+
     </main>
   );
 };

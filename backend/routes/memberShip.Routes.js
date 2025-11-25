@@ -18,6 +18,10 @@ const router = express.Router();
 //role string [enum: owner, caregiver, family]
 // status string [enum: active, pending, removed]
 
+const VALID_ROLES = ["admin", "careGiver", "familyMember", "readonly", "careRecipient"];
+const VALID_STATUSES = ["active", "pending", "removed"];
+const ROLES_REQUIRING_ONBOARDING = ["careGiver", "careRecipient"];
+
 
 //Create Membership
 router.post("/", async (req, res) => {
@@ -30,11 +34,12 @@ router.post("/", async (req, res) => {
         console.log("role", role);
         console.log("groupId", groupId);
         console.log("userId", userId);
+
         if (!groupId || !userId) {
             return res.status(400).json({ error: "Group ID and User ID are required" });
         }
         if (!role) {
-            role = "family";
+            role = "familyMember";
         }
         if (!status) {
             status = "pending";
@@ -45,10 +50,13 @@ router.post("/", async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(userId)) {
             return res.status(400).json({ error: 'Invalid User ID' });
         }
-        if (!["admin", "careGiver", "familyMember", "readonly", "careRecipient"].includes(role)) {
+        if (!VALID_ROLES.includes(role)) {
             return res.status(400).json({ error: "Invalid role value" });
         }
-        if (!["active", "pending", "removed"].includes(status)) {
+        if (!status) {
+            status = "pending";
+        }
+        if (!VALID_STATUSES.includes(status)) {
             return res.status(400).json({ error: "Invalid status value" });
         }
         if (permissions && typeof permissions !== "object") {
@@ -60,6 +68,11 @@ router.post("/", async (req, res) => {
         if (isMember) {
             return res.status(400).json({ error: "User is already a member of this group" });
         }
+
+        // let onboardingStatus = "not_required";
+        // if (ROLES_REQUIRING_ONBOARDING.includes(role)) {
+        //     onboardingStatus = "required";
+        // }
         const membershipData = {
             groupId,
             userId,

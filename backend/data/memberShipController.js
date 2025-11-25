@@ -18,7 +18,8 @@ export const createMembership = async (
   userId,
   role,
   status,
-  permissions
+  permissions,
+  onboardingStatus
 ) => {
   try {
     console.log("groupId - createMembership", groupId);
@@ -50,6 +51,13 @@ export const createMembership = async (
       throw new Error("Permissions must be an object");
     }
 
+    const rolesRequiringOnboarding = ["careGiver", "careRecipient"];
+    if (!onboardingStatus) {
+      onboardingStatus = rolesRequiringOnboarding.includes(role)
+        ? "required"
+        : "not_required";
+    }
+
     const [group, user, existing] = await Promise.all([
       FamilyGroup.findById(groupId).lean(),
       User.findById(userId).lean(),
@@ -76,6 +84,7 @@ export const createMembership = async (
       role,
       status,
       permissions: permissions || {},
+      onboardingStatus
     });
     return created.toObject();
   } catch (error) {
@@ -389,7 +398,7 @@ export const updateMembershipStatus = async (membershipId, status) => {
 export const updateMembershipPermissions = async (
   membershipId,
   permissions
-) => {};
+) => { };
 
 //Count Memberships in Group
 export const countMembershipsInGroup = async (groupId) => {
@@ -408,10 +417,10 @@ export const countMembershipsInGroup = async (groupId) => {
 };
 
 //Get Recent Memberships
-export const getRecentMemberships = async (limit) => {};
+export const getRecentMemberships = async (limit) => { };
 
 //Search Memberships
-export const searchMemberships = async (searchTerm) => {};
+export const searchMemberships = async (searchTerm) => { };
 
 //Get Memberships by Role
 export const getMembershipsByRole = async (role) => {
@@ -456,4 +465,4 @@ export const getRemovedMemberships = async () => {
 export const getMembershipsWithPermission = async (
   permissionKey,
   permissionValue
-) => {};
+) => { };
