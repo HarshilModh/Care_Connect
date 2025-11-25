@@ -51,7 +51,7 @@ const AddMembers = () => {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteFirstName, setInviteFirstName] = useState("");
   const [inviteLastName, setInviteLastName] = useState("");
-  const [inviteRole, setInviteRole] = useState("family");
+  const [inviteRole, setInviteRole] = useState("familyMember");
   const [inviteSubmitting, setInviteSubmitting] = useState(false);
 
   // load groups created by current user (from localStorage) once
@@ -209,7 +209,7 @@ const AddMembers = () => {
       groupId,
       userId: uid,
       email: emailVal,
-      role: "family",
+      role: "familyMember",
       status: "pending",
     };
     setPending((p) => [...p, newRow]);
@@ -224,7 +224,7 @@ const AddMembers = () => {
     }
     setPending((p) => [
       ...p,
-      { groupId, userId: "", email: "", role: "family", status: "pending" },
+      { groupId, userId: "", email: "", role: "familyMember", status: "pending" },
     ]);
   };
 
@@ -557,7 +557,7 @@ const AddMembers = () => {
                                   className="input"
                                   value={
                                     pending.find((p) => p.userId === uid)
-                                      ?.role ?? "family"
+                                      ?.role ?? "familyMember"
                                   }
                                   onChange={(e) => {
                                     const idx = pending.findIndex(

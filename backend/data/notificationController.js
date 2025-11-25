@@ -4,6 +4,7 @@ import { FamilyGroup } from "../models/familyGroups.model.js";
 import { Task } from "../models/task.model.js";
 import { isValidID, isValidString } from "../utils/validation.utils.js";
 
+
 // Create a notification
 export const createNotification = async (notificationData) => {
   try {
@@ -315,52 +316,16 @@ export const acceptJoinRequest = async (notificationId, userId) => {
       throw new Error("Membership not found");
     }
 
-    // Make sure this membership is for this user
-    if (membership.userId.toString() !== userId.toString()) {
-      throw new Error("Not allowed to accept this membership");
-    }
-
-    // Mark as active
-    membership.status = "active";
-
-    // 2️⃣ Decide onboardingStatus based on role + existing profiles
-    let onboardingStatus = "not_required";
-    const role = membership.role;
-    const groupId = notification.groupId;
-
-    if (ROLES_REQUIRING_ONBOARDING.includes(role)) {
-      if (role === "careGiver") {
-        // Global caregiver profile (per user)
-        const caregiverProfile = await CaregiverProfile.findOne({ userId });
-        onboardingStatus = caregiverProfile ? "completed" : "required";
-      } else if (role === "careRecipient") {
-        // Per group + user
-        const recipientProfile = await CareRecipientProfile.findOne({
-          userId,
-          groupId,
-        });
-        onboardingStatus = recipientProfile ? "completed" : "required";
-      }
-    }
-
-    membership.onboardingStatus = onboardingStatus;
-    await membership.save();
-
-    // 3️⃣ Add user to group.members array if not already there
     const group = await FamilyGroup.findById(notification.groupId);
     if (!group) {
       throw new Error("Group not found");
     }
 
-    if (!Array.isArray(group.members)) {
+    if (!group.members) {
       group.members = [];
     }
 
-    // IMPORTANT: members is usually ObjectId[], so use equals()
-    const alreadyMember = group.members.some(
-      (m) => m.toString() === userId.toString()
-    );
-    if (!alreadyMember) {
+    if (!group.members.includes(userId)) {
       group.members.push(userId);
       await group.save();
     }
@@ -369,13 +334,14 @@ export const acceptJoinRequest = async (notificationId, userId) => {
     notification.isRead = true;
     await notification.save();
 
-    // 5️⃣ Return updated docs
-    const updatedNotification = await Notification.findById(notification._id).lean();
+    const updatedNotification = await Notification.findById(
+      notification._id
+    ).lean();
     const updatedMembership = await Membership.findById(membership._id).lean();
 
     return {
       notification: updatedNotification,
-      membership: updatedMembership, // includes onboardingStatus now
+      membership: updatedMembership,
       message: "Join request accepted successfully",
     };
   } catch (error) {
