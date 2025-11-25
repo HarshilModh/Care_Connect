@@ -77,6 +77,7 @@ const GroupMembers = () => {
           `http://localhost:3000/api/memberships/group/${groupId}`,
           { withCredentials: true, signal: ctrl.signal }
         )
+        console.log("get group by id ", res)
         const payload = Array.isArray(res.data) ? res.data : res.data?.members ?? []
         if (!mounted) return
         setMembers(payload)
@@ -103,6 +104,7 @@ const GroupMembers = () => {
     const qlc = q.trim().toLowerCase()
     return members
       .filter((m) => {
+        console.log("members m >>>", m);
         if (roleFilter && m.role !== roleFilter) return false
         if (statusFilter && m.status !== statusFilter) return false
         if (!qlc) return true

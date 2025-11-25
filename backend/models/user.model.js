@@ -45,6 +45,11 @@ const userSchema = new mongoose.Schema({
     match: [/(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}/, 'Password must contain at least one uppercase letter, one lowercase letter, and one number.']
     //demo Password Validation: 
   },
+  needPasswordReset: {
+    type: Boolean,
+    default: false,
+
+  },
   role: {
     type: String,
     enum: ['admin', 'familyMember', 'careGiver', 'careRecipient'],

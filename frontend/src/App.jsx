@@ -1,32 +1,34 @@
-import React, { useState } from "react"
-import { Routes, Route, useLocation } from "react-router-dom"
-import { ToastContainer } from "react-toastify"
-import "react-toastify/dist/ReactToastify.css"
+import React, { useState } from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-import NavbarTwo from "./components/Navbar"
-import SideBar from "./components/SideBar"
+import NavbarTwo from "./components/Navbar";
+import SideBar from "./components/SideBar";
 
-import Home from "./pages/Home"
-import Landing from "./pages/Landing"
-import SignUp from "./pages/Signup"
-import SignIn from "./pages/SignIn"
-import VerifySuccess from "./pages/VerifySuccess"
-import ForgotPassword from "./pages/ForgotPassword"
-import ResetPassword from "./pages/ResetPassword"
-import CreateGroup from "./components/familyGroups/CreateGroup"
-import AddMembers from "./components/familyGroups/AddMembers"
-import FamilyGroups from "./components/familyGroups/FamilyGroups"
-import GroupMembers from "./components/familyGroups/GroupMembers"
+import Home from "./pages/Home";
+import Landing from "./pages/Landing";
+import SignUp from "./pages/Signup";
+import SignIn from "./pages/SignIn";
+import VerifySuccess from "./pages/VerifySuccess";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import CreateGroup from "./components/familyGroups/CreateGroup";
+import AddMembers from "./components/familyGroups/AddMembers";
+import FamilyGroups from "./components/familyGroups/FamilyGroups";
+import GroupMembers from "./components/familyGroups/GroupMembers";
+import ActionHandler from "./pages/ActionHandler";
+import Notifications from "./components/notifications/Notifications";
 
-import "./App.css" // keep your css imports
+import "./App.css"; // keep your css imports
 
-const hideLayoutRoutes = ["/signin", "/signup"]
+const hideLayoutRoutes = ["/signin", "/signup"];
 
 function App() {
-  const location = useLocation()
-  const hideLayout = hideLayoutRoutes.includes(location.pathname)
+  const location = useLocation();
+  const hideLayout = hideLayoutRoutes.includes(location.pathname);
 
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -35,7 +37,9 @@ function App() {
       {!hideLayout && (
         <div
           className={`fixed inset-0 bg-black/40 z-30 transition-opacity md:hidden ${
-            sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+            sidebarOpen
+              ? "opacity-100 pointer-events-auto"
+              : "opacity-0 pointer-events-none"
           }`}
           onClick={() => setSidebarOpen(false)}
         />
@@ -59,8 +63,18 @@ function App() {
                   className="inline-flex items-center justify-center p-2 rounded hover:bg-gray-100"
                   aria-label="toggle menu"
                 >
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
                   </svg>
                 </button>
 
@@ -77,6 +91,7 @@ function App() {
             <div className="max-w-6xl mx-auto">
               <Routes>
                 <Route path="/" element={<Landing />} />
+                <Route path="/action" element={<ActionHandler />} />
                 <Route path="/verify-success" element={<VerifySuccess />} />
                 <Route path="/home" element={<Home />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -84,7 +99,11 @@ function App() {
                 <Route path="/createGroup" element={<CreateGroup />} />
                 <Route path="/addMember" element={<AddMembers />} />
                 <Route path="/family-groups" element={<FamilyGroups />} />
-                <Route path="/group-members/:groupId" element={<GroupMembers />} />
+                <Route
+                  path="/group-members/:groupId"
+                  element={<GroupMembers />}
+                />
+                <Route path="/notifications" element={<Notifications />} />
                 <Route path="/signin" element={<SignIn />} />
                 <Route path="/signup" element={<SignUp />} />
               </Routes>
@@ -107,8 +126,18 @@ function App() {
                   className="p-1 rounded hover:bg-gray-100"
                   aria-label="close menu"
                 >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
@@ -119,7 +148,7 @@ function App() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

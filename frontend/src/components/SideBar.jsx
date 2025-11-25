@@ -35,6 +35,7 @@ const SideBar = () => {
         {link("/family-groups", UsersIcon, "My groups")}
         {link("/addMember", UserPlusIcon, "Add members")}
 
+
         {insideGroup && (
           <NavLink
             to={`/group-members/${groupId}`}

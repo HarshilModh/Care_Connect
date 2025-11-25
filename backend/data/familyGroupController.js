@@ -4,8 +4,14 @@ import {
   isValidString,
 } from "../utils/validation.utils.js";
 import User from "../models/user.model.js";
-import { createMembership, deleteMembership, getMembershipsByGroupId, getMembershipsByUserId, } from "./memberShipController.js";
+import {
+  createMembership,
+  deleteMembership,
+  getMembershipsByGroupId,
+  getMembershipsByUserId,
+} from "./memberShipController.js";
 import { Membership } from "../models/memberShip.model.js";
+import { deleteNotificationsByGroupId } from "./notificationController.js";
 import { isValidObjectId } from "mongoose";
 import mongoose from "mongoose";
 //Data Functions
@@ -18,54 +24,59 @@ export const createFamilyGroup = async (
   createdBy,
   isPublic
 ) => {
- try {
-  if(!groupName || !createdBy){
-    throw new Error("groupName and createdBy are required to create a family group");
-  }
-  if(typeof groupName !== "string"){
-    throw new Error("groupName must be a string");
-  }
-  if (typeof isPublic !== "boolean") {
-    throw new Error("isPublic must be a boolean value");
-  }
-  if(description){
-    description = isValidString(description, "description");
-  }
-  groupName = isValidString(groupName, "groupName");
-  if(!mongoose.Types.ObjectId.isValid(createdBy)){
-    throw new Error("createdBy must be a valid ObjectId");
-  }
+  try {
+    if (!groupName || !createdBy) {
+      throw new Error(
+        "groupName and createdBy are required to create a family group"
+      );
+    }
+    if (typeof groupName !== "string") {
+      throw new Error("groupName must be a string");
+    }
+    if (typeof isPublic !== "boolean") {
+      throw new Error("isPublic must be a boolean value");
+    }
+    if (description) {
+      description = isValidString(description, "description");
+    }
+    groupName = isValidString(groupName, "groupName");
+    if (!mongoose.Types.ObjectId.isValid(createdBy)) {
+      throw new Error("createdBy must be a valid ObjectId");
+    }
 
-  groupName = groupName.toLowerCase().trim();
-  description = description ? description.trim() : "";
+    groupName = groupName.toLowerCase().trim();
+    description = description ? description.trim() : "";
 
-  const familyGroupData = {
-    groupName,
-    description,
-    createdBy,
-    isPublic,
-  };
+    const familyGroupData = {
+      groupName,
+      description,
+      createdBy,
+      isPublic,
+    };
 
- const newCreatedGroup = new FamilyGroup(familyGroupData);
- const newFamilyGroup = await newCreatedGroup.save();
-  //add creator as owner member
-  const ownerMembership = await createMembership(
-    newFamilyGroup._id,
-    createdBy,
-    'owner',
-    'active'
-  );
-  
- let getCreatedGroup = await FamilyGroup.findById(newFamilyGroup._id).lean();
- let activeMemberships = await getMembershipsByGroupId(newFamilyGroup._id);
- //filter only active members
-  activeMemberships = activeMemberships.filter(m => m.status === "active");
- getCreatedGroup.members = activeMemberships.map(m => m.userId); //view only field
+    console.log("familyGroupData", familyGroupData)
 
-  return getCreatedGroup;
+    const newCreatedGroup = new FamilyGroup(familyGroupData);
+    const newFamilyGroup = await newCreatedGroup.save();
+    console.log("newFamilyGroup from createFamilyGroup", newFamilyGroup);
+    //add creator as owner member
+    const ownerMembership = await createMembership(
+      newFamilyGroup._id,
+      createdBy,
+      "admin",
+      "active"
+    );
+
+    let getCreatedGroup = await FamilyGroup.findById(newFamilyGroup._id).lean();
+    let activeMemberships = await getMembershipsByGroupId(newFamilyGroup._id);
+    //filter only active members
+    activeMemberships = activeMemberships.filter((m) => m.status === "active");
+    getCreatedGroup.members = activeMemberships.map((m) => m.userId); //view only field
+
+    return getCreatedGroup;
   } catch (error) {
     console.log(error);
-    
+
     throw new Error("Error creating family group: " + error.message);
   }
 };
@@ -141,17 +152,35 @@ export const updateFamilyGroup = async (groupId, updateData) => {
 
 //Delete Family Group
 export const deleteFamilyGroup = async (groupId) => {
-  if (!mongoose.Types.ObjectId.isValid(groupId)) {
-    throw new Error("Invalid group ID");
+  try {
+    if (!isValidID(groupId)) {
+      throw new Error("Invalid group ID");
+    }
+
+    // Delete all notifications related to this group FIRST
+    const notificationResult = await deleteNotificationsByGroupId(groupId);
+
+    // Delete all memberships for this group
+    const membershipResult = await Membership.deleteMany({ groupId: groupId });
+
+    // Finally delete the group
+    const deletedGroup = await FamilyGroup.findByIdAndDelete(groupId);
+
+    if (!deletedGroup) {
+      throw new Error("Family group not found");
+    }
+
+    return {
+      message:
+        "Family group, memberships, and related notifications deleted successfully",
+      groupId,
+      notificationsDeleted: notificationResult.deletedCount,
+      membershipsDeleted: membershipResult.deletedCount,
+    };
+  } catch (error) {
+    console.log(error);
+    throw new Error("Error deleting family group: " + error.message);
   }
-
-  const deletedGroup = await FamilyGroup.findByIdAndDelete(groupId);
-
-  if (!deletedGroup) {
-    throw new Error("Family group not found");
-  }
-
-  return { message: "Family group deleted successfully", groupId };
 };
 
 //Get All Family Groups
@@ -162,7 +191,11 @@ export const getAllFamilyGroups = async () => {
 };
 //changes done here by Harshil Modh
 //Add Member to Family Group
-export const addMemberToFamilyGroup = async (groupId, memberId, role = "family") => {
+export const addMemberToFamilyGroup = async (
+  groupId,
+  memberId,
+  role = "family"
+) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(groupId)) {
       throw new Error("Invalid group ID");
@@ -173,7 +206,7 @@ export const addMemberToFamilyGroup = async (groupId, memberId, role = "family")
 
     const [group, user] = await Promise.all([
       FamilyGroup.findById(groupId).lean(),
-      User.findById(memberId).lean()
+      User.findById(memberId).lean(),
     ]);
     if (!group) throw new Error("Family group not found");
     if (!user) throw new Error("User not found");
@@ -188,7 +221,7 @@ export const addMemberToFamilyGroup = async (groupId, memberId, role = "family")
       { groupId, userId: memberId },
       {
         $set: { role, status: "active" },
-        $setOnInsert: { joinedAt: new Date() }
+        $setOnInsert: { joinedAt: new Date() },
       },
       { upsert: true }
     );
@@ -197,7 +230,7 @@ export const addMemberToFamilyGroup = async (groupId, memberId, role = "family")
     const activeMemberships = await getMembershipsByGroupId(groupId);
     return {
       ...familyGroupAfterAdd,
-      members: activeMemberships.map(m => m.userId)  // view only field
+      members: activeMemberships.map((m) => m.userId), // view only field
     };
   } catch (error) {
     throw new Error("Error adding member to family group: " + error.message);
@@ -216,7 +249,7 @@ export const removeMemberFromFamilyGroup = async (groupId, memberId) => {
 
     const [group, user] = await Promise.all([
       FamilyGroup.findById(groupId).lean(),
-      User.findById(memberId).lean()
+      User.findById(memberId).lean(),
     ]);
     if (!group) throw new Error("Family group not found");
     if (!user) throw new Error("User not found");
@@ -232,7 +265,7 @@ export const removeMemberFromFamilyGroup = async (groupId, memberId) => {
         groupId,
         role: "owner",
         status: "active",
-        userId: { $ne: memberId }
+        userId: { $ne: memberId },
       });
       if (otherOwners === 0) {
         throw new Error("Cannot remove the only owner of the group");
@@ -248,10 +281,12 @@ export const removeMemberFromFamilyGroup = async (groupId, memberId) => {
     const activeMemberships = await getMembershipsByGroupId(groupId);
     return {
       ...familyGroupAfterRemove,
-      members: activeMemberships.map(m => m.userId)  // view only field
+      members: activeMemberships.map((m) => m.userId), // view only field
     };
   } catch (error) {
-    throw new Error("Error removing member from family group: " + error.message);
+    throw new Error(
+      "Error removing member from family group: " + error.message
+    );
   }
 };
 
@@ -266,13 +301,14 @@ export const getFamilyGroupsByUserId = async (userId) => {
     const memberships = await getMembershipsByUserId(userId);
     const groupIds = memberships.map((m) => m.groupId);
 
-    const familyGroups = await FamilyGroup.find({ _id: { $in: groupIds } }).sort({
+    const familyGroups = await FamilyGroup.find({
+      _id: { $in: groupIds },
+    }).sort({
       createdAt: -1,
     });
 
     return familyGroups;
-  }
-  catch (error) {
+  } catch (error) {
     throw new Error("Error getting family groups by user ID: " + error.message);
   }
 };
@@ -357,12 +393,14 @@ export const getFamilyGroupMembers = async (groupId) => {
       throw new Error("Invalid group ID");
     }
 
-    const members= await getMembershipsByGroupId(groupId);
+    const members = await getMembershipsByGroupId(groupId);
     //now we will ony return userIds of members with groupId
-    const memberData ={groupId: groupId, members: members.map(m => m.userId)};
+    const memberData = {
+      groupId: groupId,
+      members: members.map((m) => m.userId),
+    };
     return memberData;
-  }
-  catch (error) {
+  } catch (error) {
     throw new Error("Error getting family group members: " + error.message);
   }
 };
@@ -405,8 +443,7 @@ export const countMembersInFamilyGroup = async (groupId) => {
 
     const count = await Membership.countDocuments({ groupId });
     return { groupId, memberCount: count };
-  }
-  catch (error) {
+  } catch (error) {
     throw new Error("Error counting members in family group: " + error.message);
   }
 };
@@ -428,11 +465,11 @@ export const getRecentFamilyGroups = async (limit) => {
 
 //Get Family Groups Created by User
 export const getFamilyGroupsCreatedByUser = async (userId) => {
-  try{
-    if(!userId){
+  try {
+    if (!userId) {
       throw new Error("User ID is required");
     }
-    if(!mongoose.Types.ObjectId.isValid(userId)){
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
       throw new Error("Invalid user ID");
     }
     const familyGroups = await FamilyGroup.find({ createdBy: userId }).sort({
@@ -440,29 +477,33 @@ export const getFamilyGroupsCreatedByUser = async (userId) => {
     });
 
     return familyGroups;
-  }
-  catch(error){
-    throw new Error("Error getting family groups created by user: " + error.message);
+  } catch (error) {
+    throw new Error(
+      "Error getting family groups created by user: " + error.message
+    );
   }
 };
 
 //Get Family Groups with No Members
 export const getFamilyGroupsWithNoMembers = async () => {
-  try{
+  try {
     const allGroups = await FamilyGroup.find();
     const groupsWithNoMembers = [];
 
-    for(const group of allGroups){
-        const memberCount = await Membership.countDocuments({ groupId: group._id });
-        if(memberCount === 0){
-            groupsWithNoMembers.push(group);
-        }
+    for (const group of allGroups) {
+      const memberCount = await Membership.countDocuments({
+        groupId: group._id,
+      });
+      if (memberCount === 0) {
+        groupsWithNoMembers.push(group);
+      }
     }
 
     return groupsWithNoMembers;
-  }
-  catch(error){
-    throw new Error("Error fetching family groups with no members: " + error.message);
+  } catch (error) {
+    throw new Error(
+      "Error fetching family groups with no members: " + error.message
+    );
   }
 };
 

@@ -10,6 +10,7 @@ import {
     from "../data/memberShipController.js";
 import { Membership } from "../models/memberShip.model.js";
 import express from "express";
+import { CareRecipient } from "../models/careRecipients.model.js";
 const router = express.Router();
 
 
@@ -21,40 +22,43 @@ const router = express.Router();
 //Create Membership
 router.post("/", async (req, res) => {
     try {
-        let groupId =  req.body.groupId;
+        let groupId = req.body.groupId;
         let userId = req.body.userId;
-        let role = req.body.role 
+        let role = req.body.role
         let status = req.body.status
         let permissions = req.body.permissions || {};
-        if(!groupId || !userId){
-            return  res.status(400).json({ error: "Group ID and User ID are required" });
+        console.log("role", role);
+        console.log("groupId", groupId);
+        console.log("userId", userId);
+        if (!groupId || !userId) {
+            return res.status(400).json({ error: "Group ID and User ID are required" });
         }
-        if(!role){
+        if (!role) {
             role = "family";
         }
-        if(!status){
+        if (!status) {
             status = "pending";
         }
-        if(!mongoose.Types.ObjectId.isValid(groupId)){
+        if (!mongoose.Types.ObjectId.isValid(groupId)) {
             return res.status(400).json({ error: 'Invalid Group ID' });
         }
-        if(!mongoose.Types.ObjectId.isValid(userId)){
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
             return res.status(400).json({ error: 'Invalid User ID' });
         }
-        if(!["owner", "caregiver", "family", "readonly"].includes(role)){
+        if (!["admin", "careGiver", "familyMember", "readonly", "careRecipient"].includes(role)) {
             return res.status(400).json({ error: "Invalid role value" });
         }
-        if(!["active", "pending", "removed"].includes(status)){
+        if (!["active", "pending", "removed"].includes(status)) {
             return res.status(400).json({ error: "Invalid status value" });
         }
-        if(permissions && typeof permissions !== "object"){
+        if (permissions && typeof permissions !== "object") {
             return res.status(400).json({ error: "Permissions must be an object" });
         }
-        
+
         //check if user is already in the group
         const isMember = await Membership.findOne({ groupId, userId });
         if (isMember) {
-          return res.status(400).json({ error: "User is already a member of this group" });
+            return res.status(400).json({ error: "User is already a member of this group" });
         }
         const membershipData = {
             groupId,
@@ -67,7 +71,7 @@ router.post("/", async (req, res) => {
         res.status(200).json(newMembership);
     } catch (error) {
         console.log(error);
-        
+
         res.status(500).json({ error: error.message });
     }
 });
@@ -76,40 +80,41 @@ router.post("/", async (req, res) => {
 router.post("/bulk", async (req, res) => {
     try {
         const memberships = req.body.memberships;
-        if(!memberships || !Array.isArray(memberships) || memberships.length === 0){
+        console.log("memberships", memberships)
+        if (!memberships || !Array.isArray(memberships) || memberships.length === 0) {
             return res.status(400).json({ error: "Memberships array is required" });
         }
         const validMemberships = [];
-        for(const membership of memberships){
+        for (const membership of memberships) {
             let { groupId, userId, role, status, permissions } = membership;
-            if(!groupId || !userId){
+            if (!groupId || !userId) {
                 return res.status(400).json({ error: "Group ID and User ID are required for each membership" });
             }
-            if(!mongoose.Types.ObjectId.isValid(groupId)){
+            if (!mongoose.Types.ObjectId.isValid(groupId)) {
                 return res.status(400).json({ error: 'Invalid Group ID' });
             }
-            if(!mongoose.Types.ObjectId.isValid(userId)){
+            if (!mongoose.Types.ObjectId.isValid(userId)) {
                 return res.status(400).json({ error: 'Invalid User ID' });
             }
-            if(!role){
+            if (!role) {
                 role = "family";
             }
-            if(!status){
+            if (!status) {
                 status = "pending";
             }
-            if(!["owner", "caregiver", "family"].includes(role)){
+            if (!["admin", "careGiver", "familyMember", "readonly", "careRecipient"].includes(role)) {
                 return res.status(400).json({ error: "Invalid role value in one of the memberships" });
             }
-            if(!["active", "pending", "removed"].includes(status)){
+            if (!["active", "pending", "removed"].includes(status)) {
                 return res.status(400).json({ error: "Invalid status value in one of the memberships" });
             }
-            if(permissions && typeof permissions !== "object"){
+            if (permissions && typeof permissions !== "object") {
                 return res.status(400).json({ error: "Permissions must be an object in one of the memberships" });
             }
             //check if user is already in the group
             const isMember = await Membership.findOne({ groupId, userId });
             if (isMember) {
-              return res.status(400).json({ error: `User ${userId} is already a member of group ${groupId}` });
+                return res.status(400).json({ error: `User ${userId} is already a member of group ${groupId}` });
             }
             validMemberships.push({
                 groupId,
@@ -119,12 +124,12 @@ router.post("/bulk", async (req, res) => {
                 permissions: permissions || {}
             });
         }
-        
+
         const newMemberships = await createMultipleMemberships(validMemberships);
         res.status(200).json(newMemberships);
     } catch (error) {
         console.log(error);
-        
+
         res.status(500).json({ error: error.message });
     }
 });
@@ -132,10 +137,10 @@ router.post("/bulk", async (req, res) => {
 router.get("/user/:userId", async (req, res) => {
     try {
         const userId = req.params.userId;
-        if(!userId){
+        if (!userId) {
             return res.status(400).json({ error: 'User ID is required' });
         }
-        if(!mongoose.Types.ObjectId.isValid(userId)){
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
             return res.status(400).json({ error: 'Invalid User ID' });
         }
         const memberships = await getMembershipsByUserId(userId);
@@ -148,10 +153,10 @@ router.get("/user/:userId", async (req, res) => {
 router.get("/group/:groupId", async (req, res) => {
     try {
         const groupId = req.params.groupId;
-        if(!groupId){
+        if (!groupId) {
             return res.status(400).json({ error: 'Group ID is required' });
         }
-        if(!mongoose.Types.ObjectId.isValid(groupId)){
+        if (!mongoose.Types.ObjectId.isValid(groupId)) {
             return res.status(400).json({ error: 'Invalid Group ID' });
         }
         const memberships = await getMembershipsByGroupId(groupId);
@@ -165,19 +170,19 @@ router.put("/:membershipId/role", async (req, res) => {
     try {
         const membershipId = req.params.membershipId;
         const role = req.body.role;
-        if(!membershipId){
+        if (!membershipId) {
             return res.status(400).json({ error: 'Membership ID is required' });
         }
-        if(!role){
+        if (!role) {
             return res.status(400).json({ error: 'Role is required' });
         }
-        if(!mongoose.Types.ObjectId.isValid(membershipId)){
+        if (!mongoose.Types.ObjectId.isValid(membershipId)) {
             return res.status(400).json({ error: 'Invalid Membership ID' });
         }
-        if(!role || typeof role !== "string" || role.trim().length === 0){
+        if (!role || typeof role !== "string" || role.trim().length === 0) {
             return res.status(400).json({ error: 'Invalid role' });
         }
-        if(!["owner", "caregiver", "family"].includes(role)){
+        if (!["admin", "careGiver", "familyMember", "readonly", "careRecipient"].includes(role)) {
             return res.status(400).json({ error: 'Role must be one of owner, caregiver, family' });
         }
 
@@ -192,19 +197,19 @@ router.put("/:membershipId/status", async (req, res) => {
     try {
         const membershipId = req.params.membershipId;
         const status = req.body.status;
-        if(!membershipId){
+        if (!membershipId) {
             return res.status(400).json({ error: 'Membership ID is required' });
         }
-        if(!status){
+        if (!status) {
             return res.status(400).json({ error: 'Status is required' });
         }
-        if(!mongoose.Types.ObjectId.isValid(membershipId)){
+        if (!mongoose.Types.ObjectId.isValid(membershipId)) {
             return res.status(400).json({ error: 'Invalid Membership ID' });
         }
-        if(!status || typeof status !== "string" || status.trim().length === 0){
+        if (!status || typeof status !== "string" || status.trim().length === 0) {
             return res.status(400).json({ error: 'Invalid status' });
         }
-        if(!["active", "pending", "removed"].includes(status)){
+        if (!["active", "pending", "removed"].includes(status)) {
             return res.status(400).json({ error: 'Status must be one of active, pending, removed' });
         }
 
@@ -219,10 +224,10 @@ router.put("/:membershipId/status", async (req, res) => {
 router.delete("/:membershipId", async (req, res) => {
     try {
         const membershipId = req.params.membershipId;
-        if(!membershipId){
+        if (!membershipId) {
             return res.status(400).json({ error: 'Membership ID is required' });
         }
-        if(!mongoose.Types.ObjectId.isValid(membershipId)){
+        if (!mongoose.Types.ObjectId.isValid(membershipId)) {
             return res.status(400).json({ error: 'Invalid Membership ID' });
         }
         const deletedMembership = await deleteMembership(membershipId);
@@ -236,10 +241,10 @@ router.delete("/:membershipId", async (req, res) => {
 router.get("/group/:groupId/count", async (req, res) => {
     try {
         const groupId = req.params.groupId;
-        if(!groupId){
+        if (!groupId) {
             return res.status(400).json({ error: 'Group ID is required' });
         }
-        if(!mongoose.Types.ObjectId.isValid(groupId)){
+        if (!mongoose.Types.ObjectId.isValid(groupId)) {
             return res.status(400).json({ error: 'Invalid Group ID' });
         }
         const count = await countMembershipsInGroup(groupId);
@@ -289,10 +294,10 @@ router.get("/", async (req, res) => {
 router.get("/:membershipId", async (req, res) => {
     try {
         const membershipId = req.params.membershipId;
-        if(!membershipId){
+        if (!membershipId) {
             return res.status(400).json({ error: 'Membership ID is required' });
         }
-        if(!mongoose.Types.ObjectId.isValid(membershipId)){
+        if (!mongoose.Types.ObjectId.isValid(membershipId)) {
             return res.status(400).json({ error: 'Invalid Membership ID' });
         }
         const membership = await getMembershipById(membershipId);
@@ -305,10 +310,10 @@ router.get("/:membershipId", async (req, res) => {
 router.get("/role/:role", async (req, res) => {
     try {
         const role = req.params.role;
-        if(!role){
+        if (!role) {
             return res.status(400).json({ error: 'Role is required' });
         }
-        if(!["owner", "caregiver", "family"].includes(role)){
+        if (!["admin", "careGiver", "familyMember", "readonly", "careRecipient"].includes(role)) {
             return res.status(400).json({ error: 'Role must be one of owner, caregiver, family' });
         }
         const memberships = await getMembershipsByRole(role);
@@ -327,40 +332,40 @@ router.put("/:membershipId", async (req, res) => {
         let status = req.body.status;
         let permissions = req.body.permissions;
         const updateData = {};
-        if(groupId){
-            if(!mongoose.Types.ObjectId.isValid(groupId)){
+        if (groupId) {
+            if (!mongoose.Types.ObjectId.isValid(groupId)) {
                 return res.status(400).json({ error: 'Invalid Group ID' });
             }
             updateData.groupId = groupId;
         }
-        if(userId){
-            if(!mongoose.Types.ObjectId.isValid(userId)){
+        if (userId) {
+            if (!mongoose.Types.ObjectId.isValid(userId)) {
                 return res.status(400).json({ error: 'Invalid User ID' });
             }
             updateData.userId = userId;
         }
-        if(role){
-            if(!["owner", "caregiver", "family"].includes(role)){
+        if (role) {
+            if (!["admin", "careGiver", "familyMember", "readonly", "careRecipient"].includes(role)) {
                 return res.status(400).json({ error: 'Role must be one of owner, caregiver, family' });
             }
             updateData.role = role;
         }
-        if(status){
-            if(!["active", "pending", "removed"].includes(status)){
+        if (status) {
+            if (!["active", "pending", "removed"].includes(status)) {
                 return res.status(400).json({ error: 'Status must be one of active, pending, removed' });
             }
             updateData.status = status;
         }
-        if(permissions){
-            if(typeof permissions !== "object"){
+        if (permissions) {
+            if (typeof permissions !== "object") {
                 return res.status(400).json({ error: 'Permissions must be an object' });
             }
             updateData.permissions = permissions;
         }
-        if(!membershipId){
+        if (!membershipId) {
             return res.status(400).json({ error: 'Membership ID is required' });
         }
-        if(!mongoose.Types.ObjectId.isValid(membershipId)){
+        if (!mongoose.Types.ObjectId.isValid(membershipId)) {
             return res.status(400).json({ error: 'Invalid Membership ID' });
         }
         const updatedMembership = await updateMembership(membershipId, updateData);
