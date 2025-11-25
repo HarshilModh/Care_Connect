@@ -1,8 +1,16 @@
-import taskModel from "../models/task.model.js";
+import { Task as taskModel } from "../models/task.model.js";
 import { isValidString } from "../utils/validation.utils.js";
 import User from "../models/user.model.js";
-import { VALID_TYPES, VALID_STATUS, assertActiveMember, assertRecipientInGroup, sanitizeTimezone, uniqueObjectIds } from "../utils/taskHelper.js"
+import {
+  VALID_TYPES,
+  VALID_STATUS,
+  assertActiveMember,
+  assertRecipientInGroup,
+  sanitizeTimezone,
+  uniqueObjectIds,
+} from "../utils/taskHelper.js";
 import mongoose from "mongoose";
+import { FamilyGroup } from "../models/familyGroups.model.js";
 
 export const createTask = async (
   groupId,
@@ -48,14 +56,14 @@ export const createTask = async (
       }
     }
     const memberRole = await assertActiveMember(createdBy, groupId);
-    if (!["owner", "family"].includes(memberRole)) {
-      throw new Error("User does not have permission to create tasks in this group");
+    if (!["owner", "family", "admin"].includes(memberRole)) {
+      throw new Error(
+        "User does not have permission to create tasks in this group"
+      );
     }
     // Assert care recipient belongs to group
     //will uncomment later after care recipient model is fixed
     // await assertRecipientInGroup(recipientId, groupId);
-
-
     // Create task object
     //There are already defaults in schema for assignedTo,timezone,type,notificationConfig,attachments
     //so only set them if they are provided
@@ -71,7 +79,7 @@ export const createTask = async (
       repeatRule,
       type,
       notificationConfig,
-      attachments
+      attachments,
     });
 
     // Save to database
@@ -96,7 +104,21 @@ export const getTaskById = async (taskId) => {
   return task;
 };
 //we are getting all data to update the task
-export const updateTask = async (taskId, groupId, recipientId, createdBy, title, description, assignedTo, dueAt, timezone, repeatRule, type, notificationConfig, attachments) => {
+export const updateTask = async (
+  taskId,
+  groupId,
+  recipientId,
+  createdBy,
+  title,
+  description,
+  assignedTo,
+  dueAt,
+  timezone,
+  repeatRule,
+  type,
+  notificationConfig,
+  attachments
+) => {
   try {
     if (!taskId) {
       throw new Error("taskId is required");
@@ -140,18 +162,16 @@ export const updateTask = async (taskId, groupId, recipientId, createdBy, title,
       repeatRule,
       type,
       notificationConfig,
-      attachments
+      attachments,
     };
-    const updatedTask = await taskModel.findByIdAndUpdate(
-      taskId,
-      updateData,
-      { new: true }
-    );
+    const updatedTask = await taskModel.findByIdAndUpdate(taskId, updateData, {
+      new: true,
+    });
     return updatedTask;
   } catch (error) {
     throw new Error(`Error updating task: ${error.message}`);
   }
-}
+};
 // Delete task by ID
 export const deleteTask = async (taskId) => {
   try {
@@ -166,17 +186,17 @@ export const deleteTask = async (taskId) => {
   } catch (error) {
     throw new Error(`Error deleting task: ${error.message}`);
   }
-}
+};
 
 //markTaskCompleted
 //need to change model to add completedBy field
 export const markTaskCompleted = async (taskId, completedBy) => {
   try {
-    if(!taskId) {
+    if (!taskId) {
       throw new Error("Invalid or missing taskId");
     }
     //check if task exists
-    if(!completedBy) {
+    if (!completedBy) {
       throw new Error("Invalid or missing completedBy");
     }
     if (!mongoose.Types.ObjectId.isValid(taskId)) {
@@ -191,14 +211,20 @@ export const markTaskCompleted = async (taskId, completedBy) => {
     }
     //check if completedBy is a group member
     const memberRole = await assertActiveMember(completedBy, task.groupId);
-    //now only care takers can mark task as completed 
+    //now only care takers can mark task as completed
     if (memberRole !== "caregiver") {
-      throw new Error("User does not have permission to mark task as completed");
+      throw new Error(
+        "User does not have permission to mark task as completed"
+      );
     }
     //update task
     const updatedTask = await taskModel.findByIdAndUpdate(
       taskId,
-      { status: 'completed', completedAt: new Date(), completedBy: completedBy },
+      {
+        status: "completed",
+        completedAt: new Date(),
+        completedBy: completedBy,
+      },
       { new: true }
     );
     return updatedTask;
@@ -210,10 +236,10 @@ export const markTaskCompleted = async (taskId, completedBy) => {
 //reassignTask
 export const reassignTask = async (taskId, newAssignee) => {
   try {
-    if(!taskId) {
+    if (!taskId) {
       throw new Error("Invalid or missing taskId");
     }
-    if(!newAssignee) {
+    if (!newAssignee) {
       throw new Error("Invalid or missing newAssignee");
     }
     if (!mongoose.Types.ObjectId.isValid(taskId)) {
@@ -245,7 +271,6 @@ export const reassignTask = async (taskId, newAssignee) => {
   }
 };
 
-
 export const listGroupTasks = async (groupId) => {
   try {
     if (!groupId) {
@@ -261,19 +286,47 @@ export const listGroupTasks = async (groupId) => {
   }
 };
 
-export const listMyTasks = async (groupId, userId, { status, from, to } =
-  {}) => { };
-
-
-
+export const listMyTasks = async (
+  groupId,
+  userId,
+  { status, from, to } = {}
+) => {};
 
 //Methods to add later
 
 //addAttachmentToTask and removeAttachmentFromTask can be added later
-export const addAttachmentToTask = async (taskId, documentId) => { };
-export const removeAttachmentFromTask = async (taskId, documentId) => { };
+export const addAttachmentToTask = async (taskId, documentId) => {};
+export const removeAttachmentFromTask = async (taskId, documentId) => {};
 
 //listUpcomingDueTasks
-export const listUpcomingDueTasks = async (groupId, withinMinutes = 60
+export const listUpcomingDueTasks = async (groupId, withinMinutes = 60) => {};
 
-) => { };
+export const getTasksGroupedByGroup = async (userId) => {
+  try {
+    const tasks = await taskModel
+      .find({ assignedTo: userId, status: "pending" })
+      .populate("groupId", "groupName")
+      .exec();
+
+    const groupedTasks = {};
+
+    tasks.forEach((task) => {
+      const groupId = task.groupId?._id?.toString() || "ungrouped";
+      const groupName = task.groupId?.groupName || "Unknown Group";
+
+      if (!groupedTasks[groupId]) {
+        groupedTasks[groupId] = {
+          groupName,
+          tasks: [],
+        };
+      }
+
+      groupedTasks[groupId].tasks.push(task);
+    });
+
+    return groupedTasks;
+  } catch (err) {
+    console.error("Error fetching tasks:", err);
+    throw err;
+  }
+};

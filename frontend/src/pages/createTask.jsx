@@ -55,10 +55,19 @@ export default function CreateTask() {
     if (!selectedGroup) return;
 
     async function fetchMembers() {
+      const members = [];
       try {
-        const res = await fetch(`/api/group/${selectedGroup}/members`);
+        const res = await fetch(
+          `http://localhost:3000/api/memberships/group/${selectedGroup}`
+        );
         const data = await res.json();
-        setMembers(data.members || []);
+        for (const item of data) {
+          members.push({
+            id: item.userId._id,
+            name: item.userId.firstName + " " + item.userId.lastName,
+          });
+        }
+        setMembers(members);
       } catch (err) {
         console.error("Error fetching members:", err);
         toast.error("Failed to fetch members.");
@@ -86,11 +95,12 @@ export default function CreateTask() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/tasks", {
+      const res = await fetch("http://localhost:3000/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           groupId: selectedGroup,
+          assignedTo: recipient,
           recipientId: recipient,
           createdBy: userId,
           title,
@@ -99,7 +109,10 @@ export default function CreateTask() {
           type,
         }),
       });
-      if (!res.ok) throw new Error("Failed to create task");
+      console.log("Create task response:", res);
+      if (!res.ok) {
+        throw new Error("Failed to create task");
+      }
       toast.success("Task created successfully!");
       resetForm();
       navigate("/tasks");
@@ -165,7 +178,6 @@ export default function CreateTask() {
                 ))}
               </select>
             </div>
-
             {/* Recipient */}
             <div className={`floater ${recipient ? "filled" : ""}`}>
               <label className="float-label"></label>
@@ -178,8 +190,8 @@ export default function CreateTask() {
               >
                 <option value="">Select Recipient</option>
                 {members.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
+                  <option key={m.id} value={m.id}>
+                    {m.name}
                   </option>
                 ))}
               </select>
@@ -200,14 +212,16 @@ export default function CreateTask() {
               </select>
             </div>
 
-            {/* Due Date */}
+            {/* Due Date (updated: min + readOnly) */}
             <div className={`floater ${dueDate ? "filled" : ""}`}>
               <label className="float-label"></label>
               <input
                 className="input"
                 type="date"
                 value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+                min={new Date().toISOString().split("T")[0]} // disable past dates
+                onKeyDown={(e) => e.preventDefault()} // disable typing
+                onChange={(e) => setDueDate(e.target.value)} // allow selection
               />
             </div>
 

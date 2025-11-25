@@ -1,21 +1,15 @@
-import TaskCard from "./TaskCard";
+import TaskCard from "./TaskCard.jsx";
 
-export default function TaskList({ tasks, onComplete, onView }) {
-  if (tasks.length === 0)
-    return (
-      <div className="text-center text-slate-500 mt-6">
-        No tasks to display.
-      </div>
-    );
-
+export default function TaskList({ tasks, onComplete, onView, onEdit }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="flex flex-col gap-4">
       {tasks.map((task) => (
         <TaskCard
           key={task._id}
           task={task}
           onComplete={onComplete}
           onView={onView}
+          onEdit={onEdit}
         />
       ))}
     </div>
