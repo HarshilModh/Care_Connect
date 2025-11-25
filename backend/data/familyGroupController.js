@@ -299,7 +299,9 @@ export const getFamilyGroupsByUserId = async (userId) => {
     }
 
     const memberships = await getMembershipsByUserId(userId);
+    console.log("memberships data from group controller", memberships)
     const groupIds = memberships.map((m) => m.groupId);
+    console.log("groupIds", groupIds);
 
     const familyGroups = await FamilyGroup.find({
       _id: { $in: groupIds },

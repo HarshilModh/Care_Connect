@@ -9,7 +9,6 @@ const NotificationBell = () => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchUnreadCount = async () => {
-    // Try userId first, then fall back to _id
     const userId = user?.userId || user?._id;
 
     if (!userId) {
@@ -28,7 +27,6 @@ const NotificationBell = () => {
   useEffect(() => {
     fetchUnreadCount();
 
-    // Poll every 30 seconds for new notifications
     const interval = setInterval(fetchUnreadCount, 30000);
 
     return () => clearInterval(interval);

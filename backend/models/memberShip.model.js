@@ -26,6 +26,11 @@ const membershipSchema = new mongoose.Schema(
     },
     permissions: { type: mongoose.Schema.Types.Mixed, default: {} },
     joinedAt: { type: Date, default: Date.now },
+    onboardingStatus: {
+      type: String,
+      enum: ["not_required", "required", "completed"],
+      default: "not_required",
+    }
   },
   { timestamps: true, versionKey: false }
 );

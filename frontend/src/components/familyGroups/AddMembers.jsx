@@ -3,7 +3,7 @@ import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import { auth } from "../../firebase.js";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import { createRandomPassword } from "../../../../backend/utils/randomGenerator.js";
 import { sendJoinRequest } from "../../api/notifications";
 
@@ -24,7 +24,7 @@ const ROLE_OPTIONS = [
 ];
 
 const AddMembers = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   // core lists
   const [groups, setGroups] = useState([]);
@@ -51,7 +51,7 @@ const AddMembers = () => {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteFirstName, setInviteFirstName] = useState("");
   const [inviteLastName, setInviteLastName] = useState("");
-  const [inviteRole, setInviteRole] = useState("family");
+  const [inviteRole, setInviteRole] = useState("familyMember");
   const [inviteSubmitting, setInviteSubmitting] = useState(false);
 
   // load groups created by current user (from localStorage) once
@@ -209,7 +209,7 @@ const AddMembers = () => {
       groupId,
       userId: uid,
       email: emailVal,
-      role: "family",
+      role: "familyMember",
       status: "pending",
     };
     setPending((p) => [...p, newRow]);
@@ -224,7 +224,7 @@ const AddMembers = () => {
     }
     setPending((p) => [
       ...p,
-      { groupId, userId: "", email: "", role: "family", status: "pending" },
+      { groupId, userId: "", email: "", role: "familyMember", status: "pending" },
     ]);
   };
 
@@ -252,6 +252,7 @@ const AddMembers = () => {
       toast.error("No pending members to submit");
       return;
     }
+    console.log("pending", pending);
 
     const invalid = pending.find((r) => !(r.userId || r.email) || !r.role);
     if (invalid) {
@@ -276,7 +277,11 @@ const AddMembers = () => {
       }
     }
 
+    console.log("uniques", uniques);
+
     const memberships = uniques.map((u) => u.payload);
+
+    console.log("memberships", memberships)
 
     try {
       setSubmitting(true);
@@ -300,6 +305,7 @@ const AddMembers = () => {
         setExistingMembers(updatedMembers);
       } catch (err) {
         // ignore
+        console.log("err", err);
       } finally {
         setIsLoadingMembers(false);
       }
@@ -551,7 +557,7 @@ const AddMembers = () => {
                                   className="input"
                                   value={
                                     pending.find((p) => p.userId === uid)
-                                      ?.role ?? "family"
+                                      ?.role ?? "familyMember"
                                   }
                                   onChange={(e) => {
                                     const idx = pending.findIndex(
@@ -693,6 +699,7 @@ const AddMembers = () => {
                   </button>
                 </div>
 
+
                 {pending.length === 0 ? (
                   <div className="text-sm text-slate-400 mt-2">
                     No pending members
@@ -700,6 +707,7 @@ const AddMembers = () => {
                 ) : (
                   <div className="mt-2 space-y-2">
                     {pending.map((p, idx) => (
+
                       <div
                         key={idx}
                         className="flex items-center gap-3 p-2 border rounded"

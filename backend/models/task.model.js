@@ -1,91 +1,94 @@
 import mongoose from "mongoose";
 
-
-
-const taskSchema = new mongoose.Schema({
+const taskSchema = new mongoose.Schema(
+  {
     groupId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'FamilyGroup',
-        required: true,
-        index: true
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "FamilyGroup",
+      required: true,
+      index: true,
     },
     recipientId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'CareRecipient',
-        required: true,
-        index: true
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CareRecipient",
+      required: true,
+      index: true,
     },
     createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-        index: true
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
     },
     title: {
-        type: String,
-        required: true,
-        trim: true,
-        maxlength: 200
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 200,
     },
     description: {
-        type: String,
-        trim: true,
-        maxlength: 2000,
-        default: ''
+      type: String,
+      trim: true,
+      maxlength: 2000,
+      default: "",
     },
     assignedTo: {
-        type: mongoose.Schema.Types.ObjectId ,
-        ref: 'User' ,
-        default: null,
-        index: true
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+      index: true,
     },
     dueAt: {
-        type: Date,
-        required: false,
-        default: null
+      type: Date,
+      required: false,
+      default: null,
     },
     timezone: {
-        type: String,
-        default: 'UTC',
-        match: [/^[A-Za-z_]+\/[A-Za-z_]+(?:\/[A-Za-z_]+)?$/, 'Use a valid IANA time zone like America/New_York']
+      type: String,
+      default: "UTC",
+      match: [
+        /^[A-Za-z0-9_\-+]+(\/[A-Za-z0-9_\-+]+){0,2}$/,
+        "Use a valid IANA time zone like America/New_York",
+      ],
     },
     repeatRule: {
-        type: String,
-        trim: true,
-        maxlength: 500,
-        default: ''
+      type: String,
+      trim: true,
+      maxlength: 500,
+      default: "",
     },
     status: {
-        type: String,
-        enum: ['pending', 'completed', 'missed'],
-        default: 'pending',
-        index: true
+      type: String,
+      enum: ["pending", "completed", "missed"],
+      default: "pending",
+      index: true,
     },
     completedAt: {
-        type: Date,
-        required: false,
-        default: null
+      type: Date,
+      required: false,
+      default: null,
     },
     completedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        default: null,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
     },
     type: {
-        type: String,
-        enum: ['task', 'medication', 'event', 'note'],
-        default: 'task',
-        index: true
+      type: String,
+      enum: ["task", "medication", "event", "note"],
+      default: "task",
+      index: true,
     },
     notificationConfig: {
-        type: mongoose.Schema.Types.Mixed,
-        default: {}
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
     },
     attachments: {
-        type: [ { type: mongoose.Schema.Types.ObjectId, ref: 'Document' } ],
-        default: []
-    }
-}, { timestamps: true });
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: "Document" }],
+      default: [],
+    },
+  },
+  { timestamps: true }
+);
 
-
-export const Task = mongoose.model('Task', taskSchema);
+export const Task = mongoose.model("Task", taskSchema);
