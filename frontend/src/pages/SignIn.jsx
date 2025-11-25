@@ -62,8 +62,8 @@ function SignIn() {
             login(res.data.user, token);
 
             toast.success("Logged in successfully!");
-            navigate("/home", { replace: true });
-            // setTimeout(() => navigate("/home", { replace: true }), 1000);
+            // navigate("/home", { replace: true });
+            setTimeout(() => navigate("/home", { replace: true }), 1000);
 
         } catch (err) {
             console.error("Google login error:", err);
@@ -400,7 +400,7 @@ function SignIn() {
                 </div>
             </div>
             <ToastContainer
-                position="top-right"
+                position="top-center"
                 autoClose={3000}
                 hideProgressBar={false}
                 newestOnTop={false}
