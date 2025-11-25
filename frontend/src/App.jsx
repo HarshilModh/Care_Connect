@@ -19,6 +19,8 @@ import FamilyGroups from "./components/familyGroups/FamilyGroups";
 import GroupMembers from "./components/familyGroups/GroupMembers";
 import ActionHandler from "./pages/ActionHandler";
 import Notifications from "./components/notifications/Notifications";
+import Tasks from "./pages/tasksPage";
+import CreateTask from "./pages/CreateTask";
 
 import "./App.css"; // keep your css imports
 
@@ -106,6 +108,8 @@ function App() {
                 <Route path="/notifications" element={<Notifications />} />
                 <Route path="/signin" element={<SignIn />} />
                 <Route path="/signup" element={<SignUp />} />
+                <Route path="/tasks" element={<Tasks />} />
+                <Route path="/tasks/create" element={<CreateTask />} />
               </Routes>
             </div>
           </main>

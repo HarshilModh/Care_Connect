@@ -1,3 +1,4 @@
+import { data } from "react-router-dom";
 import api from "./axios";
 
 // Get all notifications for a user
