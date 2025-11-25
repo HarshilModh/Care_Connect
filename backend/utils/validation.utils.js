@@ -26,9 +26,11 @@ export const isValidID = (id) => {
       `Error: ID cannot be an empty string or just spaces`
     );
   }
+  // console.log("ObjectId.isValid(id)", ObjectId.isValid(id))
   if (!ObjectId.isValid(id)) {
     throw new Error(`Error: ID invalid object ID`);
   }
+  // console.log("id result", id);
   return id;
 };
 export const isValidObjectId = (id) => {

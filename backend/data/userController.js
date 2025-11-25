@@ -117,13 +117,54 @@ export const createUser = async (
     }
 
     console.log("needPasswordReset value", needPasswordReset);
-    if (needPasswordReset == true) {
+
+
+    let resetPasswordLink = null;
+
+    if (needPasswordReset === true) {
+
+      const actionCodeSettings = {
+        url: `${process.env.CLIENT_URL}`, // or your frontend route
+        handleCodeInApp: true,
+      };
+      console.log("actionCodeSettings", actionCodeSettings)
+
+      const resetPasswordLink = await admin
+        .auth()
+        .generatePasswordResetLink(normEmail, actionCodeSettings);
+
+      console.log("resetPasswordLink", resetPasswordLink)
+
+      // Now send email with this link instead of plain password
       const response = await sendMail({
         to: normEmail,
-        subject: "Congrats! Your Account Has Been Created",
-        text: `Hello ${firstName},\n\nYour account has been successfully created. \n\nHere is your password: ${password} \n\nPlease log in and change your password at your earliest convenience.\n\nBest regards,\nCare Connect Team`,
-        html: `<p>Hello ${firstName},</p><p>Your account has been successfully created. Here is your password: ${password} </p><p>Please log in and change your password at your earliest convenience.</p><p>Best regards,<br/>Care Connect Team</p>`,
+        subject: "Welcome to Care Connect – Set Your Password",
+        text: `Hello ${firstName},
+
+Your Care Connect account has been created.
+
+Please set your password using the secure link below:
+${resetPasswordLink}
+
+If you did not request this, you can ignore this email.
+
+Best regards,
+Care Connect Team`,
+        html: `
+          <p>Hello ${firstName},</p>
+          <p>Your Care Connect account has been successfully created.</p>
+          <p>Please set your password using the secure link below:</p>
+          <p>
+            <a href="${resetPasswordLink}" target="_blank" rel="noopener noreferrer">
+              Click here to set your password
+            </a>
+          </p>
+          <p>If the button doesn't work, copy and paste this URL in your browser:</p>
+          <p>${resetPasswordLink}</p>
+          <p>Best regards,<br/>Care Connect Team</p>
+        `,
       });
+
       console.log("Account creation email sent, message ID:", response);
     }
 
@@ -350,10 +391,25 @@ export const resetUserPassword = async (email, newPassword) => {
     const user = await User.findOne({ email: normEmail });
     if (!user) throw new Error("User not found");
 
+    if (user.isVerified === false) {
+
+      user.isVerified = true;
+      console.log("isVerified changes to true", user.isVerified);
+    }
+
+    // Clear reset flag correctly
+    if (user.needPasswordReset === true) {
+      user.needPasswordReset = false;
+      console.log("needPasswordReset changes to false", user.needPasswordReset);
+
+    }
+
     user.password = newPassword.trim();
     await user.save();
 
     await client.del(`refresh:${user._id}`); // force re-login
+
+    console.log("user password reset successfull")
 
     return { ok: true };
   } catch (error) {
@@ -362,10 +418,10 @@ export const resetUserPassword = async (email, newPassword) => {
 };
 
 //Verify User Email
-export const verifyUserEmail = async (userId, verificationCode) => {};
+export const verifyUserEmail = async (userId, verificationCode) => { };
 
 //Send Password Reset Email
-export const sendPasswordResetEmail = async (email) => {};
+export const sendPasswordResetEmail = async (email) => { };
 
 //Update User Profile Picture
 export const updateUserProfilePicture = async (userId, profilePictureUrl) => {

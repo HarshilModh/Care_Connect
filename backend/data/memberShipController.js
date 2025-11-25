@@ -18,13 +18,14 @@ export const createMembership = async (
   userId,
   role,
   status,
-  permissions,
-  onboardingStatus
+  permissions
 ) => {
   try {
     console.log("groupId - createMembership", groupId);
     console.log("userId", userId);
     console.log("roles", role);
+
+
     if (!groupId || !userId) {
       throw new Error("Group ID and User ID are required");
     }
@@ -52,11 +53,9 @@ export const createMembership = async (
     }
 
     const rolesRequiringOnboarding = ["careGiver", "careRecipient"];
-    if (!onboardingStatus) {
-      onboardingStatus = rolesRequiringOnboarding.includes(role)
-        ? "required"
-        : "not_required";
-    }
+    let onboardingStatus = rolesRequiringOnboarding.includes(role)
+      ? "required"
+      : "not_required";
 
     const [group, user, existing] = await Promise.all([
       FamilyGroup.findById(groupId).lean(),
@@ -121,6 +120,9 @@ export const createMultipleMemberships = async (membershipsData) => {
         throw new Error("Invalid User ID: " + userId);
       }
 
+      if (!role) role = "familyMember";
+      if (!status) status = "pending";
+
       const validRoles = [
         "admin",
         "careGiver",
@@ -139,12 +141,26 @@ export const createMultipleMemberships = async (membershipsData) => {
       }
       //check if user is already in the group
       const isMember = await Membership.findOne({ groupId, userId });
+
       if (isMember) {
         throw new Error(
           `User ${userId} is already a member of group ${groupId}`
         );
       }
+
+      data.role = role;
+      data.status = status;
+      data.permissions = permissions || {};
+
+      const rolesRequiringOnboarding = ["careGiver", "careRecipient"];
+
+      if (!data.onboardingStatus) {
+        data.onboardingStatus = rolesRequiringOnboarding.includes(role)
+          ? "required"
+          : "not_required";
+      }
     }
+    console.log("membershipsData", membershipsData);
     const createdMemberships = await Membership.insertMany(membershipsData);
     return createdMemberships.map((membership) => membership.toObject());
   } catch (error) {

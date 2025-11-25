@@ -61,6 +61,7 @@ export const createFamilyGroup = async (
     const newFamilyGroup = await newCreatedGroup.save();
     console.log("newFamilyGroup from createFamilyGroup", newFamilyGroup);
     //add creator as owner member
+
     const ownerMembership = await createMembership(
       newFamilyGroup._id,
       createdBy,

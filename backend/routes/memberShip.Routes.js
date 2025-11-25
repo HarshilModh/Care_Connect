@@ -73,14 +73,14 @@ router.post("/", async (req, res) => {
         // if (ROLES_REQUIRING_ONBOARDING.includes(role)) {
         //     onboardingStatus = "required";
         // }
-        const membershipData = {
-            groupId,
-            userId,
-            role,
-            status,
-            permissions
-        };
-        const newMembership = await createMembership(membershipData);
+        // const membershipData = {
+        //     groupId,
+        //     userId,
+        //     role,
+        //     status,
+        //     permissions
+        // };
+        const newMembership = await createMembership(groupId, userId, role, status, permissions);
         res.status(200).json(newMembership);
     } catch (error) {
         console.log(error);
@@ -110,17 +110,24 @@ router.post("/bulk", async (req, res) => {
                 return res.status(400).json({ error: 'Invalid User ID' });
             }
             if (!role) {
-                role = "family";
+                role = "familyMember";
             }
+
+            if (!VALID_ROLES.includes(role)) {
+                return res
+                    .status(400)
+                    .json({ error: "Invalid role value in one of the memberships" });
+            }
+
             if (!status) {
                 status = "pending";
             }
-            if (!["admin", "careGiver", "familyMember", "readonly", "careRecipient"].includes(role)) {
-                return res.status(400).json({ error: "Invalid role value in one of the memberships" });
+            if (!VALID_STATUSES.includes(status)) {
+                return res
+                    .status(400)
+                    .json({ error: "Invalid status value in one of the memberships" });
             }
-            if (!["active", "pending", "removed"].includes(status)) {
-                return res.status(400).json({ error: "Invalid status value in one of the memberships" });
-            }
+
             if (permissions && typeof permissions !== "object") {
                 return res.status(400).json({ error: "Permissions must be an object in one of the memberships" });
             }
@@ -129,6 +136,11 @@ router.post("/bulk", async (req, res) => {
             if (isMember) {
                 return res.status(400).json({ error: `User ${userId} is already a member of group ${groupId}` });
             }
+
+            // const onboardingStatus = ROLES_REQUIRING_ONBOARDING.includes(role)
+            //     ? "required"
+            //     : "not_required";
+
             validMemberships.push({
                 groupId,
                 userId,
