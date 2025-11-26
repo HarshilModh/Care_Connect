@@ -10,12 +10,12 @@ import {
 import { auth, googleProvider } from "../firebase";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
-import { useTheme } from "../context/ThemeContext";
+// import { useTheme } from "../context/ThemeContext";
 
 export default function Signup() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const { theme } = useTheme();
+  // const { theme } = useTheme();
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
@@ -49,7 +49,9 @@ export default function Signup() {
 
       login(res.data.user, token);
       toast.success("Logged in successfully!");
-      navigate("/home", { replace: true });
+      // navigate("/home", { replace: true });
+      setTimeout(() => navigate("/home", { replace: true }), 1000);
+
     } catch (err) {
       console.error("Google login error:", err);
       toast.error("Google Sign-In failed. Try again.");

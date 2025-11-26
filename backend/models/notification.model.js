@@ -26,7 +26,7 @@ const notificationSchema = new mongoose.Schema(
     senderId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      default: null, // null for system notifications
+      default: null,
     },
     groupId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -84,13 +84,10 @@ const notificationSchema = new mongoose.Schema(
   }
 );
 
-// Compound index for efficient querying of user's unread notifications
 notificationSchema.index({ recipientId: 1, isRead: 1, createdAt: -1 });
 
-// Index for cleanup of expired notifications
 notificationSchema.index({ expiresAt: 1 }, { sparse: true });
 
-// Index for cleanup of deleted notifications
 notificationSchema.index({ markedForDeletion: 1, updatedAt: 1 });
 
 export const Notification = mongoose.model("Notification", notificationSchema);

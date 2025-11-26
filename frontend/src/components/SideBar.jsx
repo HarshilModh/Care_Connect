@@ -1,5 +1,5 @@
-import React from "react"
-import { NavLink, useLocation, useParams } from "react-router-dom"
+import React from "react";
+import { NavLink, useLocation, useParams } from "react-router-dom";
 import {
   HomeIcon,
   UsersIcon,
@@ -8,21 +8,25 @@ import {
   ArrowLeftOnRectangleIcon,
   ChatBubbleLeftRightIcon
 } from "@heroicons/react/24/outline"
+  ClipboardDocumentCheckIcon,
+} from "@heroicons/react/24/outline";
 
 const SideBar = () => {
-  const location = useLocation()
-  const { groupId } = useParams()
-  const insideGroup = location.pathname.startsWith("/group-members")
+  const location = useLocation();
+  const { groupId } = useParams();
+  const insideGroup = location.pathname.startsWith("/group-members");
 
   const link = (to, Icon, label) => (
     <NavLink
       to={to}
-      className={({ isActive }) => (isActive ? "sidebar-link sidebar-link-active" : "sidebar-link")}
+      className={({ isActive }) =>
+        isActive ? "sidebar-link sidebar-link-active" : "sidebar-link"
+      }
     >
       <Icon className="h-5 w-5" />
       <span>{label}</span>
     </NavLink>
-  )
+  );
 
   return (
     <aside className="sidebar">
@@ -37,11 +41,14 @@ const SideBar = () => {
         {link("/addMember", UserPlusIcon, "Add members")}
         {link("/chat", ChatBubbleLeftRightIcon, "Chat")}
 
+        {link("/tasks", ClipboardDocumentCheckIcon, "Tasks")}
 
         {insideGroup && (
           <NavLink
             to={`/group-members/${groupId}`}
-            className={({ isActive }) => (isActive ? "sidebar-link sidebar-link-active" : "sidebar-link")}
+            className={({ isActive }) =>
+              isActive ? "sidebar-link sidebar-link-active" : "sidebar-link"
+            }
           >
             <UsersIcon className="h-5 w-5" />
             Group members
@@ -54,9 +61,7 @@ const SideBar = () => {
           type="button"
           className="sidebar-logout"
           onClick={() => {
-            // sign out placeholder
-            // add your sign out logic here: clear auth, redirect, etc.
-            window.location.href = "/signin"
+            window.location.href = "/signin";
           }}
         >
           <ArrowLeftOnRectangleIcon className="h-5 w-5" />
@@ -64,7 +69,7 @@ const SideBar = () => {
         </button>
       </div>
     </aside>
-  )
-}
+  );
+};
 
-export default SideBar
+export default SideBar;

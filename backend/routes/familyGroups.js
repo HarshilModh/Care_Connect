@@ -137,6 +137,7 @@ router.get("/user/:userId", async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       throw new Error("User ID must be a valid ObjectId");
     }
+    console.log("getFamilyGroupsByUserId route", userId);
     const familyGroups = await getFamilyGroupsByUserId(userId);
     res.status(200).json(familyGroups);
   } catch (error) {

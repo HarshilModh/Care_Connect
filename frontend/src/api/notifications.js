@@ -1,6 +1,6 @@
+import { data } from "react-router-dom";
 import api from "./axios";
 
-// Get all notifications for a user
 export const getUserNotifications = async (userId, filters = {}) => {
   const params = new URLSearchParams();
   if (filters.isRead !== undefined) params.append("isRead", filters.isRead);
@@ -15,19 +15,16 @@ export const getUserNotifications = async (userId, filters = {}) => {
   return response.data;
 };
 
-// Get unread count
 export const getUnreadCount = async (userId) => {
   const response = await api.get(`/notifications/user/${userId}/unread-count`);
   return response.data;
 };
 
-// Get single notification
 export const getNotificationById = async (notificationId) => {
   const response = await api.get(`/notifications/${notificationId}`);
   return response.data;
 };
 
-// Send join request (admin invites user)
 export const sendJoinRequest = async (
   groupId,
   recipientId,
@@ -38,18 +35,17 @@ export const sendJoinRequest = async (
     "/notifications/join-request",
     {
       groupId,
-      recipientId, // <-- correct backend field
+      recipientId,
       senderId,
       message,
     },
     {
-      withCredentials: true, // <-- REQUIRED
+      withCredentials: true,
     }
   );
   return response.data;
 };
 
-// Accept join request
 export const acceptJoinRequest = async (notificationId, userId) => {
   const response = await api.patch(`/notifications/${notificationId}/accept`, {
     userId,
@@ -57,7 +53,6 @@ export const acceptJoinRequest = async (notificationId, userId) => {
   return response.data;
 };
 
-// Reject join request
 export const rejectJoinRequest = async (notificationId, userId) => {
   const response = await api.patch(`/notifications/${notificationId}/reject`, {
     userId,
@@ -65,7 +60,6 @@ export const rejectJoinRequest = async (notificationId, userId) => {
   return response.data;
 };
 
-// Mark as read
 export const markAsRead = async (notificationId, userId) => {
   const response = await api.patch(`/notifications/${notificationId}/read`, {
     userId,
@@ -73,13 +67,11 @@ export const markAsRead = async (notificationId, userId) => {
   return response.data;
 };
 
-// Mark all as read
 export const markAllAsRead = async (userId) => {
   const response = await api.patch(`/notifications/user/${userId}/read-all`);
   return response.data;
 };
 
-// Mark for deletion
 export const markForDeletion = async (notificationId, userId) => {
   const response = await api.patch(
     `/notifications/${notificationId}/mark-delete`,
@@ -90,7 +82,6 @@ export const markForDeletion = async (notificationId, userId) => {
   return response.data;
 };
 
-// Delete permanently
 export const deleteNotification = async (notificationId, userId) => {
   const response = await api.delete(`/notifications/${notificationId}`, {
     data: { userId },
