@@ -18,6 +18,7 @@ import Notifications from "../components/notifications/Notifications";
 import PrivateRoute from "./PrivateRoutes.jsx";
 import Tasks from "../pages/tasksPage.jsx";
 import CreateTask from "../pages/createTask.jsx";
+import ChatLayout from "../components/chat/ChatLayout.jsx";
 
 const AppRoutes = () => {
   return (
@@ -33,6 +34,7 @@ const AppRoutes = () => {
       <Route path="/verify-success" element={<VerifySuccess />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/chat" element={<ChatLayout />} />
 
       {/* private routes  */}
       <Route

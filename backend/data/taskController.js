@@ -10,7 +10,9 @@ import {
   uniqueObjectIds,
 } from "../utils/taskHelper.js";
 import mongoose from "mongoose";
+import { createNotification } from "./notificationController.js";
 import { FamilyGroup } from "../models/familyGroups.model.js";
+import { meta } from "zod/v4/core";
 
 export const createTask = async (
   groupId,
@@ -84,6 +86,22 @@ export const createTask = async (
 
     // Save to database
     const savedTask = await newTask.save();
+
+    try {
+      await createNotification({
+        type: "task_assigned",
+        recipientId: assignedTo,
+        senderId: createdBy,
+        groupId: groupId,
+        taskId: savedTask._id,
+        title: `NEW TASK : ${title} `,
+        message: `A new task "${title}" has been assigned to you.`,
+        metaData: {},
+      });
+    } catch (error) {
+      console.error("Error creating notification:", error);
+    }
+
     return savedTask;
   } catch (error) {
     throw new Error(`Error creating task: ${error.message}`);

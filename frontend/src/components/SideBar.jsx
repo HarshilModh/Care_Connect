@@ -6,8 +6,7 @@ import {
   UserPlusIcon,
   PlusCircleIcon,
   ArrowLeftOnRectangleIcon,
-  ChatBubbleLeftRightIcon
-} from "@heroicons/react/24/outline"
+  ChatBubbleLeftRightIcon,
   ClipboardDocumentCheckIcon,
 } from "@heroicons/react/24/outline";
 
