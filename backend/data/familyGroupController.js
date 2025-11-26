@@ -83,7 +83,7 @@ export const createFamilyGroup = async (
 
 //Get Family Group by ID
 export const getFamilyGroupById = async (groupId) => {
-  if(!mongoose.Types.ObjectId.isValid(groupId)){
+  if (!mongoose.Types.ObjectId.isValid(groupId)) {
     throw new Error("Invalid group ID");
   }
 
@@ -153,10 +153,9 @@ export const updateFamilyGroup = async (groupId, updateData) => {
 //Delete Family Group
 export const deleteFamilyGroup = async (groupId) => {
   try {
-    if (!isValidID(groupId)) {
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
       throw new Error("Invalid group ID");
     }
-
     // Delete all notifications related to this group FIRST
     const notificationResult = await deleteNotificationsByGroupId(groupId);
 
@@ -299,9 +298,9 @@ export const getFamilyGroupsByUserId = async (userId) => {
     }
 
     const memberships = await getMembershipsByUserId(userId);
-    console.log("memberships data from group controller", memberships)
-    const groupIds = memberships.map((m) => m.groupId);
-    console.log("groupIds", groupIds);
+    // Filter for only active memberships
+    const activeMemberships = memberships.filter(m => m.status === 'active');
+    const groupIds = activeMemberships.map((m) => m.groupId);
 
     const familyGroups = await FamilyGroup.find({
       _id: { $in: groupIds },
@@ -399,7 +398,7 @@ export const getFamilyGroupMembers = async (groupId) => {
     //now we will ony return userIds of members with groupId
     const memberData = {
       groupId: groupId,
-      members: members.map((m) => m.userId),
+      members: members,
     };
     return memberData;
   } catch (error) {

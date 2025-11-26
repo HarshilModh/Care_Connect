@@ -4,6 +4,7 @@ import membershipRouter from "./memberShip.Routes.js";
 import careRecipientsRouter from "./careRecipients.Routes.js";
 import careGiversRouter from "./careGivers.Routes.js";
 import notificationRoutes from "./notifications.js";
+import chatRoutes from "./chat.Routes.js";
 import taskRoutes from "./task.Routes.js";
 
 const constructMethod = (app) => {
@@ -13,6 +14,7 @@ const constructMethod = (app) => {
   app.use("/api/care-recipients", careRecipientsRouter);
   app.use("/api/caregivers", careGiversRouter);
   app.use("/api/notifications", notificationRoutes);
+  app.use("/api/chats", chatRoutes);
   app.use("/api/tasks", taskRoutes);
 };
 

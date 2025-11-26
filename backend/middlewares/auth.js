@@ -1,17 +1,40 @@
 import jwt from 'jsonwebtoken';
-
 import admin from '../integrations/firebaseAdmin.js';
+import User from '../models/user.model.js';
 
-export const requireAuth = (req, _res, next) => {
+export const requireAuth = async (req, res, next) => {
   const hdr = req.headers.authorization || '';
   const token = hdr.startsWith('Bearer ') ? hdr.slice(7) : null;
-  if (!token) return next(new Error('Missing access token'));
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Missing access token' });
+  }
+
   try {
-    const p = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
+    // 1. Try verifying as Custom JWT
+    const p = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
     req.user = { _id: p._id, email: p.email, role: p.role };
-    next();
-  } catch {
-    next(new Error('Invalid or expired access token'));
+    return next();
+  } catch (jwtError) {
+    // 2. If JWT fails, try verifying as Firebase ID Token
+    try {
+      const decoded = await admin.auth().verifyIdToken(token);
+      
+      // Find user in MongoDB by Firebase UID
+      const user = await User.findOne({ uid: decoded.uid }).select('_id email role firstName lastName');
+      
+      if (!user) {
+        // Optional: You might want to create the user here if they don't exist, 
+        // but usually that happens at login/signup.
+        return res.status(401).json({ error: 'User not found in system' });
+      }
+
+      req.user = user; // Mongoose document or POJO
+      req.firebaseUser = decoded;
+      return next();
+    } catch (firebaseError) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
   }
 };
 
@@ -26,7 +49,7 @@ export const verifyFirebaseToken = async (req, res, next) => {
 
     const decoded = await admin.auth().verifyIdToken(token);
 
-    console.log("Decoded Firebase token:", decoded);
+    // console.log("Decoded Firebase token:", decoded);
     req.firebaseUser = decoded;
     next();
   } catch (error) {
