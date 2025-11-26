@@ -93,7 +93,7 @@ const FamilyGroups = () => {
     setFamilyGroups((p) => p.filter((g) => (g._id || g.id) !== groupId))
 
     try {
-      await axios.delete(`http://localhost:3000/api/family-groups/${groupId}`, { withCredentials: true })
+      await axios.delete(`http://localhost:3000/api/family-groups/group/${groupId}`, { withCredentials: true })
       toast.success("Group deleted")
     } catch (err) {
       // rollback on failure

@@ -19,6 +19,7 @@ import FamilyGroups from "./components/familyGroups/FamilyGroups";
 import GroupMembers from "./components/familyGroups/GroupMembers";
 import ActionHandler from "./pages/ActionHandler";
 import Notifications from "./components/notifications/Notifications";
+import ChatLayout from "./components/chat/chatLayout.jsx";
 
 import "./App.css"; // keep your css imports
 
@@ -103,6 +104,7 @@ function App() {
                   path="/group-members/:groupId"
                   element={<GroupMembers />}
                 />
+                <Route path="/chat" element={<ChatLayout />} />
                 <Route path="/notifications" element={<Notifications />} />
                 <Route path="/signin" element={<SignIn />} />
                 <Route path="/signup" element={<SignUp />} />

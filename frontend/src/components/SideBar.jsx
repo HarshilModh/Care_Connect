@@ -5,7 +5,8 @@ import {
   UsersIcon,
   UserPlusIcon,
   PlusCircleIcon,
-  ArrowLeftOnRectangleIcon
+  ArrowLeftOnRectangleIcon,
+  ChatBubbleLeftRightIcon
 } from "@heroicons/react/24/outline"
 
 const SideBar = () => {
@@ -34,6 +35,7 @@ const SideBar = () => {
         {link("/createGroup", PlusCircleIcon, "Create group")}
         {link("/family-groups", UsersIcon, "My groups")}
         {link("/addMember", UserPlusIcon, "Add members")}
+        {link("/chat", ChatBubbleLeftRightIcon, "Chat")}
 
 
         {insideGroup && (
