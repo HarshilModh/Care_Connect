@@ -39,7 +39,9 @@ if (!client.isOpen) {
 //Data Functions
 const generateAccessAndRefereshTokens = async (userId) => {
   try {
+    console.log(userId);
     const user = await User.findById(userId);
+    console.log(user);
     if (!user) {
       throw new Error("User not found when generating tokens");
     }
@@ -47,10 +49,13 @@ const generateAccessAndRefereshTokens = async (userId) => {
     const refreshToken = user.generateRefreshToken();
 
     const refreshTTL = toSeconds(process.env.REFRESH_TOKEN_EXPIRY || "7d");
+    console.log(refreshTTL);
     await client.set(`refresh:${userId}`, refreshToken, { EX: refreshTTL });
 
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
+
+    console.log("Generated tokens for user:", accessToken, refreshToken);
 
     return { accessToken, refreshToken };
   } catch (error) {

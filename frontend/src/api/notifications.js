@@ -1,3 +1,4 @@
+import { data } from "react-router-dom";
 import api from "./axios";
 
 export const getUserNotifications = async (userId, filters = {}) => {

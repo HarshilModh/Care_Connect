@@ -1,7 +1,6 @@
 import { FamilyGroup } from "../models/familyGroups.model.js";
 import {
   isValidArray,
-  isValidID,
   isValidString,
 } from "../utils/validation.utils.js";
 import User from "../models/user.model.js";
@@ -85,7 +84,7 @@ export const createFamilyGroup = async (
 
 //Get Family Group by ID
 export const getFamilyGroupById = async (groupId) => {
-  if (!isValidID(groupId)) {
+  if (!mongoose.Types.ObjectId.isValid(groupId)) {
     throw new Error("Invalid group ID");
   }
 
@@ -100,7 +99,7 @@ export const getFamilyGroupById = async (groupId) => {
 
 //Update Family Group
 export const updateFamilyGroup = async (groupId, updateData) => {
-  if (!isValidID(groupId)) {
+  if (!mongoose.Types.ObjectId.isValid(groupId)) {
     throw new Error("Invalid group ID");
   }
 
@@ -155,10 +154,9 @@ export const updateFamilyGroup = async (groupId, updateData) => {
 //Delete Family Group
 export const deleteFamilyGroup = async (groupId) => {
   try {
-    if (!isValidID(groupId)) {
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
       throw new Error("Invalid group ID");
     }
-
     // Delete all notifications related to this group FIRST
     const notificationResult = await deleteNotificationsByGroupId(groupId);
 
@@ -199,10 +197,10 @@ export const addMemberToFamilyGroup = async (
   role = "family"
 ) => {
   try {
-    if (!isValidID(groupId)) {
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
       throw new Error("Invalid group ID");
     }
-    if (!isValidID(memberId)) {
+    if (!mongoose.Types.ObjectId.isValid(memberId)) {
       throw new Error("Invalid member ID");
     }
 
@@ -242,10 +240,10 @@ export const addMemberToFamilyGroup = async (
 //Remove Member from Family Group
 export const removeMemberFromFamilyGroup = async (groupId, memberId) => {
   try {
-    if (!isValidID(groupId)) {
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
       throw new Error("Invalid group ID");
     }
-    if (!isValidID(memberId)) {
+    if (!mongoose.Types.ObjectId.isValid(memberId)) {
       throw new Error("Invalid member ID");
     }
 
@@ -296,15 +294,14 @@ export const removeMemberFromFamilyGroup = async (groupId, memberId) => {
 //Get Family Groups by User ID
 export const getFamilyGroupsByUserId = async (userId) => {
   try {
-    if (!isValidID(userId)) {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
       throw new Error("Invalid user ID");
     }
 
-    // 1) memberships for this user
-    const myMemberships = await Membership.find({
-      userId,
-      status: { $ne: "removed" },
-    }).lean();
+    const memberships = await getMembershipsByUserId(userId);
+    // Filter for only active memberships
+    const activeMemberships = memberships.filter(m => m.status === 'active');
+    const groupIds = activeMemberships.map((m) => m.groupId);
 
     if (!myMemberships.length) return [];
 
@@ -397,7 +394,7 @@ export const getFamilyGroupsByTimeZone = async (timeZone) => {
 
 //Update Family Group Visibility
 export const updateFamilyGroupVisibility = async (groupId, isPublic) => {
-  if (!isValidID(groupId)) {
+  if (!mongoose.Types.ObjectId.isValid(groupId)) {
     throw new Error("Invalid group ID");
   }
   if (typeof isPublic !== "boolean") {
@@ -434,7 +431,7 @@ export const getFamilyGroupsByName = async (groupName) => {
 //Get Family Group Members
 export const getFamilyGroupMembers = async (groupId) => {
   try {
-    if (!isValidID(groupId)) {
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
       throw new Error("Invalid group ID");
     }
 
@@ -442,7 +439,7 @@ export const getFamilyGroupMembers = async (groupId) => {
     //now we will ony return userIds of members with groupId
     const memberData = {
       groupId: groupId,
-      members: members.map((m) => m.userId),
+      members: members,
     };
     return memberData;
   } catch (error) {
@@ -452,7 +449,7 @@ export const getFamilyGroupMembers = async (groupId) => {
 
 //Update Family Group Time Zone
 export const updateFamilyGroupTimeZone = async (groupId, timeZone) => {
-  if (!isValidID(groupId)) {
+  if (!mongoose.Types.ObjectId.isValid(groupId)) {
     throw new Error("Invalid group ID");
   }
   if (!isValidString(timeZone)) {
@@ -482,7 +479,7 @@ export const countFamilyGroups = async () => {
 //Count Members in Family Group
 export const countMembersInFamilyGroup = async (groupId) => {
   try {
-    if (!isValidID(groupId)) {
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
       throw new Error("Invalid group ID");
     }
 

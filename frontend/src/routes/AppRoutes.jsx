@@ -20,46 +20,67 @@ import CaregiverOnboarding from "../pages/CaregiverOnboarding.jsx"
 
 
 const AppRoutes = () => {
-    return (
-        <Routes>
-            <Route path="/" element={<Landing />} />
+  return (
+    <Routes>
+      <Route path="/" element={<Landing />} />
 
-            {/* auth routes  */}
-            <Route path="/signin" element={<SignIn />} />
-            <Route path="/signup" element={<SignUp />} />
+      {/* auth routes  */}
+      <Route path="/signin" element={<SignIn />} />
+      <Route path="/signup" element={<SignUp />} />
 
-            {/* verification routes  */}
-            <Route path="/action" element={<ActionHandler />} />
-            <Route path="/verify-success" element={<VerifySuccess />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
+      {/* verification routes  */}
+      <Route path="/action" element={<ActionHandler />} />
+      <Route path="/verify-success" element={<VerifySuccess />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/chat" element={<ChatLayout />} />
 
-            {/* private routes  */}
-            <Route path="/home" element={<PrivateRoute>
-                <Home />
-            </PrivateRoute>} />
+      {/* private routes  */}
+      <Route
+        path="/home"
+        element={
+          <PrivateRoute>
+            <Home />
+          </PrivateRoute>
+        }
+      />
 
-            <Route path="/createGroup" element={<PrivateRoute>
-                <CreateGroup />
-            </PrivateRoute>} />
-            <Route path="/addMember" element={<PrivateRoute>
-                <AddMembers />
-            </PrivateRoute>} />
-            <Route path="/family-groups" element={<PrivateRoute>
-                <FamilyGroups />
-            </PrivateRoute>} />
-            <Route path="/group-members/:groupId" element={<PrivateRoute>
-                <GroupMembers />
-            </PrivateRoute>} />
-            <Route path="/onboarding/caregiver" element={<PrivateRoute>
-                <CaregiverOnboarding />
-            </PrivateRoute>} />
+      <Route path="/createGroup" element={<PrivateRoute>
+        <CreateGroup />
+      </PrivateRoute>} />
+      <Route path="/addMember" element={<PrivateRoute>
+        <AddMembers />
+      </PrivateRoute>} />
+      <Route path="/family-groups" element={<PrivateRoute>
+        <FamilyGroups />
+      </PrivateRoute>} />
+      <Route path="/group-members/:groupId" element={<PrivateRoute>
+        <GroupMembers />
+      </PrivateRoute>} />
+      <Route path="/onboarding/caregiver" element={<PrivateRoute>
+        <CaregiverOnboarding />
+      </PrivateRoute>} />
 
+      <Route
+        path="/tasks"
+        element={
+          <PrivateRoute>
+            <Tasks />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/tasks/create"
+        element={
+          <PrivateRoute>
+            <CreateTask />
+          </PrivateRoute>
+        }
+      />
 
-            <Route path="/notifications" element={<Notifications />} />
-
-        </Routes>
-    );
+      <Route path="/notifications" element={<Notifications />} />
+    </Routes >
+  );
 };
 
 export default AppRoutes;

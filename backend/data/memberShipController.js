@@ -180,6 +180,7 @@ export const getMembershipById = async (membershipId) => {
     if (!isValidID(membershipId)) {
       throw new Error("Invalid membership ID");
     }
+
     const membership = await Membership.findById(membershipId).lean();
     return membership;
   } catch (error) {
