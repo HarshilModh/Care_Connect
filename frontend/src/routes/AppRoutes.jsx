@@ -17,6 +17,10 @@ import ActionHandler from "../pages/ActionHandler";
 import Notifications from "../components/notifications/Notifications";
 import PrivateRoute from "./PrivateRoutes.jsx";
 import CaregiverOnboarding from "../pages/CaregiverOnboarding.jsx"
+import Tasks from "../pages/tasksPage.jsx";
+import CreateTask from "../pages/createTask.jsx";
+import ChatLayout from "../components/chat/ChatLayout.jsx";
+import CareRecipientOnboarding from "../pages/CareRecipientOnboarding.jsx";
 
 
 const AppRoutes = () => {
@@ -59,6 +63,9 @@ const AppRoutes = () => {
       </PrivateRoute>} />
       <Route path="/onboarding/caregiver" element={<PrivateRoute>
         <CaregiverOnboarding />
+      </PrivateRoute>} />
+      <Route path="/onboarding/carerecipient/:groupId" element={<PrivateRoute>
+        <CareRecipientOnboarding />
       </PrivateRoute>} />
 
       <Route

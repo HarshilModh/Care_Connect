@@ -17,6 +17,8 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
+  console.log("Navbar user:", user);
+
   const handleLogout = async () => {
     try {
       await logout();

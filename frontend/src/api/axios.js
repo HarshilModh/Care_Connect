@@ -4,7 +4,8 @@ import { auth } from '../firebase';
 
 //Base setup
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api', // your backend base URL
+    baseURL: (import.meta.env.VITE_API_URL || "http://localhost:3000/api") + "/",
+    // note the trailing slash ↑
     withCredentials: true,
 });
 

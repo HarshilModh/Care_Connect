@@ -1,5 +1,6 @@
 import { CareRecipient } from "../models/careRecipients.model.js";
 import { isValidArray, isValidID, isValidString } from '../utils/validation.utils.js';
+import { Membership } from "../models/memberShip.model.js";
 
 //Data Functions
 
@@ -16,11 +17,11 @@ export const createCareRecipient = async (groupId, userId, dob, primaryCondition
         //need to check the date format coming from frontend
         let dobDate = null;
         if (dob) {
-          const parsed = new Date(dob);
-          if (isNaN(parsed.getTime())) {
-            throw new Error("Invalid date format for dob");
-          }
-          dobDate = parsed;
+            const parsed = new Date(dob);
+            if (isNaN(parsed.getTime())) {
+                throw new Error("Invalid date format for dob");
+            }
+            dobDate = parsed;
         }
 
         if (primaryCondition) {
@@ -31,50 +32,50 @@ export const createCareRecipient = async (groupId, userId, dob, primaryCondition
         }
 
         let formattedContacts = [];
-        if(emergencyContacts){
+        if (emergencyContacts) {
             if (!Array.isArray(emergencyContacts)) {
                 throw new Error("emergencyContacts must be an array");
             }
-        
+
             formattedContacts = emergencyContacts.map((contact, index) => {
                 if (!contact || typeof contact !== "object") {
-                  throw new Error(
-                    `Emergency contact at index ${index} must be an object`
-                  );
+                    throw new Error(
+                        `Emergency contact at index ${index} must be an object`
+                    );
                 }
-        
+
                 const { name, phone, relation } = contact;
-        
+
                 if (!name || typeof name !== "string" || name.trim().length === 0) {
-                  throw new Error(
-                    `Emergency contact at index ${index} is missing a valid name`
-                  );
+                    throw new Error(
+                        `Emergency contact at index ${index} is missing a valid name`
+                    );
                 }
-        
+
                 if (!phone || typeof phone !== "string" || phone.trim().length === 0) {
-                  throw new Error(
-                    `Emergency contact at index ${index} is missing a valid phone`
-                  );
+                    throw new Error(
+                        `Emergency contact at index ${index} is missing a valid phone`
+                    );
                 }
-        
+
                 const cleaned = {
-                  name: name.trim(),
-                  phone: phone.trim(),
+                    name: name.trim(),
+                    phone: phone.trim(),
                 };
-        
+
                 if (relation && typeof relation === "string" && relation.trim().length) {
-                  cleaned.relation = relation.trim();
+                    cleaned.relation = relation.trim();
                 }
-        
+
                 return cleaned;
             });
         }
 
         const existing = await CareRecipient.findOne({ groupId, userId }).lean();
         if (existing) {
-          throw new Error(
-            "Care recipient already exists for this user in this group"
-          );
+            throw new Error(
+                "Care recipient already exists for this user in this group"
+            );
         }
 
         const newRecipient = await CareRecipient.create({
@@ -85,6 +86,32 @@ export const createCareRecipient = async (groupId, userId, dob, primaryCondition
             notes,
             emergencyContacts: formattedContacts,
         });
+
+        try {
+            const updateResult = await Membership.updateOne(
+                {
+                    groupId,
+                    userId,
+                    role: "careRecipient",
+                    // optional guard if you only want to flip from required:
+                    // onboardingStatus: "required",
+                },
+                {
+                    $set: { onboardingStatus: "completed" },
+                }
+            );
+
+            if (updateResult.matchedCount === 0) {
+                console.warn(
+                    `No Membership found to update onboardingStatus for careRecipient: userId=${userId}, groupId=${groupId}`
+                );
+            }
+        } catch (err) {
+            console.error(
+                "Failed to update onboardingStatus for careRecipient membership:",
+                err
+            );
+        }
 
         return newRecipient;
 
@@ -99,13 +126,13 @@ export const getCareRecipientById = async (careRecipientId) => {
         if (!careRecipientId || !isValidID(careRecipientId)) {
             throw new Error("Invalid or missing careRecipientId");
         }
-    
+
         const recipient = await CareRecipient.findById(careRecipientId);
-    
+
         if (!recipient) {
             throw new Error("Care recipient not found");
         }
-    
+
         return recipient;
     } catch (error) {
         throw new Error("Error fetching care recipient: " + error.message);
@@ -123,100 +150,100 @@ export const updateCareRecipient = async (careRecipientId, updateData) => {
         if (!updateData || typeof updateData !== "object") {
             throw new Error("Update data must be a valid object");
         }
-    
+
         const { dob, primaryCondition, notes, emergencyContacts } = updateData;
         const updates = {};
-    
+
         if (dob !== undefined) {
             if (dob === null || dob === "") {
-              // allow clearing dob
-              updates.dob = null;
+                // allow clearing dob
+                updates.dob = null;
             } else {
-              const parsed = new Date(dob);
-              if (isNaN(parsed.getTime())) {
-                throw new Error("Invalid date format for dob");
-              }
-              updates.dob = parsed;
-            }  
+                const parsed = new Date(dob);
+                if (isNaN(parsed.getTime())) {
+                    throw new Error("Invalid date format for dob");
+                }
+                updates.dob = parsed;
+            }
         }
-    
+
         if (primaryCondition !== undefined) {
             if (primaryCondition === null || primaryCondition === "") {
-              updates.primaryCondition = undefined;
+                updates.primaryCondition = undefined;
             } else {
-              updates.primaryCondition = isValidString(
-                primaryCondition,
-                "primaryCondition"
-              );
+                updates.primaryCondition = isValidString(
+                    primaryCondition,
+                    "primaryCondition"
+                );
             }
         }
-    
+
         if (notes !== undefined) {
             if (notes === null || notes === "") {
-              updates.notes = undefined; // effectively remove
+                updates.notes = undefined; // effectively remove
             } else {
-              updates.notes = isValidString(notes, "notes");
-            }  
-        }
-    
-        if (emergencyContacts !== undefined) {
-            if (emergencyContacts === null) {
-              // allow wiping all contacts
-              updates.emergencyContacts = [];
-            } else {
-              if (!Array.isArray(emergencyContacts)) {
-                throw new Error("emergencyContacts must be an array");
-              }
-      
-              updates.emergencyContacts = emergencyContacts.map((contact, index) => {
-                if (!contact || typeof contact !== "object") {
-                  throw new Error(
-                    `Emergency contact at index ${index} must be an object`
-                  );
-                }
-      
-                const { name, phone, relation } = contact;
-      
-                if (!name || typeof name !== "string" || name.trim().length === 0) {
-                  throw new Error(
-                    `Emergency contact at index ${index} is missing a valid name`
-                  );
-                }
-      
-                if (!phone || typeof phone !== "string" || phone.trim().length === 0) {
-                  throw new Error(
-                    `Emergency contact at index ${index} is missing a valid phone`
-                  );
-                }
-      
-                const cleaned = {
-                  name: name.trim(),
-                  phone: phone.trim(),
-                };
-      
-                if (relation && typeof relation === "string" && relation.trim().length) {
-                  cleaned.relation = relation.trim();
-                }
-      
-                return cleaned;
-              });
+                updates.notes = isValidString(notes, "notes");
             }
         }
-    
+
+        if (emergencyContacts !== undefined) {
+            if (emergencyContacts === null) {
+                // allow wiping all contacts
+                updates.emergencyContacts = [];
+            } else {
+                if (!Array.isArray(emergencyContacts)) {
+                    throw new Error("emergencyContacts must be an array");
+                }
+
+                updates.emergencyContacts = emergencyContacts.map((contact, index) => {
+                    if (!contact || typeof contact !== "object") {
+                        throw new Error(
+                            `Emergency contact at index ${index} must be an object`
+                        );
+                    }
+
+                    const { name, phone, relation } = contact;
+
+                    if (!name || typeof name !== "string" || name.trim().length === 0) {
+                        throw new Error(
+                            `Emergency contact at index ${index} is missing a valid name`
+                        );
+                    }
+
+                    if (!phone || typeof phone !== "string" || phone.trim().length === 0) {
+                        throw new Error(
+                            `Emergency contact at index ${index} is missing a valid phone`
+                        );
+                    }
+
+                    const cleaned = {
+                        name: name.trim(),
+                        phone: phone.trim(),
+                    };
+
+                    if (relation && typeof relation === "string" && relation.trim().length) {
+                        cleaned.relation = relation.trim();
+                    }
+
+                    return cleaned;
+                });
+            }
+        }
+
         if (Object.keys(updates).length === 0) {
             throw new Error("No valid fields to update");
         }
-    
+
         const updatedRecipient = await CareRecipient.findByIdAndUpdate(
             careRecipientId,
             { $set: updates },
             { new: true, runValidators: true }
         );
-    
+
         if (!updatedRecipient) {
             throw new Error("Care recipient not found");
         }
-      
+
         return updatedRecipient;
     } catch (error) {
         throw new Error("Error updating care recipient: " + error.message);
@@ -240,7 +267,7 @@ export const deleteCareRecipient = async (careRecipientId) => {
     } catch (error) {
         throw new Error("Error deleting care recipient: " + error.message);
     }
-}; 
+};
 
 //Get All Care Recipients
 export const getAllCareRecipients = async () => {
@@ -248,7 +275,7 @@ export const getAllCareRecipients = async () => {
         const recipients = await CareRecipient.find();
         if (!recipients || recipients.length === 0) {
             throw new Error("No care recipients found");
-          }
+        }
         return recipients;
     } catch (error) {
         throw new Error("Error fetching care recipients: " + error.message);
@@ -295,7 +322,7 @@ export const getCareRecipientsByUserId = async (userId) => {
 //Search Care Recipients
 export const searchCareRecipients = async (searchTerm) => {
     try {
-        if(!searchTerm){
+        if (!searchTerm) {
             throw new Error("Search term is required");
         }
 
@@ -305,10 +332,10 @@ export const searchCareRecipients = async (searchTerm) => {
 
         const recipients = await CareRecipient.find({
             $or: [
-              { primaryCondition: regex },
-              { notes: regex },
-              { "emergencyContacts.name": regex },
-              { "emergencyContacts.relation": regex }
+                { primaryCondition: regex },
+                { notes: regex },
+                { "emergencyContacts.name": regex },
+                { "emergencyContacts.relation": regex }
             ]
         });
 
@@ -345,8 +372,8 @@ export const getRecentCareRecipients = async (limit) => {
         }
 
         const recipients = await CareRecipient.find()
-        .sort({ createdAt: -1 })
-        .limit(limitNum);
+            .sort({ createdAt: -1 })
+            .limit(limitNum);
 
         if (!recipients || recipients.length === 0) {
             throw new Error("No recent care recipients found");
@@ -409,9 +436,9 @@ export const getCareRecipientsByDOBRange = async (startDate, endDate) => {
 
         const start = new Date(startDate);
         const end = new Date(endDate);
-    
+
         if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-          throw new Error("Invalid date format for startDate or endDate");
+            throw new Error("Invalid date format for startDate or endDate");
         }
 
         if (start > end) {
@@ -446,38 +473,38 @@ export const updateCareRecipientEmergencyContacts = async (careRecipientId, emer
             contactsToSave = [];
         } else {
             if (!Array.isArray(emergencyContacts)) {
-              throw new Error("emergencyContacts must be an array or null");
+                throw new Error("emergencyContacts must be an array or null");
             }
             contactsToSave = emergencyContacts.map((contact, index) => {
                 if (!contact || typeof contact !== "object") {
-                  throw new Error(
-                    `Emergency contact at index ${index} must be an object`
-                  );
+                    throw new Error(
+                        `Emergency contact at index ${index} must be an object`
+                    );
                 }
-        
+
                 const { name, phone, relation } = contact;
-        
+
                 if (!name || typeof name !== "string" || name.trim().length === 0) {
-                  throw new Error(
-                    `Emergency contact at index ${index} is missing a valid name`
-                  );
+                    throw new Error(
+                        `Emergency contact at index ${index} is missing a valid name`
+                    );
                 }
-        
+
                 if (!phone || typeof phone !== "string" || phone.trim().length === 0) {
-                  throw new Error(
-                    `Emergency contact at index ${index} is missing a valid phone`
-                  );
+                    throw new Error(
+                        `Emergency contact at index ${index} is missing a valid phone`
+                    );
                 }
-        
+
                 const cleaned = {
-                  name: name.trim(),
-                  phone: phone.trim(),
+                    name: name.trim(),
+                    phone: phone.trim(),
                 };
-        
+
                 if (relation && typeof relation === "string" && relation.trim().length) {
-                  cleaned.relation = relation.trim();
+                    cleaned.relation = relation.trim();
                 }
-        
+
                 return cleaned;
             });
         }
@@ -487,11 +514,11 @@ export const updateCareRecipientEmergencyContacts = async (careRecipientId, emer
             { $set: { emergencyContacts: contactsToSave } },
             { new: true, runValidators: true }
         );
-      
+
         if (!updatedRecipient) {
             throw new Error("Care recipient not found");
         }
-      
+
         return updatedRecipient;
 
     } catch (error) {
@@ -533,7 +560,7 @@ export const getCareRecipientsByMultipleConditions = async (conditions) => {
 
         const cleanedConditions = conditions.map((cond, index) => {
             if (!cond) {
-              throw new Error(`Condition at index ${index} is missing or invalid`);
+                throw new Error(`Condition at index ${index} is missing or invalid`);
             }
             return isValidString(cond, `condition[${index}]`);
         });
@@ -541,7 +568,7 @@ export const getCareRecipientsByMultipleConditions = async (conditions) => {
         const orClauses = cleanedConditions.map((cond) => ({
             primaryCondition: { $regex: new RegExp(cond, "i") },
         }));
-      
+
         const recipients = await CareRecipient.find({
             $or: orClauses,
         });
@@ -569,11 +596,11 @@ export const getCareRecipientsByAgeRange = async (minAge, maxAge) => {
         if (isNaN(min) || isNaN(max)) {
             throw new Error("minAge and maxAge must be valid numbers");
         }
-      
+
         if (min < 0 || max < 0) {
             throw new Error("minAge and maxAge must be non-negative");
         }
-      
+
         if (min > max) {
             throw new Error("minAge cannot be greater than maxAge");
         }
@@ -594,7 +621,7 @@ export const getCareRecipientsByAgeRange = async (minAge, maxAge) => {
         if (!recipients || recipients.length === 0) {
             throw new Error("No care recipients found in this age range");
         }
-      
+
         return recipients;
     } catch (error) {
         throw new Error("Error fetching care recipients by age range: " + error.message);
@@ -636,8 +663,8 @@ export const getCareRecipientsWithoutEmergencyContacts = async () => {
     try {
         const recipients = await CareRecipient.find({
             $or: [
-              { emergencyContacts: { $exists: false } },
-              { emergencyContacts: { $size: 0 } }
+                { emergencyContacts: { $exists: false } },
+                { emergencyContacts: { $size: 0 } }
             ]
         });
 
@@ -662,21 +689,21 @@ export const getCareRecipientsByUserName = async (userName) => {
         const regex = new RegExp(cleanedName, "i");
 
         const recipients = await CareRecipient.find()
-        .populate({
-          path: "userId",
-          select: "firstName lastName",
-          match: {
-            $or: [
-              { firstName: { $regex: regex } },
-              { lastName: { $regex: regex } },
-            ],
-          },
-        });
+            .populate({
+                path: "userId",
+                select: "firstName lastName",
+                match: {
+                    $or: [
+                        { firstName: { $regex: regex } },
+                        { lastName: { $regex: regex } },
+                    ],
+                },
+            });
 
         const filtered = recipients.filter((rec) => rec.userId);
 
         if (!filtered || filtered.length === 0) {
-          throw new Error("No care recipients found for this user name");
+            throw new Error("No care recipients found for this user name");
         }
 
         return filtered;

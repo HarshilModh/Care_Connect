@@ -301,11 +301,10 @@ export const getFamilyGroupsByUserId = async (userId) => {
     const memberships = await getMembershipsByUserId(userId);
     // Filter for only active memberships
     const activeMemberships = memberships.filter(m => m.status === 'active');
+
+    if (!activeMemberships.length) return [];
+
     const groupIds = activeMemberships.map((m) => m.groupId);
-
-    if (!myMemberships.length) return [];
-
-    const groupIds = myMemberships.map((m) => m.groupId);
 
     // 2) all groups where this user is a member
     const familyGroups = await FamilyGroup.find({
@@ -327,7 +326,7 @@ export const getFamilyGroupsByUserId = async (userId) => {
     const myMembershipByGroupId = {};
     const groupMembersByGroupId = {};
 
-    for (const m of myMemberships) {
+    for (const m of activeMemberships) {
       myMembershipByGroupId[m.groupId.toString()] = m;
     }
 

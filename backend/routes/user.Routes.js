@@ -98,6 +98,61 @@ router.get("/search/:email", async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 });
+
+router.get("/search/", verifyFirebaseToken, async (req, res, next) => {
+  try {
+    const { email } = req.query;
+    console.log("Email:>>>", email);
+
+    if (!email) {
+      return res
+        .status(400)
+        .json({ error: "Email query parameter is required" });
+    }
+
+    if (typeof email !== "string" || email.trim() === "") {
+      return res
+        .status(400)
+        .json({ error: "Email must be a non-empty string" });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+
+    const users = await searchUsersByEmail(email);
+    console.log("Fetched User using email >>>", users);
+    return res.status(200).json(users);
+  } catch (e) {
+    console.error("Error searching users by email:", e);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// /users/profile?googleId=user.uid
+
+router.get("/profile/", requireAuth, async (req, res, next) => {
+  try {
+    const { googleId } = req.query;
+    console.log("Google ID:>>>", googleId);
+
+    const user = await User.findOne({ firebaseUid: googleId }).select(
+      "_id firstName lastName email role isVerified displayName"
+    );
+
+    console.log("Fetched User:>>>", user);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.json(user);
+
+
+  } catch (e) {
+    next(e);
+  }
+
+});
+
 router.get("/me", requireAuth, async (req, res, next) => {
   try {
     const me = await getUserById(req.user._id);
@@ -166,7 +221,7 @@ router.patch("/me/reset_passoword", async (req, res) => {
 router.post("/google", verifyFirebaseToken, async (req, res, next) => {
   try {
     const { idToken } = req.body || {};
-    console.log(idToken);
+    console.log("idtoken from google route", idToken);
     console.log("firstToken", idToken, req.body);
     if (!idToken) return res.status(400).json({ error: "ID token required" });
     // Call the controller function to handle Google sign-in

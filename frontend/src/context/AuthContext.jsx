@@ -2,6 +2,7 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "../firebase";
+import api from "../api/axios";
 
 const AuthContext = createContext();
 
@@ -10,11 +11,16 @@ export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(null);
     const [loading, setLoading] = useState(true);
 
-
     const loadStoredSession = () => {
         const storedUser = localStorage.getItem("user");
         const storedToken = localStorage.getItem("accessToken");
         const storedExpiry = localStorage.getItem("tokenExpiry");
+
+        console.log("Loaded session from storage:", {
+            storedUser,
+            storedToken,
+            storedExpiry,
+        });
 
         if (storedUser && storedToken && storedExpiry) {
             const expiry = Number(storedExpiry);
@@ -29,9 +35,8 @@ export const AuthProvider = ({ children }) => {
         return null;
     };
 
-
     const storeSession = (userData, accessToken) => {
-        const expiry = Date.now() + 60 * 60 * 1000; // 1 hour
+        const expiry = Date.now() + 60 * 60 * 1000; // 1 hour from now
         localStorage.setItem("user", JSON.stringify(userData));
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("tokenExpiry", expiry.toString());
@@ -40,6 +45,18 @@ export const AuthProvider = ({ children }) => {
         setToken(accessToken);
     };
 
+    // Ensure session is cleared if expired
+    useEffect(() => {
+        const storedExpiry = localStorage.getItem("tokenExpiry");
+        console.log("storedExpiry", storedExpiry);
+        if (storedExpiry && Date.now() >= Number(storedExpiry)) {
+            localStorage.removeItem("user");
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("tokenExpiry");
+            setUser(null);
+            setToken(null);
+        }
+    }, []);
 
     const clearSession = () => {
         localStorage.removeItem("user");
@@ -49,12 +66,13 @@ export const AuthProvider = ({ children }) => {
         setToken(null);
     };
 
-
     const login = (userData, accessToken) => {
         if (!userData || !accessToken) return;
-        storeSession(userData, accessToken);
-    };
+        const normalizedUser = Array.isArray(userData) ? userData[0] : userData;
 
+        console.log("Logging in user function authcontext", normalizedUser);
+        storeSession(normalizedUser, accessToken);
+    };
 
     const logout = async () => {
         try {
@@ -65,46 +83,62 @@ export const AuthProvider = ({ children }) => {
         clearSession();
     };
 
-
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            if (firebaseUser) {
-                // Firebase user logged in (Google)
-                const idToken = await firebaseUser.getIdToken();
-                const userData = {
-                    uid: firebaseUser.uid,
-                    email: firebaseUser.email,
-                    displayName: firebaseUser.displayName || "",
-                };
+        let unsubscribe = () => { };
 
-                // Only overwrite if user isn't already logged in via backend
-                setUser((prev) => prev || userData);
-                setToken((prev) => prev || idToken);
-
-                // Store session if not already stored
-                if (!localStorage.getItem("user")) {
-                    storeSession(userData, idToken);
+        const initAuth = async () => {
+            try {
+                // 1) Restore from localStorage
+                const stored = loadStoredSession();
+                if (stored?.user?._id) {
+                    setUser(stored.user);
+                    setToken(stored.token);
                 }
+
+                // 2) Listen for Firebase (Google) auth changes
+                unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+                    try {
+                        if (!firebaseUser) {
+                            // Don't clear existing session here – email/password users won’t have a firebaseUser
+                            return;
+                        }
+
+                        const idToken = await firebaseUser.getIdToken();
+                        console.log("idToken from onAuthStateChanged:", idToken);
+
+                        // Make sure axios baseURL is http://localhost:3000
+                        const res = await api.post("/users/google", { idToken });
+                        const { user: backendUser, tokens } = res.data || {};
+                        console.log("Backend user after Google login:", backendUser);
+
+                        if (backendUser && backendUser._id) {
+                            const accessToken = tokens?.accessToken || idToken;
+                            storeSession(backendUser, accessToken);
+                        }
+                    } catch (err) {
+                        console.error("Backend login error in onAuthStateChanged:", err);
+                    }
+                });
+            } finally {
+                // 3) Done initial checks
+                setLoading(false);
             }
+        };
 
-
-
-            setLoading(false);
-        });
+        initAuth();
 
         return () => unsubscribe();
     }, []);
 
-
-    useEffect(() => {
-        const stored = loadStoredSession();
-        if (stored) {
-            setUser(stored.user);
-            setToken(stored.token);
-        }
-        setLoading(false);
-    }, []);
-
+    // useEffect(() => {
+    //     const stored = loadStoredSession();
+    //     // Only restore if backend user object has _id
+    //     if (stored && stored.user && stored.user._id) {
+    //         setUser(stored.user);
+    //         setToken(stored.token);
+    //     }
+    //     setLoading(false);
+    // }, []);
 
     useEffect(() => {
         if (!auth.currentUser) return;
@@ -112,22 +146,21 @@ export const AuthProvider = ({ children }) => {
         const interval = setInterval(async () => {
             try {
                 const idToken = await auth.currentUser.getIdToken(true);
-                const currentUser = auth.currentUser;
+                const res = await api.post("/users/google", { idToken });
+                const { user: backendUser, tokens } = res.data || {};
+                console.log("Refreshed backend user:", backendUser);
 
-                const userData = {
-                    uid: currentUser.uid,
-                    email: currentUser.email,
-                    displayName: currentUser.displayName || "",
-                };
-
-                storeSession(userData, idToken);
+                if (backendUser && backendUser._id) {
+                    const accessToken = tokens?.accessToken || idToken;
+                    storeSession(backendUser, accessToken);
+                }
             } catch (err) {
                 console.error("Token refresh error:", err);
             }
         }, 55 * 60 * 1000);
 
         return () => clearInterval(interval);
-    }, [auth.currentUser]);
+    }, []);
 
     return (
         <AuthContext.Provider value={{ user, token, loading, login, logout }}>

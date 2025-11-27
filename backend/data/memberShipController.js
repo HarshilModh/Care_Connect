@@ -85,6 +85,8 @@ export const createMembership = async (
       permissions: permissions || {},
       onboardingStatus
     });
+
+
     return created.toObject();
   } catch (error) {
     throw new Error("Error creating membership: " + error.message);

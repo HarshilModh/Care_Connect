@@ -45,26 +45,23 @@ function SignIn() {
 
     const handleGoogleLogin = async () => {
         try {
-
             const result = await signInWithPopup(auth, googleProvider);
-            // console.log("Google sign-in result:", result);
-            const user = result.user;
-            const token = await user.getIdToken();
-            // console.log("token", token);
+            const firebaseUser = result.user;
+            const idToken = await firebaseUser.getIdToken();
 
-            const res = await api.post("/users/google", { "idToken": token }, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await api.post("/users/google", { idToken });
+            const { user: backendUser, tokens } = res.data || {};
 
-            console.log("Backend response:", res.data);
-            // setUser(user);
-            // setToken(token);
-            login(res.data.user, token);
+            if (!backendUser || !backendUser._id) {
+                toast.error("Invalid server response for Google login");
+                return;
+            }
+
+            const accessToken = tokens?.accessToken || idToken;
+            login(backendUser, accessToken);
 
             toast.success("Logged in successfully!");
-            // navigate("/home", { replace: true });
             setTimeout(() => navigate("/home", { replace: true }), 1000);
-
         } catch (err) {
             console.error("Google login error:", err);
             toast.error("Google Sign-In failed. Try again.");
@@ -88,6 +85,7 @@ function SignIn() {
             console.log("Login response:", res);
             if (res.data?.user && res.data?.tokens?.accessToken) {
                 login(res.data.user, res.data.tokens?.accessToken);
+
                 toast.success("Login successful!");
                 setFormData({ email: "", password: "" });
                 // navigate("/home", { replace: true });

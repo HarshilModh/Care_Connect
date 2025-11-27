@@ -1,326 +1,360 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-
-/**
- FamilyGroups.jsx
- - lists groups created by current user
- - search and simple public filter
- - optimistic delete with rollback
- - safe requests using abort controller
-*/
-
-const ROLES_REQUIRING_ONBOARDING = ["careGiver", "careRecipient"];
+import {
+  Search,
+  Plus,
+  Users,
+  Settings,
+  Shield,
+  CheckCircle2,
+  Filter,
+} from "lucide-react";
 
 const FamilyGroups = () => {
   const [familyGroups, setFamilyGroups] = useState([]);
+  const [currentUserId, setCurrentUserId] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const [q, setQ] = useState(""); // search text
-  const [publicOnly, setPublicOnly] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const navigate = useNavigate();
 
-  // fetch groups created by current user
-  useEffect(() => {
-    let mounted = true;
-    const ctrl = new AbortController();
+  const loadGroups = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const userRaw = localStorage.getItem("user") || "";
+      const user = userRaw ? JSON.parse(userRaw) : null;
+      const userId = user?._id || "";
+      setCurrentUserId(userId);
 
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const userRaw = localStorage.getItem("user") || "";
-        const user = userRaw ? JSON.parse(userRaw) : null;
-        const userId = user?._id || "";
-        if (!userId) {
-          if (!mounted) return;
-          setFamilyGroups([]);
-          setLoading(false);
-          return;
-        }
-
-        const res = await axios.get(
-          `http://localhost:3000/api/family-groups/creator/${userId}`,
-          { withCredentials: true, signal: ctrl.signal }
-        );
-
-        const groups = res.data.familyGroups ?? res.data ?? [];
-        if (!mounted) return;
-        setFamilyGroups(Array.isArray(groups) ? groups : []);
-      } catch (err) {
-        if (axios.isCancel?.(err)) return;
-        const msg =
-          err?.response?.data?.error ?? err?.message ?? "Failed to load groups";
-        if (!mounted) return;
-        setError(msg);
-      } finally {
-        if (!mounted) return;
+      if (!userId) {
+        setFamilyGroups([]);
         setLoading(false);
+        return;
       }
-    };
 
-    load();
-    return () => {
-      mounted = false;
-      ctrl.abort();
-    };
+      const response = await axios.get(
+        `http://localhost:3000/api/family-groups/user/${userId}`,
+        { withCredentials: true }
+      );
+
+      const groups = response.data.familyGroups ?? response.data ?? [];
+      setFamilyGroups(Array.isArray(groups) ? groups : []);
+    } catch (err) {
+      setError(
+        err.response?.data?.error ||
+        err.message ||
+        "Error fetching family groups"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadGroups();
   }, []);
 
-  // derived filtered list
-  const filtered = useMemo(() => {
-    const qlc = q.trim().toLowerCase();
-    return (familyGroups || [])
-      .filter((g) => {
-        if (publicOnly && !g.isPublic) return false;
-        if (!qlc) return true;
-        return (
-          (g.groupName ?? "").toLowerCase().includes(qlc) ||
-          (g.description ?? "").toLowerCase().includes(qlc)
-        );
-      })
-      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-  }, [familyGroups, q, publicOnly]);
+  const handleEdit = (groupId) => {
+    navigate(`/groups/edit/${groupId}`);
+  };
 
-  // navigate to edit
-  const handleEdit = (groupId) => navigate(`/groups/edit/${groupId}`);
-
-  // optimistic delete
-  const handleDelete = async (groupId, groupName) => {
+  const handleDelete = async (groupId) => {
     const ok = window.confirm(
-      `Delete group "${groupName}"? This cannot be undone.`
+      "Are you sure you want to delete this group? This cannot be undone."
     );
     if (!ok) return;
 
-    const prev = familyGroups;
-    setDeletingId(groupId);
-    setFamilyGroups((p) => p.filter((g) => (g._id || g.id) !== groupId));
-
     try {
-      await axios.delete(`http://localhost:3000/api/family-groups/group/${groupId}`, { withCredentials: true })
-      toast.success("Group deleted")
+      await axios.delete(
+        `http://localhost:3000/api/family-groups/group/${groupId}`,
+        { withCredentials: true }
+      );
+      setFamilyGroups((prev) => prev.filter((g) => (g._id || g.id) !== groupId));
     } catch (err) {
-      // rollback on failure
-      setFamilyGroups(prev);
-      const msg =
-        err?.response?.data?.error ?? err?.message ?? "Failed to delete group";
-      toast.error(msg);
-    } finally {
-      setDeletingId(null);
+      console.error("Failed to delete group:", err);
+      setError(
+        err.response?.data?.error || err.message || "Failed to delete group"
+      );
     }
   };
 
-  const handleOpenGroup = (group) => {
-    const groupId = group._id || group.id;
-    const membership = group.membership || {};
-    const role = membership.role;
-    const membershipStatus = membership.status;
-    const onboardingStatus = membership.onboardingStatus;
+  // Normalize backend data for UI
+  const normalizedGroups = familyGroups.map((g) => {
+    const id = g._id || g.id;
+    const createdById =
+      (typeof g.createdBy === "object" ? g.createdBy._id : g.createdBy) ||
+      g.createdById;
 
-    const needsOnboarding =
-      membershipStatus === "active" &&
-      ROLES_REQUIRING_ONBOARDING.includes(role) &&
-      onboardingStatus === "required";
+    const membership = g.membership || {};
+    const role = membership.role || g.role || "member";
+    const onboarding =
+      membership.onboardingStatus &&
+        membership.onboardingStatus !== "not_required"
+        ? membership.onboardingStatus
+        : "completed";
+    const membershipStatus = membership.status || "active";
+    const membersCount = g.memberCount || g.members?.length || 0;
 
-    if (needsOnboarding) {
-      // redirect to right onboarding flow
-      if (role === "careGiver") {
-        navigate("/onboarding/caregiver");
-      } else if (role === "careRecipient") {
-        navigate(`/onboarding/recipient/${groupId}`);
-      } else {
-        // fallback: just go to members
-        navigate(`/group-members/${groupId}`);
-      }
-    } else {
-      // normal behavior
-      navigate(`/group-members/${groupId}`);
+    return {
+      id,
+      name: g.groupName,
+      description: g.description,
+      isPublic: g.isPublic,
+      createdAt: g.createdAt,
+      members: membersCount,
+      role,
+      onboarding,
+      membershipStatus,
+      isOwner: createdById === currentUserId,
+    };
+  });
+
+  const filteredGroups = normalizedGroups.filter((g) => {
+    if (!searchTerm.trim()) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      g.name?.toLowerCase().includes(term) ||
+      g.description?.toLowerCase().includes(term)
+    );
+  });
+
+  const handleCompleteOnboarding = (group) => {
+    if (group.role === "careGiver") {
+      navigate("/onboarding/caregiver");
+    } else if (group.role === "careRecipient") {
+      navigate(`/onboarding/carerecipient/${group.id}`);
     }
   };
 
-  return (
-    <main className="page">
-      <div className="container-n">
-        <header className="text-center mb-8">
-          <h1 className="section-title">Your family groups</h1>
-          <p className="section-sub">
-            Manage groups you created. Add members, edit, or delete when needed.
-          </p>
-        </header>
+  const getActionButtons = (group) => {
+    const buttons = [];
 
-        <div className="max-w-4xl mx-auto">
-          {/* search and actions */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
-            <div className="flex items-center gap-3 w-full md:w-auto">
-              <input
-                type="search"
-                className="input input-compact"
-                placeholder="Search group name or description"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                style={{ minWidth: 240 }}
-              />
-              <label className="flex items-center gap-2 text-sm text-slate-600">
-                <input
-                  type="checkbox"
-                  checked={publicOnly}
-                  onChange={(e) => setPublicOnly(e.target.checked)}
-                />
-                Public only
-              </label>
-            </div>
+    if (
+      (group.role === "careGiver" || group.role === "careRecipient") &&
+      group.onboarding === "required"
+    ) {
+      buttons.push(
+        <button
+          key="onboarding"
+          onClick={() => handleCompleteOnboarding(group)}
+          className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-medium rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-sm"
+        >
+          Complete Onboarding
+        </button>
+      );
+    }
 
-            <div className="flex items-center gap-3">
+    if (group.onboarding === "completed" || group.role === "admin") {
+      buttons.push(
+        <button
+          key="view-members"
+          onClick={() => navigate(`/group-members/${group.id}`)}
+          className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-medium rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-sm"
+        >
+          View Members
+        </button>
+      );
+    }
+
+    if (group.isOwner) {
+      buttons.push(
+        <div key="settings-wrapper" className="relative">
+          <button
+            onClick={() =>
+              setOpenDropdown(openDropdown === group.id ? null : group.id)
+            }
+            className="px-5 py-2.5 text-gray-700 dark:text-gray-200 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-colors flex items-center justify-center gap-2 w-full"
+          >
+            <Settings className="w-4 h-4" />
+            Settings
+          </button>
+
+          {openDropdown === group.id && (
+            <div className="absolute top-full right-0 mt-1 w-48 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-10">
               <button
-                className="btn-primary"
-                onClick={() => navigate("/createGroup")}
+                onClick={() => handleEdit(group.id)}
+                className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2 transition-colors"
               >
-                Create group
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
+                </svg>
+                Edit Group
               </button>
-            </div>
-          </div>
-
-          {/* Groups List */}
-          {!loading && !error && (
-            <div className="grid gap-6 max-w-3xl mx-auto">
-              {familyGroups.length === 0 ? (
-                <div className="card p-6 text-center">
-                  <p className="text-slate-500 dark:text-slate-400">
-                    You are not a member of any family groups yet.
-                  </p>
-                </div>
-              ) : (
-                familyGroups.map((group) => {
-                  console.log("group", group);
-                  const id = group._id || group.id;
-                  const createdById =
-                    group.createdBy?._id ||
-                    group.createdById ||
-                    group.createdBy ||
-                    "";
-
-                  const membership = group.membership || {};
-                  const role = membership.role || "member";
-                  const membershipStatus = membership.status || "pending";
-                  const onboardingStatus =
-                    membership.onboardingStatus || "not_required";
-
-                  const isOwner = createdById === currentUserId;
-
-                  const needsOnboarding =
-                    membershipStatus === "active" &&
-                    ROLES_REQUIRING_ONBOARDING.includes(role) &&
-                    onboardingStatus === "required";
-
-                  console.log("needsOnboarding", needsOnboarding)
-
-                  return (
-                    <div
-                      key={id}
-                      className="card p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-3">
-                          <h2 className="text-lg font-semibold truncate">
-                            {group.groupName}
-                          </h2>
-                          {group.isPublic && (
-                            <span className="text-xs text-slate-500 px-2 py-0.5 rounded bg-gray-100">
-                              Public
-                            </span>
-                          )}
-                        </div>
-
-                        {group.description && (
-                          <p className="text-slate-600 mt-2 truncate">
-                            {group.description}
-                          </p>
-                        )}
-
-                        <div className="flex flex-wrap items-center gap-2 text-xs mb-2">
-                          <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-slate-700">
-                            Role: {role}
-                          </span>
-                          <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-slate-700">
-                            Membership: {membershipStatus}
-                          </span>
-                          {ROLES_REQUIRING_ONBOARDING.includes(role) && (
-                            <span
-                              className={`inline-flex items-center rounded-full px-3 py-1 ${onboardingStatus === "completed"
-                                ? "bg-emerald-100 text-emerald-700"
-                                : onboardingStatus === "required"
-                                  ? "bg-amber-100 text-amber-700"
-                                  : "bg-slate-100 text-slate-700"
-                                }`}
-                            >
-                              Onboarding: {onboardingStatus}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="mt-2 grid gap-2 text-sm text-slate-700 dark:text-slate-300">
-                          <p>
-                            <span className="font-semibold">Public:</span>{" "}
-                            {group.isPublic ? "Yes" : "No"}
-                          </p>
-                          <p>
-                            <span className="font-semibold">Created:</span>{" "}
-                            {group.createdAt
-                              ? new Date(group.createdAt).toLocaleString()
-                              : "—"}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        {isOwner && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => handleEdit(id)}
-                              className="btn-ghost"
-                              title="Edit group"
-                            >
-                              Edit
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(id)}
-                              className="btn-ghost text-red-600 border-red-200 hover:bg-red-50"
-                              title="Delete group"
-                            >
-                              Delete
-                            </button>
-                          </>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={() => handleOpenGroup(group)}
-                          className="btn-primary"
-                          title={
-                            needsOnboarding
-                              ? "Complete onboarding to access this group"
-                              : "View group members"
-                          }
-                        >
-                          {needsOnboarding ? "Complete onboarding" : "View Members"}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+              <button
+                onClick={() => handleDelete(group.id)}
+                className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/40 flex items-center gap-2 transition-colors"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+                Delete Group
+              </button>
             </div>
           )}
         </div>
-      </div>
+      );
+    }
 
-      <ToastContainer position="top-right" autoClose={3000} />
+    return buttons;
+  };
+
+  return (
+    <main className="page bg-gray-50 dark:bg-gray-900 transition-colors">
+      <div className="container-n max-w-7xl mx-auto py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+            Your Family Groups
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300">
+            Manage groups you created or belong to. Complete onboarding, view
+            members, or update settings.
+          </p>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div className="mb-4 text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/40 border border-red-200 dark:border-red-700 rounded-lg px-4 py-3">
+            {String(error)}
+          </div>
+        )}
+
+        {/* Controls Bar */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex-1 min-w-[300px]">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search group name or description..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button className="flex items-center gap-2 px-4 py-2.5 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <Filter className="w-4 h-4" />
+                Filter
+              </button>
+
+              <button
+                onClick={() => navigate("/createGroup")}
+                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Create Group
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Loading */}
+        {loading && (
+          <div className="text-center text-gray-600 dark:text-gray-300 mt-6">
+            Loading groups…
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && filteredGroups.length === 0 && !error && (
+          <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 text-center text-gray-500 dark:text-gray-400">
+            You are not part of any family groups yet.
+          </div>
+        )}
+
+        {/* Groups List */}
+        {!loading && filteredGroups.length > 0 && (
+          <div className="space-y-4">
+            {filteredGroups.map((group) => (
+              <div
+                key={group.id}
+                className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-500 transition-all duration-200"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-3">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        {group.name}
+                      </h3>
+                      {group.isPublic && (
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border border-green-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-700">
+                          Public Group
+                        </span>
+                      )}
+                    </div>
+                    {group.description && (
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                        {group.description}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-6 text-sm flex-wrap">
+                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                        <Shield className="w-4 h-4 text-indigo-500" />
+                        <span className="font-medium capitalize">
+                          {group.role}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                        <Users className="w-4 h-4 text-indigo-500" />
+                        <span>{group.members} members</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <span className="capitalize">
+                          {group.membershipStatus}
+                        </span>
+                      </div>
+                      {(group.role === "careGiver" ||
+                        group.role === "careRecipient") && (
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${group.onboarding === "completed"
+                              ? "bg-green-50 text-green-700 border border-green-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-700"
+                              : "bg-yellow-50 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-200 dark:border-yellow-700"
+                              }`}
+                          >
+                            Onboarding: {group.onboarding}
+                          </span>
+                        )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2 min-w-[200px] items-stretch">
+                    {getActionButtons(group)}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </main>
   );
 };

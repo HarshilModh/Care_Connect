@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import axios from "axios";
-import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { ToastContainer, toast } from "react-toastify";
 
 const CaregiverOnboarding = () => {
-    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
 
@@ -15,71 +14,77 @@ const CaregiverOnboarding = () => {
     const [availability, setAvailability] = useState("");
     const [rate, setRate] = useState("");
 
+    let storedUser = localStorage.getItem("user");
+    let userId = "";
+    try {
+        userId = storedUser ? JSON.parse(storedUser)._id : "";
+    } catch (err) {
+        console.error("Invalid user data in localStorage", err);
+    }
+
     const navigate = useNavigate();
 
-    // Load existing profile (if any) so user can edit
-    useEffect(() => {
-        const fetchProfile = async () => {
-            try {
-                setLoading(true);
-                setError(null);
+    const validateForm = () => {
+        console.log("validating form", {
+            bio,
+            experienceYears,
+            skills,
+            certifications,
+            availability,
+            rate,
+        });
+        if (!bio.trim()) {
+            toast.error("Please add a short bio");
+            return false;
+        }
+        if (!experienceYears && experienceYears !== "0") {
+            toast.error("Please specify your years of experience (0 if none)");
+            return false;
+        }
 
-                const res = await axios.get(
-                    "http://localhost:3000/api/caregiver-profile/me",
-                    { withCredentials: true }
-                );
+        if (experienceYears && (isNaN(experienceYears) || Number(experienceYears) < 0)) {
+            toast.error("Years of experience must be a non-negative number");
+            return false;
+        }
 
-                if (res.data) {
-                    const p = res.data;
-                    setBio(p.bio || "");
-                    setExperienceYears(p.experienceYears ?? "");
-                    setSkills(Array.isArray(p.skills) ? p.skills.join(", ") : "");
-                    setCertifications(
-                        Array.isArray(p.certifications)
-                            ? p.certifications.join(", ")
-                            : ""
-                    );
-                    setAvailability(p.availability || "");
-                    setRate(p.rate ?? "");
-                } else {
-                    // no existing profile yet; keep defaults (empty form)
-                    setBio("");
-                    setExperienceYears("");
-                    setSkills("");
-                    setCertifications("");
-                    setAvailability("");
-                    setRate("");
-                }
+        if (skills && typeof skills !== "string") {
+            toast.error("Skills must be a comma separated string");
+            return false;
+        }
+        if (!skills.trim()) {
+            toast.error("Please specify at least one skill");
+            return false;
+        }
 
-                // if res.data not found or is empty then what 
-            } catch (err) {
-                console.error("Error loading caregiver profile", err);
-                if (err.response?.status === 404) {
-                    // no profile yet, not an error – keep form empty
-                    setError(null);
-                } else {
-                    setError(
-                        err.response?.data?.error ||
-                        err.message ||
-                        "Failed to load caregiver profile"
-                    );
-                }
-            } finally {
-                setLoading(false);
-            }
-        };
+        if (!certifications.trim()) {
+            toast.error("Please specify at least one certification");
+            return false;
+        }
 
-        fetchProfile();
-    }, []);
+        if (certifications && typeof certifications !== "string") {
+            toast.error("Certifications must be a comma separated string");
+            return false;
+        }
+
+        if (rate && (isNaN(rate) || Number(rate) < 0)) {
+            toast.error("Hourly rate must be a non-negative number");
+            return false;
+        }
+
+        if (!availability.trim()) {
+            toast.error("Please specify your availability");
+            return false;
+        }
+
+        return true;
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // basic validation
-        if (!bio.trim()) {
-            toast.error("Please add a short bio");
-            return;
-        }
+        console.log("form submit clicked");
+
+        if (!validateForm()) return;
 
         setSaving(true);
         setError(null);
@@ -88,24 +93,32 @@ const CaregiverOnboarding = () => {
             const payload = {
                 bio: bio.trim(),
                 experienceYears: Number(experienceYears) || 0,
-                skills,          // backend will normalize
-                certifications,  // backend will normalize
-                availability: availability.trim(),
+                skills: skills
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter((s) => s),
+                certifications: certifications
+                    .split(",")
+                    .map((c) => c.trim())
+                    .filter((c) => c),
+                availability: availability
+                    .split(",")
+                    .map((a) => a.trim())
+                    .filter((a) => a),
                 rate: Number(rate) || 0,
             };
 
-            const res = await axios.post(
-                "http://localhost:3000/api/caregiver-profile",
-                payload,
-                { withCredentials: true }
-            );
+            const accessToken = localStorage.getItem("accessToken");
+            const res = await axios.post("http://localhost:3000/api/caregivers", payload, {
+                withCredentials: true,
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                },
+            });
             console.log("resres", res);
-
-            // if res not found then what..
 
             toast.success("Caregiver onboarding saved 🎉");
 
-            // After onboarding, send them back to family groups
             navigate("/family-groups");
         } catch (err) {
             console.error("Error saving caregiver onboarding", err);
@@ -121,139 +134,156 @@ const CaregiverOnboarding = () => {
     };
 
     return (
-        <main className="page">
-            <div className="container-n max-w-2xl mx-auto">
+        <main className="page bg-gray-50 dark:bg-gray-900 transition-colors">
+            <div className="container-n max-w-2xl mx-auto py-8">
                 <header className="mb-6 text-center">
-                    <h1 className="section-title">Caregiver Onboarding</h1>
-                    <p className="section-sub">
+                    <h1 className="section-title text-gray-900 dark:text-white">
+                        Caregiver Onboarding
+                    </h1>
+                    <p className="section-sub text-gray-600 dark:text-gray-300">
                         Tell families about your experience, skills, and availability. This
                         profile will be reused for all groups where you&apos;re a caregiver.
                     </p>
                 </header>
 
-                {loading ? (
-                    <div className="text-center text-slate-600">Loading profile…</div>
-                ) : (
-                    <div className="card">
-                        <div className="card-pad">
-                            {error && <div className="alert-error mb-4">{String(error)}</div>}
+                <div className="card bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm">
+                    <div className="card-pad">
+                        {error && (
+                            <div className="alert-error mb-4 bg-red-50 dark:bg-red-900/40 text-red-700 dark:text-red-200 border border-red-200 dark:border-red-700 rounded-lg px-4 py-3">
+                                {String(error)}
+                            </div>
+                        )}
 
-                            <form className="grid gap-4" onSubmit={handleSubmit}>
-                                {/* Bio */}
+                        <form className="grid gap-4" onSubmit={handleSubmit}>
+                            {/* Bio */}
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-800 dark:text-gray-200">
+                                    Short bio <span className="text-red-500">*</span>
+                                </label>
+                                <textarea
+                                    className="input min-h-[80px] bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    placeholder="Describe your caregiving experience and approach"
+                                    value={bio}
+                                    onChange={(e) => setBio(e.target.value)}
+                                />
+                            </div>
+
+                            {/* Experience + Rate */}
+                            <div className="grid gap-4 sm:grid-cols-2">
                                 <div>
-                                    <label className="block text-sm font-medium mb-1">
-                                        Short bio <span className="text-red-500">*</span>
+                                    <label className="block text-sm font-medium mb-1 text-gray-800 dark:text-gray-200">
+                                        Years of experience
                                     </label>
-                                    <textarea
-                                        className="input min-h-[80px]"
-                                        placeholder="Describe your caregiving experience and approach"
-                                        value={bio}
-                                        onChange={(e) => setBio(e.target.value)}
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        className="input bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                        value={experienceYears}
+                                        onChange={(e) => setExperienceYears(e.target.value)}
+                                        placeholder="e.g. 3"
                                     />
                                 </div>
 
-                                {/* Experience + Rate */}
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">
-                                            Years of experience
-                                        </label>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-gray-800 dark:text-gray-200">
+                                        Hourly rate (optional)
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-slate-500 dark:text-slate-300">$</span>
                                         <input
                                             type="number"
                                             min="0"
-                                            className="input"
-                                            value={experienceYears}
-                                            onChange={(e) => setExperienceYears(e.target.value)}
-                                            placeholder="e.g. 3"
+                                            className="input bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                            value={rate}
+                                            onChange={(e) => setRate(e.target.value)}
+                                            placeholder="e.g. 25"
                                         />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">
-                                            Hourly rate (optional)
-                                        </label>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-slate-500">$</span>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                className="input"
-                                                value={rate}
-                                                onChange={(e) => setRate(e.target.value)}
-                                                placeholder="e.g. 25"
-                                            />
-                                            <span className="text-slate-500 text-sm">/ hour</span>
-                                        </div>
+                                        <span className="text-slate-500 dark:text-slate-300 text-sm">
+                                            / hour
+                                        </span>
                                     </div>
                                 </div>
+                            </div>
 
-                                {/* Skills */}
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">
-                                        Skills (comma separated)
-                                    </label>
-                                    <input
-                                        className="input"
-                                        placeholder="e.g. Medication management, Mobility support, Meal preparation"
-                                        value={skills}
-                                        onChange={(e) => setSkills(e.target.value)}
-                                    />
-                                    <p className="text-xs text-slate-500 mt-1">
-                                        Separate multiple skills with commas.
-                                    </p>
-                                </div>
+                            {/* Skills */}
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-800 dark:text-gray-200">
+                                    Skills (comma separated)
+                                </label>
+                                <input
+                                    className="input bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    placeholder="e.g. Medication management, Mobility support, Meal preparation"
+                                    value={skills}
+                                    onChange={(e) => setSkills(e.target.value)}
+                                />
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                    Separate multiple skills with commas.
+                                </p>
+                            </div>
 
-                                {/* Certifications */}
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">
-                                        Certifications (comma separated)
-                                    </label>
-                                    <input
-                                        className="input"
-                                        placeholder="e.g. CPR, First Aid"
-                                        value={certifications}
-                                        onChange={(e) => setCertifications(e.target.value)}
-                                    />
-                                    <p className="text-xs text-slate-500 mt-1">
-                                        List any relevant certifications or training.
-                                    </p>
-                                </div>
+                            {/* Certifications */}
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-800 dark:text-gray-200">
+                                    Certifications (comma separated)
+                                </label>
+                                <input
+                                    className="input bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    placeholder="e.g. CPR, First Aid"
+                                    value={certifications}
+                                    onChange={(e) => setCertifications(e.target.value)}
+                                />
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                    List any relevant certifications or training.
+                                </p>
+                            </div>
 
-                                {/* Availability */}
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">
-                                        Availability
-                                    </label>
-                                    <textarea
-                                        className="input min-h-[60px]"
-                                        placeholder="e.g. Weekdays 9am–6pm, weekends on request"
-                                        value={availability}
-                                        onChange={(e) => setAvailability(e.target.value)}
-                                    />
-                                </div>
+                            {/* Availability */}
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-800 dark:text-gray-200">
+                                    Availability
+                                </label>
+                                <textarea
+                                    className="input min-h-[60px] bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    placeholder="e.g. Weekdays 9am–6pm, weekends on request"
+                                    value={availability}
+                                    onChange={(e) => setAvailability(e.target.value)}
+                                />
+                            </div>
 
-                                <div className="flex justify-end gap-3 mt-4">
-                                    <button
-                                        type="button"
-                                        className="btn-ghost"
-                                        onClick={() => navigate("/family-groups")}
-                                        disabled={saving}
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="btn-primary"
-                                        disabled={saving}
-                                    >
-                                        {saving ? "Saving…" : "Save & Continue"}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+                            <div className="flex justify-end gap-3 mt-4">
+                                <button
+                                    type="button"
+                                    className="btn-ghost text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                    onClick={() => navigate("/family-groups")}
+                                    disabled={saving}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="btn-primary bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 text-white"
+                                    disabled={saving}
+                                >
+                                    {saving ? "Saving…" : "Save & Continue"}
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                )}
+                </div>
             </div>
+
+            <ToastContainer
+                position="top-center"
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="colored"
+            />
         </main>
     );
 };

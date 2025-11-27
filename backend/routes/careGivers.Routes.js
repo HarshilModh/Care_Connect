@@ -1,6 +1,7 @@
 import express from "express";
 import mongoose from "mongoose";
-import {createCareGiver,getCareGiverById,getAllCareGivers,getCareGiverByUserId,updateCareGiver,deleteCareGiver,getCareGiversBySkill,getCareGiversByCertification,searchCareGivers,} from "../data/careGiverController.js";
+import { createCareGiver, getCareGiverById, getAllCareGivers, getCareGiverByUserId, updateCareGiver, deleteCareGiver, getCareGiversBySkill, getCareGiversByCertification, searchCareGivers, } from "../data/careGiverController.js";
+import { requireAuth } from "../middlewares/auth.js";
 
 const router = express.Router();
 
@@ -12,41 +13,42 @@ router.get("/", async (req, res) => {
     return res.status(400).json({ error: error.message });
   }
 });
-router.post("/", async (req, res) => {
-    try {
-      let {
-        userId,
-        bio,
-        experienceYears,
-        skills,
-        certifications,
-        availability,
-        rate,
-      } = req.body;
-  
-      if (!userId) {
-        return res.status(400).json({ error: "userId is required" });
-      }
-      if (!mongoose.Types.ObjectId.isValid(userId)) {
-        return res
-          .status(400)
-          .json({ error: "userId must be a valid ObjectId" });
-      }
-  
-      const careGiver = await createCareGiver(
-        userId,
-        bio,
-        experienceYears,
-        skills,
-        certifications,
-        availability,
-        rate
-      );
-  
-      return res.status(201).json(careGiver);
-    } catch (error) {
-      return res.status(400).json({ error: error.message });
+router.post("/", requireAuth, async (req, res) => {
+  try {
+    let {
+      bio,
+      experienceYears,
+      skills,
+      certifications,
+      availability,
+      rate,
+    } = req.body;
+    const userId = req.user._id.toString();
+    console.log("userId", userId)
+
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
     }
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res
+        .status(400)
+        .json({ error: "userId must be a valid ObjectId" });
+    }
+
+    const careGiver = await createCareGiver(
+      userId,
+      bio,
+      experienceYears,
+      skills,
+      certifications,
+      availability,
+      rate
+    );
+
+    return res.status(201).json(careGiver);
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
 });
 
 router.get("/user/:userId", async (req, res) => {
