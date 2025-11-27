@@ -13,6 +13,8 @@ const notificationSchema = new mongoose.Schema(
         "member_added",
         "member_removed",
         "system",
+        "group",
+        "chat_message",
       ],
       required: true,
       index: true,
@@ -26,6 +28,11 @@ const notificationSchema = new mongoose.Schema(
     senderId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      default: null,
+    },
+    chatId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Chat",
       default: null,
     },
     groupId: {

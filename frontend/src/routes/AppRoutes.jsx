@@ -18,8 +18,10 @@ import Notifications from "../components/notifications/Notifications";
 import PrivateRoute from "./PrivateRoutes.jsx";
 import Tasks from "../pages/tasksPage.jsx";
 import CreateTask from "../pages/createTask.jsx";
-import ChatLayout from "../components/chat/ChatLayout.jsx";
-
+import ChatLayout from "../components/chat/chatLayout.jsx";
+import UserProfile from "../components/userProfile/UserProfile.jsx";
+import EditProfile from "../components/userProfile/EditProfile.jsx";
+import EditGroup from "../components/familyGroups/EditGroup";
 const AppRoutes = () => {
   return (
     <Routes>
@@ -35,6 +37,15 @@ const AppRoutes = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/chat" element={<ChatLayout />} />
+      <Route path="/groups/edit/:id" element={<EditGroup />} />
+      <Route
+        path="/edit-profile"
+        element={
+          // <PrivateRoute>
+            <EditProfile />
+          // </PrivateRoute>
+        }
+      />
 
       {/* private routes  */}
       <Route
@@ -93,6 +104,15 @@ const AppRoutes = () => {
           <PrivateRoute>
             <CreateTask />
           </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/user-profile"
+        element={
+          // <PrivateRoute>
+            <UserProfile />
+          // </PrivateRoute>
         }
       />
 

@@ -9,6 +9,7 @@ import {
   authenticateUserWithGoogle,
   searchUsersByEmail,
   resetUserPassword,
+  deleteUser,
 } from "../data/userController.js";
 import { requireAuth, verifyFirebaseToken } from "../middlewares/auth.js";
 import express from "express";
@@ -107,9 +108,22 @@ router.get("/me", requireAuth, async (req, res, next) => {
   }
 });
 
-router.patch("/me", requireAuth, async (req, res, next) => {
+router.patch("/me", async (req, res, next) => {
   try {
-    const updated = await updateUser(req.user._id, req.body);
+    let id=req.body.id;
+    let firstname=req.body.firstName;
+    let lastname=req.body.lastName;
+    let email=req.body.email;
+    let firebaseUid=req.body.firebaseUid;
+
+    console.log("In update route", id, firstname, lastname, email, firebaseUid);
+    const updateData = {
+      firstName: firstname,
+      lastName: lastname,
+      email: email,
+      firebaseUid: firebaseUid,
+    };
+    const updated = await updateUser(id, updateData);
     res.json(updated);
   } catch (e) {
     next(e);
@@ -159,6 +173,7 @@ router.patch("/me/reset_passoword", async (req, res) => {
     res.json(result);
     console.log("password");
   } catch (error) {
+    console.log(error);
     res.status(400).json({ error: error.message });
   }
 });
@@ -216,6 +231,20 @@ router.post("/verify-email", verifyFirebaseToken, async (req, res) => {
       error: "Failed to sync verification",
       details: error.message,
     });
+  }
+});
+router.delete("/delete/:id", requireAuth, async (req, res) => {
+  try {
+    console.log("in delete Routes");
+    
+    const userId = req.params.id;
+    if (req.user._id.toString() !== userId) {
+      return res.status(403).json({ error: "Unauthorized to delete this user" });
+    }
+    const result = await deleteUser(userId);
+    res.status(200).json({ message: "User deleted successfully", result });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 });
 

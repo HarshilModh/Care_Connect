@@ -3,8 +3,8 @@ import { Membership } from "../models/memberShip.model.js";
 import { FamilyGroup } from "../models/familyGroups.model.js";
 import { Task } from "../models/task.model.js";
 import { isValidID, isValidString } from "../utils/validation.utils.js";
-
-
+import {Chat} from "../models/chat.model.js";
+import mongoose from "mongoose";
 // Create a notification
 export const createNotification = async (notificationData) => {
   try {
@@ -32,6 +32,8 @@ export const createNotification = async (notificationData) => {
         "member_added",
         "member_removed",
         "system",
+        "group",
+        "chat_message",
       ].includes(type)
     ) {
       throw new Error("Valid notification type is required");
@@ -573,5 +575,122 @@ export const sendJoinRequest = async (
   } catch (error) {
     console.log(error);
     throw new Error("Error sending join request: " + error.message);
+  }
+};
+export const createChatMessageNotification = async (
+  chatId, senderID, groupId, messageText
+) => {
+
+
+  console.log("Creating chat message notification");
+  console.log("chatId:", chatId, "senderId:", senderID, "groupId:", groupId, "messageText:", messageText);
+  try {
+    if (!mongoose.Types.ObjectId.isValid(chatId)) {
+      throw new Error("Valid chat ID is required");
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(senderID)) {
+      throw new Error("Valid sender ID is required");
+    }
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
+      throw new Error("Valid group ID is required");
+    }
+    if (messageText && typeof messageText !== "string") {
+      throw new Error("Message text must be a string");
+    }
+    //we need to send notification to all members of the group
+    const members = await Membership.find({ groupId: groupId, status: "active" });
+    const notifications = [];
+    for (const member of members) {
+      if (member.userId.toString() === senderID.toString()) {
+        continue; // Skip sender
+      }
+
+      //get unread chat counts for this user in this group
+      const unreadChatCount = await Chat.countDocuments({
+        groupId: groupId,
+        "readBy.userId": { $ne: member.userId },
+      });
+      //if unreadChatCount is greater then 5 then create only one notification like you have x amount of 
+      //unreads message in this group
+      if (unreadChatCount > 5) {
+        //we also need to delete last notification of that group
+        await Notification.deleteMany({
+          recipientId: member.userId,
+          groupId: groupId,
+          type: "chat_message",
+        });
+        const notificationData = new Notification({
+          type: "chat_message",
+          recipientId: member.userId,
+          senderId: senderID,
+          chatId: chatId,
+          groupId: groupId,
+          title: "New Chat Messages",
+          message: `You have ${unreadChatCount} unread messages in the group chat.`,
+          metadata: {
+            chatId: chatId,
+            groupId: groupId,
+            senderId: senderID,
+            unreadCount: unreadChatCount
+          },
+        });
+        console.log("Notification data prepared for bulk unread:", notificationData);
+        const notification = await notificationData.save();
+        notifications.push(notification);
+        continue; // Skip creating individual notifications
+      }
+      const notificationData = new Notification({
+        type: "chat_message",
+        recipientId: member.userId,
+        senderId: senderID,
+        chatId: chatId,
+        groupId: groupId,
+        title: "New Chat Message",
+        message: messageText
+          ? messageText.length > 100
+            ? messageText.substring(0, 97) + "..."
+            : messageText
+          : "You have a new message in the group chat.",
+        metadata: {
+          chatId: chatId,
+          groupId: groupId,
+          senderId: senderID
+        },
+      });
+      console.log("Notification data prepared:", notificationData);
+      const notification = await notificationData.save();
+      notifications.push(notification);
+    }
+    return notifications;
+  
+
+  }
+  catch (error) {
+    console.log(error);
+    throw new Error("Error creating chat message notification: " + error.message);
+  }
+};
+export const markChatNotificationsAsRead = async (groupId, userId) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
+      throw new Error("Valid group ID is required");
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new Error("Valid user ID is required");
+    }
+
+    const result = await Notification.updateMany(
+      { groupId: groupId, recipientId: userId, isRead: false, type: "chat_message" },
+      { $set: { isRead: true } }
+    );
+
+    return { modifiedCount: result.modifiedCount };
+  } catch (error) {
+    console.log(error);
+    throw new Error(
+      "Error marking chat notifications as read: " + error.message
+    );
   }
 };
