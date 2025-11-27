@@ -30,14 +30,10 @@ const GroupList = ({ onSelectGroup, selectedGroupId }) => {
           return;
         }
 
-        // 🔥 ADD LOGGING TO DEBUG
-        console.log("Fetching groups for user:", currentUser._id);
         const response = await api.get(`/family-groups/user/${currentUser._id}`);
-        console.log("Groups response:", response.data);
 
         // Handle different response structures
         const groupsData = response.data?.data || response.data?.groups || response.data || [];
-        console.log("Extracted groups:", groupsData);
 
         setGroups(groupsData);
 
@@ -55,7 +51,6 @@ const GroupList = ({ onSelectGroup, selectedGroupId }) => {
         setUnreadCounts(counts);
       } catch (error) {
         console.error("Error fetching groups:", error);
-        console.error("Error response:", error.response?.data);
         toast.error(error.response?.data?.message || "Failed to load groups");
       } finally {
         setLoading(false);
@@ -76,9 +71,9 @@ const GroupList = ({ onSelectGroup, selectedGroupId }) => {
   if (groups.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-        <div className="text-6xl mb-4">💬</div>
-        <h3 className="text-xl font-semibold mb-2">No Groups Yet</h3>
-        <p className="text-gray-600">Join or create a family group to start chatting</p>
+        <div className="text-6xl mb-4 opacity-50">💬</div>
+        <h3 className="text-xl font-semibold mb-2 text-[var(--text-main)]">No Groups Yet</h3>
+        <p className="text-gray-500 text-sm">Join or create a family group to start chatting</p>
       </div>
     );
   }
@@ -86,15 +81,15 @@ const GroupList = ({ onSelectGroup, selectedGroupId }) => {
   return (
     <div className="h-full flex flex-col bg-white dark:bg-gray-900 border-r border-[var(--border)]">
       {/* Header */}
-      <div className="p-6 border-b border-[var(--border)] bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm">
+      <div className="p-5 border-b border-[var(--border)] bg-white/80 dark:bg-gray-900/80 backdrop-blur-md sticky top-0 z-10">
         <h2 className="text-2xl font-bold bg-gradient-to-r from-[var(--brand-1)] to-[var(--brand-2)] bg-clip-text text-transparent">
-          Chats
+          Messages
         </h2>
-        <p className="text-sm text-gray-500 mt-1 font-medium">{groups.length} active conversations</p>
+        <p className="text-xs text-gray-500 mt-1 font-medium uppercase tracking-wider">{groups.length} conversations</p>
       </div>
 
       {/* Group List */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1">
         {groups.map((group) => {
           const isSelected = selectedGroupId === group._id;
           const unreadCount = unreadCounts[group._id] || 0;
@@ -105,40 +100,39 @@ const GroupList = ({ onSelectGroup, selectedGroupId }) => {
               key={group._id}
               onClick={() => onSelectGroup(group)}
               className={`
-                group relative p-4 rounded-2xl cursor-pointer transition-all duration-200
+                group relative p-3 rounded-xl cursor-pointer transition-all duration-200
                 ${isSelected
-                  ? "bg-gradient-to-r from-[var(--brand-1)]/10 to-[var(--brand-2)]/10 shadow-sm"
-                  : "hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                  ? "bg-[var(--brand-1)]/10 dark:bg-[var(--brand-1)]/20"
+                  : "hover:bg-gray-50 dark:hover:bg-gray-800"
                 }
               `}
             >
-              {/* Active Indicator Line */}
-              {isSelected && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-full bg-gradient-to-b from-[var(--brand-1)] to-[var(--brand-2)]" />
-              )}
-
-              <div className="flex items-center gap-4">
-                {/* Avatar Placeholder */}
+              <div className="flex items-center gap-3">
+                {/* Avatar */}
                 <div className={`
-                  h-12 w-12 rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-transform group-hover:scale-105
+                  h-12 w-12 rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-transform duration-300 group-hover:scale-105
                   ${isSelected
-                    ? "bg-gradient-to-br from-[var(--brand-1)] to-[var(--brand-2)] text-white"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+                    ? "bg-gradient-to-br from-[var(--brand-1)] to-[var(--brand-2)] text-white shadow-md ring-2 ring-[var(--brand-1)]/20"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 group-hover:bg-white group-hover:shadow-md dark:group-hover:bg-gray-700"
                   }
                 `}>
                   {initials}
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-baseline mb-1">
-                    <h3 className={`font-semibold truncate ${isSelected ? "text-[var(--brand-1)]" : "text-[var(--text-main)]"}`}>
+                  <div className="flex justify-between items-baseline mb-0.5">
+                    <h3 className={`font-semibold truncate text-sm ${isSelected ? "text-[var(--brand-1)]" : "text-[var(--text-main)]"}`}>
                       {group.groupName || group.name}
                     </h3>
-                    {/* Optional: Time of last message could go here */}
+                    {unreadCount > 0 && (
+                      <span className="text-[10px] font-bold text-[var(--brand-1)]">
+                        New
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex justify-between items-center">
-                    <p className="text-sm text-gray-500 truncate max-w-[80%]">
+                    <p className={`text-xs truncate max-w-[85%] ${isSelected ? "text-[var(--brand-1)]/80" : "text-gray-500"}`}>
                       {group.description || "No description"}
                     </p>
 

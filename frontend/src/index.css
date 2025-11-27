@@ -7,7 +7,10 @@
   --brand-2: #8b5cf6;
   --muted: #6b7280;
   --text: #0f172a;
+  --text-main: #0f172a;
   --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --border: #e2e8f0;
   --ring: rgba(99,102,241,0.18);
   --radius: 14px;
   --shadow-sm: 0 6px 18px rgba(2,6,23,0.06);
@@ -16,8 +19,11 @@
 
 html.dark, .dark {
   --text: #e6eef9;
+  --text-main: #e6eef9;
   --muted: #9aa4b2;
   --surface: #0b1220;
+  --surface-2: #111827;
+  --border: #1e293b;
   --ring: rgba(99,102,241,0.28);
   --shadow-sm: 0 8px 26px rgba(0,0,0,0.24);
   --shadow-lg: 0 24px 60px rgba(0,0,0,0.34);

@@ -18,7 +18,8 @@ import { createClient } from "redis";
 import { toSeconds } from "../helper.js";
 import jwt from "jsonwebtoken";
 import { Membership } from "../models/memberShip.model.js";
-
+import { FamilyGroup } from "../models/familyGroups.model.js";
+import { Chat } from "../models/chat.model.js";
 import { sendMail } from "../integrations/nodemailer.js";
 
 import admin from "../integrations/firebaseAdmin.js";
@@ -75,6 +76,7 @@ export const createUser = async (
 ) => {
   try {
     //validation
+
     if (!firstName || !lastName || !email || !password || !confirmPassword) {
       throw new Error("All fields are required");
     }
@@ -96,15 +98,15 @@ export const createUser = async (
     ) {
       throw new Error("Fields cannot be empty");
     }
-    if (
-      !isValidString(firstName, "firstName") ||
-      !isValidString(lastName, "lastName") ||
-      !isValidEmail(email) ||
-      !isValidPassword(password) ||
-      !isValidPassword(confirmPassword)
-    ) {
-      throw new Error("Invalid input data");
-    }
+    // if (
+    //   // !isValidString(firstName, "firstName") ||
+    //   // !isValidString(lastName, "lastName") ||
+    //   // !isValidEmail(email) ||
+    //   // !isValidPassword(password) ||
+    //   // !isValidPassword(confirmPassword)
+    // ) {
+    //   throw new Error("Invalid input data");
+    // }
     // if (phone) {
     //   if (!isValidPhone(phone)) {
     //     throw new Error('Invalid phone number');
@@ -173,7 +175,7 @@ Care Connect Team`,
       console.log("Account creation email sent, message ID:", response);
     }
 
-    const hashedPassword = await bcrypt.hash(password.trim(), 10);
+    // const hashedPassword = await bcrypt.hash(password.trim(), 10);
 
     //create new user
     const newUser = await User.create({
@@ -181,7 +183,7 @@ Care Connect Team`,
       lastName: lastName.trim(),
       displayName: `${firstName.trim()} ${lastName.trim()}`,
       email: normEmail,
-      password: hashedPassword,
+      password: password.trim(),
       needPasswordReset: needPasswordReset || false,
       role: role || null,
       uid: uid || null,
@@ -203,6 +205,7 @@ Care Connect Team`,
     const { password: _ignore, ...safe } = newUser.toObject();
     return safe;
   } catch (error) {
+    console.error("Error in createUser:", error);
     if (error?.code === 11000 && error?.keyPattern?.email) {
       throw new Error("User with this email already exists");
     }
@@ -230,40 +233,55 @@ export const getUserById = async (userId) => {
 //Update User
 export const updateUser = async (userId, updateData) => {
   try {
+    console.log(userId);
+    console.log(updateData);
+    let firebaseUid = updateData.firebaseUid || null;
+
+    if (!firebaseUid) {
+      throw new Error("Firebase UID is required");
+    }
     if (!isValidID(userId, "userId")) throw new Error("Invalid user id");
     if (!updateData || typeof updateData !== "object") {
       throw new Error("No update data provided");
     }
 
-    const { firstName, lastName, phone, profilePicture } = updateData;
+    const { firstName, lastName, email } = updateData;
     const safe = {};
 
     if (typeof firstName === "string" && firstName.trim()) {
-      safe.firstName = isValidString(firstName, "firstName");
+      safe.firstName = firstName.trim();
     }
     if (typeof lastName === "string" && lastName.trim()) {
-      safe.lastName = isValidString(lastName, "lastName");
-    }
-    if (typeof profilePicture === "string" && profilePicture.trim())
-      safe.profilePicture = profilePicture.trim();
-    if (typeof phone === "string" && phone.trim()) {
-      if (!isValidPhone(phone)) throw new Error("Invalid phone");
-      safe.phone = phone.trim();
+      safe.lastName = lastName.trim();
     }
 
     if (Object.keys(safe).length === 0) {
       throw new Error("No valid fields to update");
     }
-
+    //also set isVerified to false if email is changed 
+    if (typeof email === "string" && email.trim()) {
+      const normEmail = email.trim().toLowerCase();
+      if (!isValidEmail(normEmail)) throw new Error("Invalid email");
+      safe.email = normEmail;
+      safe.isVerified = false;
+    }
     const updated = await User.findByIdAndUpdate(
       userId,
       { $set: safe },
       { new: true, runValidators: true }
-    ).select("-password");
+    ).select("-password -refreshToken");
+    //also need to update in firebase
+    if (firebaseUid) {
+      await admin.auth().updateUser(firebaseUid, {
+        email: safe.email,
+        displayName: `${safe.firstName || updated.firstName} ${safe.lastName || updated.lastName}`
+      });
+    }
 
     if (!updated) throw new Error("User not found");
     return updated;
   } catch (error) {
+    console.log(error);
     throw new Error(`Error updating user: ${error.message}`);
   }
 };
@@ -271,17 +289,131 @@ export const updateUser = async (userId, updateData) => {
 //Delete User
 export const deleteUser = async (userId) => {
   try {
-    if (!isValidID(userId, "userId")) throw new Error("Invalid user id");
+    console.log("🗑️ Starting user deletion for:", userId);
 
-    const deleted = await User.findByIdAndDelete(userId);
-    if (!deleted) throw new Error("User not found");
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new Error("Invalid user id");
+    }
 
-    await client.del(`refresh:${userId}`);
-    return { ok: true };
+    // 1) Load user
+    const user = await User.findById(userId);
+    if (!user) throw new Error("User not found");
+
+    // 2) Delete all chat messages sent by this user (from ALL groups)
+    const userChatsResult = await Chat.deleteMany({ senderId: userId });
+    console.log(`✅ Deleted ${userChatsResult.deletedCount} chat messages sent by user`);
+
+    // 3) Delete all memberships where this user is a member (but not owner)
+    const membershipResult = await Membership.deleteMany({
+      userId,
+      role: { $ne: "admin" } // Don't delete admin memberships yet
+    });
+    console.log(`✅ Deleted ${membershipResult.deletedCount} non-admin memberships for user`);
+
+    // 4) Handle groups owned by this user - transfer ownership or delete
+    const ownedGroups = await FamilyGroup.find({ createdBy: userId });
+
+    let groupsTransferred = 0;
+    let groupsDeleted = 0;
+    let groupMembershipDeleteResult = { deletedCount: 0 };
+    let ownedGroupChatsResult = { deletedCount: 0 };
+
+    for (const group of ownedGroups) {
+      // Find next admin or family member to transfer ownership
+      const newOwnerMembership = await Membership.findOne({
+        groupId: group._id,
+        userId: { $ne: userId },
+        status: "active",
+        role: { $in: ["admin", "familyMember"] }
+      }).sort({ role: 1, createdAt: 1 }); // Prefer admin, then oldest member
+
+      if (newOwnerMembership) {
+        // Transfer ownership
+        group.createdBy = newOwnerMembership.userId;
+
+        // Promote new owner to admin if not already
+        if (newOwnerMembership.role !== "admin") {
+          newOwnerMembership.role = "admin";
+          await newOwnerMembership.save();
+        }
+
+        await group.save();
+        groupsTransferred++;
+        console.log(`✅ Transferred ownership of group ${group._id} to user ${newOwnerMembership.userId}`);
+
+        // Create notification for new owner
+        try {
+          await createNotification({
+            type: "group",
+            recipientId: newOwnerMembership.userId.toString(),
+            title: "Group Ownership Transferred",
+            message: `You are now the owner of "${group.groupName}"`,
+            metadata: { groupId: group._id.toString() }
+          });
+        } catch (notifErr) {
+          console.error("Failed to create transfer notification:", notifErr);
+        }
+      } else {
+        // No members left - delete the group and all related data
+        await Chat.deleteMany({ groupId: group._id });
+        await Membership.deleteMany({ groupId: group._id });
+        await group.deleteOne();
+        groupsDeleted++;
+        console.log(`✅ Deleted empty group ${group._id} (no members to transfer to)`);
+      }
+    }
+
+    // 5) Now delete remaining admin memberships for this user
+    const adminMembershipResult = await Membership.deleteMany({
+      userId,
+      role: "admin"
+    });
+    console.log(`✅ Deleted ${adminMembershipResult.deletedCount} admin memberships for user`);
+
+    // 6) Delete the user from MongoDB
+    await User.findByIdAndDelete(userId);
+    console.log(`✅ Deleted user from MongoDB: ${userId}`);
+
+    // 7) Clear refresh token from Redis
+    try {
+      const redisKey = `refresh:${userId}`;
+      await client.del(redisKey);
+      console.log(`✅ Cleared Redis refresh token for user: ${userId}`);
+    } catch (redisErr) {
+      console.error("⚠️ Failed to clear Redis token:", redisErr?.message || redisErr);
+    }
+
+    // 8) Best-effort: delete Firebase user
+    try {
+      const firebaseUid = user.uid || null;
+      if (firebaseUid) {
+        await admin.auth().deleteUser(firebaseUid);
+        console.log(`✅ Firebase user deleted: ${firebaseUid}`);
+      } else {
+        console.log("⚠️ No Firebase UID found; skipping Firebase deletion");
+      }
+    } catch (fbErr) {
+      console.error("⚠️ Failed to delete Firebase user:", fbErr?.message || fbErr);
+    }
+
+    const result = {
+      ok: true,
+      deletedUserId: userId,
+      removedUserChats: userChatsResult.deletedCount || 0,
+      removedMemberships: (membershipResult.deletedCount + adminMembershipResult.deletedCount) || 0,
+      groupsTransferred: groupsTransferred,
+      groupsDeleted: groupsDeleted
+    };
+
+    console.log("✅ User deletion completed successfully:", result);
+    return result;
+
   } catch (error) {
+    console.error("❌ Error deleting user:", error);
     throw new Error(`Error deleting user: ${error.message}`);
   }
 };
+// ...existing code...
 
 //Get All Users
 export const getAllUsers = async () => {
@@ -305,10 +437,10 @@ export const authenticateUser = async (email, password) => {
     if (email.trim() === "" || password.trim() === "") {
       throw new Error("Email and password cannot be empty");
     }
-    if (!isValidEmail(email) || !isValidPassword(password)) {
-      throw new Error("Invalid email or password format");
-    }
-    //console.log(password);
+    // if (!isValidEmail(email) || !isValidPassword(password)) {
+    //   throw new Error("Invalid email or password format");
+    // }
+    // console.log(password);
 
     email = email.trim().toLowerCase();
     password = password.trim();
@@ -328,7 +460,7 @@ export const authenticateUser = async (email, password) => {
 
     const isPasswordValid = await user.isPasswordCorrect(password);
     if (!isPasswordValid) {
-      throw new Error("Invalid password");
+      throw new Error("Invalid password or email");
     }
     const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
       user._id
@@ -389,9 +521,9 @@ export const resetUserPassword = async (email, newPassword) => {
       throw new Error("New password is required");
 
     const normEmail = email.trim().toLowerCase();
-    if (!isValidEmail(normEmail) || !isValidPassword(newPassword.trim())) {
-      throw new Error("Invalid email or password format");
-    }
+    // if (!isValidEmail(normEmail) || !isValidPassword(newPassword.trim())) {
+    //   throw new Error("Invalid email or password format");
+    // }
 
     const user = await User.findOne({ email: normEmail });
     if (!user) throw new Error("User not found");
@@ -418,6 +550,7 @@ export const resetUserPassword = async (email, newPassword) => {
 
     return { ok: true };
   } catch (error) {
+    console.log(error);
     throw new Error(`Error resetting password: ${error.message}`);
   }
 };

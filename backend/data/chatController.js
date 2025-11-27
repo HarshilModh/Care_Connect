@@ -1,7 +1,8 @@
 import { Chat } from "../models/chat.model.js";
 import { Membership } from "../models/memberShip.model.js";
 import { FamilyGroup } from "../models/familyGroups.model.js";
-import mongoose from "mongoose";
+import mongoose from "mongoose"; 
+import {createChatMessageNotification,markChatNotificationsAsRead} from "./notificationController.js";
 
 /**
  * Send a new message to a group
@@ -49,9 +50,11 @@ export const sendMessage = async (groupId, userId, message, meta = {}, io = null
       });
       console.log(`📨 Message emitted to group:${groupId}`);
     }
-
+    // Create notifications for group members about the new message createChatMessageNotification(chatId,senderID,groupId,message)
+    await createChatMessageNotification(savedMessage._id, userId, groupId, savedMessage.message);
     return savedMessage;
   } catch (error) {
+    console.log(error);
     throw new Error(`Error in sendMessage: ${error.message}`);
   }
 };
@@ -200,6 +203,12 @@ export const markAllAsRead = async (groupId, userId) => {
         $push: { readBy: { userId, at: new Date() } },
         $set: { status: "read" }
       }
+      //Notify notifications about read messages
+    );
+    // Mark related notifications as read
+    await markChatNotificationsAsRead(groupId.toString(), userId.toString());
+    console.log(`Marked ${result.modifiedCount} messages as read in group:${groupId}`
+
     );
 
     return {

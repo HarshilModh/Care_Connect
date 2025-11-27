@@ -1,0 +1,137 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { getAuth } from 'firebase/auth';
+import api from '../../api/axios';
+import { toast } from 'react-toastify';
+const EditProfile = () => {
+  const auth = getAuth();
+  const {logout}= useAuth();
+  const firebaseUser = auth.currentUser;
+  const { setUserData } = useAuth();
+
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [uid, setUid] = useState('');
+
+  // Initialize form once
+  useEffect(() => {
+    if (firebaseUser) {
+      const display = firebaseUser.displayName || '';
+      const parts = display.trim().split(' ');
+      setFirstName(parts[0] || (localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).firstName : ''));
+      setLastName(parts.slice(1).join(' ') || (localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).lastName : ''));
+      setEmail(firebaseUser.email || '');
+      setUid(firebaseUser.uid || '');
+    }else{
+        setFirstName(localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).firstName : '');
+        setLastName(localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).lastName : '');
+        setEmail(localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).email : '');
+        setUid(localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).uid : '');
+    }
+
+
+  }, [firebaseUser]);
+
+  const updateProfile = async () => {
+   
+    try {
+      setSaving(true);
+      const res = await api.patch('/users/me', {
+        firebaseUid: uid,
+        id: JSON.parse(localStorage.getItem('user'))._id,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim(),
+      });
+      // logout user from firebase to refresh token
+       await logout();
+       setUserData(null);
+       localStorage.removeItem('user');
+      toast.success('Profile updated');
+    } catch (err) {
+      console.error(err);
+      toast.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!firstName.trim() || !lastName.trim() || !email.trim()) {
+      toast.warn('All fields required');
+      return;
+    }
+    updateProfile();
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto pt-8 px-4">
+      <div className="card card-pad shadow-xl">
+        <div className="mb-8 text-center">
+          <h2 className="section-title text-3xl">Edit Profile</h2>
+          <p className="section-sub">Update your personal details</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6 max-w-lg mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className={`floater ${firstName ? 'filled' : ''}`}>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="input"
+                maxLength={60}
+              />
+              <span className="float-label">First Name</span>
+            </div>
+
+            <div className={`floater ${lastName ? 'filled' : ''}`}>
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="input"
+                maxLength={60}
+              />
+              <span className="float-label">Last Name</span>
+            </div>
+          </div>
+
+          <div className={`floater ${email ? 'filled' : ''}`}>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="input"
+              maxLength={120}
+            />
+            <span className="float-label">Email Address</span>
+          </div>
+
+          <div className="pt-4">
+            <button
+              type="submit"
+              disabled={saving}
+              className="btn-primary w-full text-lg py-3"
+            >
+              {saving ? (
+                <div className="flex items-center gap-2">
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Saving...</span>
+                </div>
+              ) : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default EditProfile;
