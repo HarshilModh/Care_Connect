@@ -1,11 +1,14 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Popover } from "@headlessui/react";
+import { Popover, Menu, Transition } from "@headlessui/react";
+import { Fragment } from "react";
 import {
   Bars3Icon,
   XMarkIcon,
   SunIcon,
   MoonIcon,
+  UserCircleIcon,
+  ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -100,24 +103,63 @@ export default function Navbar() {
             {/* authenticated view desktop */}
             <div className="hidden lg:flex lg:items-center lg:gap-3">
               {user ? (
-                <>
-                  <div className="flex items-center gap-3">
+                <Menu as="div" className="relative ml-3">
+                  <Menu.Button className="flex items-center gap-3 rounded-full bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                     <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-white flex items-center justify-center font-semibold">
                       {user.displayName
                         ? user.displayName.charAt(0)
                         : user.email?.charAt(0)?.toUpperCase()}
                     </div>
-                    <span className="text-sm text-slate-800 dark:text-slate-200">
+                    <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
                       {user.displayName || user.email}
                     </span>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="px-4 py-2 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition"
+                  </Menu.Button>
+                  <Transition
+                    as={Fragment}
+                    enter="transition ease-out duration-200"
+                    enterFrom="transform opacity-0 scale-95"
+                    enterTo="transform opacity-100 scale-100"
+                    leave="transition ease-in duration-150"
+                    leaveFrom="transform opacity-100 scale-100"
+                    leaveTo="transform opacity-0 scale-95"
                   >
-                    Logout
-                  </button>
-                </>
+                    <Menu.Items className="absolute right-0 z-20 mt-2 w-56 origin-top-right rounded-xl bg-white dark:bg-slate-800 py-2 shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none border border-slate-100 dark:border-slate-700">
+                      <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 mb-1">
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Signed in as</p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                          {user.email}
+                        </p>
+                      </div>
+
+                      <div className="px-1 py-1">
+                        <Menu.Item>
+                          {({ active }) => (
+                            <Link
+                              to="/user-profile"
+                              className={`${active ? "bg-indigo-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-300" : "text-slate-700 dark:text-slate-200"
+                                } group flex w-full items-center rounded-md px-2 py-2 text-sm transition-colors`}
+                            >
+                              <UserCircleIcon className="mr-2 h-5 w-5" aria-hidden="true" />
+                              User Profile
+                            </Link>
+                          )}
+                        </Menu.Item>
+                        <Menu.Item>
+                          {({ active }) => (
+                            <button
+                              onClick={handleLogout}
+                              className={`${active ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400" : "text-slate-700 dark:text-slate-200"
+                                } group flex w-full items-center rounded-md px-2 py-2 text-sm transition-colors`}
+                            >
+                              <ArrowRightOnRectangleIcon className="mr-2 h-5 w-5" aria-hidden="true" />
+                              Logout
+                            </button>
+                          )}
+                        </Menu.Item>
+                      </div>
+                    </Menu.Items>
+                  </Transition>
+                </Menu>
               ) : (
                 <>
                   <Link
@@ -171,6 +213,14 @@ export default function Navbar() {
                       >
                         Contact
                       </Link>
+                      {user && (
+                        <Link
+                          to="/user-profile"
+                          className="text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-indigo-600 transition"
+                        >
+                          User Profile
+                        </Link>
+                      )}
 
                       {user && (
                         <Link

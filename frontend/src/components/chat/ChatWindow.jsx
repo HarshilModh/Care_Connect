@@ -261,54 +261,51 @@ const ChatWindow = ({ group }) => {
     return (
       <div className="flex items-center justify-center h-full bg-[var(--surface-2)]">
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--brand-1)]"></div>
-          <p className="text-gray-500 animate-pulse">Loading chat...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[var(--brand-1)]"></div>
+          <p className="text-gray-500 text-sm animate-pulse">Loading conversation...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-[var(--surface-2)] relative">
+    <div className="h-full flex flex-col bg-gray-50/50 dark:bg-gray-900/50 relative">
       {/* Header */}
-      <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md p-4 border-b border-[var(--border)] sticky top-0 z-10 shadow-sm flex items-center justify-between">
-        <div className="flex items-center gap-4 cursor-pointer" onClick={() => setShowDetails(true)}>
-          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[var(--brand-1)] to-[var(--brand-2)] flex items-center justify-center text-white font-bold text-lg shadow-lg">
+      <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md px-6 py-3 border-b border-[var(--border)] sticky top-0 z-10 shadow-sm flex items-center justify-between">
+        <div className="flex items-center gap-4 cursor-pointer group" onClick={() => setShowDetails(true)}>
+          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[var(--brand-1)] to-[var(--brand-2)] flex items-center justify-center text-white font-bold text-lg shadow-md group-hover:scale-105 transition-transform">
             {group.groupName?.charAt(0).toUpperCase()}
           </div>
           <div>
-            <h2 className="text-xl font-bold text-[var(--text-main)] flex items-center gap-2">
+            <h2 className="text-lg font-bold text-[var(--text-main)] flex items-center gap-2 group-hover:text-[var(--brand-1)] transition-colors">
               {group.groupName}
-              <span className="px-2 py-0.5 rounded-full bg-[var(--surface)] border border-[var(--border)] text-xs text-gray-500 font-normal">
-                Group
-              </span>
             </h2>
-            {group.description && (
-              <p className="text-sm text-gray-500 truncate max-w-xs">{group.description}</p>
-            )}
+            <p className="text-xs text-gray-500 truncate max-w-xs">
+              {group.description || "Click for group info"}
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {isSearching ? (
-            <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-full px-3 py-1">
+            <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-full px-3 py-1.5 animate-fadeIn">
               <span className="text-xs text-gray-500 mr-2">Results for "{searchQuery}"</span>
-              <button onClick={clearSearch} className="text-gray-500 hover:text-red-500">
+              <button onClick={clearSearch} className="text-gray-500 hover:text-red-500 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
                   <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
                 </svg>
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSearch} className="relative hidden md:block">
+            <form onSubmit={handleSearch} className="relative hidden md:block group/search">
               <input
                 type="text"
-                placeholder="Search..."
-                className="bg-gray-100 dark:bg-gray-800 border-none rounded-full py-1.5 pl-3 pr-8 text-sm focus:ring-1 focus:ring-[var(--brand-1)] w-40 focus:w-60 transition-all"
+                placeholder="Search messages..."
+                className="bg-gray-100 dark:bg-gray-800 border-none rounded-full py-1.5 pl-4 pr-9 text-sm focus:ring-2 focus:ring-[var(--brand-1)]/20 w-40 focus:w-60 transition-all placeholder:text-gray-400"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[var(--brand-1)]">
+              <button type="submit" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 group-hover/search:text-[var(--brand-1)] transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
                   <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" />
                 </svg>
@@ -318,7 +315,7 @@ const ChatWindow = ({ group }) => {
 
           <button
             onClick={() => setShowDetails(true)}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-colors"
+            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-[var(--brand-1)] transition-colors"
             title="Group Info"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
@@ -329,14 +326,14 @@ const ChatWindow = ({ group }) => {
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar scroll-smooth">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center opacity-0 animate-fadeIn" style={{ animationFillMode: 'forwards' }}>
-            <div className="w-24 h-24 bg-[var(--surface)] rounded-full flex items-center justify-center mb-6 shadow-inner">
-              <span className="text-6xl">👋</span>
+            <div className="w-20 h-20 bg-gradient-to-br from-[var(--brand-1)]/10 to-[var(--brand-2)]/10 rounded-full flex items-center justify-center mb-4 shadow-sm">
+              <span className="text-4xl">👋</span>
             </div>
-            <h3 className="text-2xl font-bold mb-2 text-[var(--text-main)]">Welcome to {group.groupName}!</h3>
-            <p className="text-gray-500 max-w-xs mx-auto">
+            <h3 className="text-xl font-bold mb-1 text-[var(--text-main)]">Welcome to {group.groupName}!</h3>
+            <p className="text-gray-500 text-sm max-w-xs mx-auto">
               This is the start of your legendary conversation. Say hello!
             </p>
           </div>
@@ -349,15 +346,15 @@ const ChatWindow = ({ group }) => {
               <div key={`group-${grpIndex}`} className={`flex gap-3 ${isOwn ? "justify-end" : "justify-start"} animate-slideUp`}>
                 {!isOwn && (
                   <div className="flex-shrink-0 self-end mb-1">
-                    <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-300 border-2 border-white dark:border-gray-800 shadow-sm" title={`${firstMsg.senderId.firstName} ${firstMsg.senderId.lastName}`}>
+                    <div className="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-sm" title={`${firstMsg.senderId.firstName} ${firstMsg.senderId.lastName}`}>
                       {getInitials(firstMsg.senderId.firstName, firstMsg.senderId.lastName)}
                     </div>
                   </div>
                 )}
 
-                <div className={`flex flex-col gap-1 max-w-[75%] ${isOwn ? "items-end" : "items-start"}`}>
+                <div className={`flex flex-col gap-0.5 max-w-[75%] ${isOwn ? "items-end" : "items-start"}`}>
                   {!isOwn && (
-                    <span className="text-xs text-gray-500 ml-1 mb-0.5">
+                    <span className="text-[10px] text-gray-400 ml-1 mb-0.5 font-medium">
                       {firstMsg.senderId.firstName}
                     </span>
                   )}
@@ -396,7 +393,7 @@ const ChatWindow = ({ group }) => {
                         <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
                           {isDeleted ? "🚫 This message was deleted" : msg.message}
                         </p>
-                        <div className={`flex items-center justify-end gap-1.5 mt-1 ${isOwn ? "opacity-80" : "opacity-60"}`}>
+                        <div className={`flex items-center justify-end gap-1 mt-1 ${isOwn ? "text-white/70" : "text-gray-400"}`}>
                           <span className="text-[10px]">
                             {formatTime(msg.createdAt)}
                           </span>
@@ -407,14 +404,14 @@ const ChatWindow = ({ group }) => {
 
                         {/* Message Actions */}
                         {isOwn && !isDeleted && (
-                          <div className="absolute -top-8 right-0 hidden group-hover/msg:flex bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 p-1 gap-1 z-10">
+                          <div className="absolute -top-8 right-0 hidden group-hover/msg:flex bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 p-1 gap-1 z-10 animate-fadeIn">
                             {(new Date() - new Date(msg.createdAt) < 15 * 60 * 1000) && (
                               <button
                                 onClick={() => {
                                   setNewMessage(msg.message);
                                   setEditingMessage(msg);
                                 }}
-                                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-blue-500"
+                                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-blue-500 transition-colors"
                                 title="Edit"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
@@ -425,7 +422,7 @@ const ChatWindow = ({ group }) => {
                             )}
                             <button
                               onClick={() => handleDeleteMessage(msg._id)}
-                              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-red-500"
+                              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-red-500 transition-colors"
                               title="Delete"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
@@ -446,12 +443,12 @@ const ChatWindow = ({ group }) => {
         {/* Typing indicator */}
         {typingUsers.size > 0 && (
           <div className="flex items-center gap-2 ml-12 animate-fadeIn">
-            <div className="bg-gray-200 dark:bg-gray-700 rounded-full px-4 py-2 flex items-center gap-1">
-              <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-              <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-              <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+            <div className="bg-gray-100 dark:bg-gray-800 rounded-full px-3 py-2 flex items-center gap-1 shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
             </div>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-400 italic">
               {Array.from(typingUsers).join(", ")} is typing...
             </span>
           </div>
@@ -463,14 +460,20 @@ const ChatWindow = ({ group }) => {
       {/* Input Area */}
       <div className="p-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-t border-[var(--border)]">
         {editingMessage && (
-          <div className="flex items-center justify-between bg-gray-100 dark:bg-gray-800 p-2 rounded-lg mb-2 text-sm">
-            <span className="text-gray-600 dark:text-gray-300 truncate">Editing: {editingMessage.message}</span>
-            <button onClick={() => { setEditingMessage(null); setNewMessage(""); }} className="text-red-500 hover:text-red-700">Cancel</button>
+          <div className="flex items-center justify-between bg-[var(--brand-1)]/10 border border-[var(--brand-1)]/20 p-2 rounded-lg mb-2 text-sm animate-slideUp">
+            <div className="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-[var(--brand-1)]">
+                <path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 01-.65-.65z" />
+                <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0010 3H4.75A2.75 2.75 0 002 5.75v9.5A2.75 2.75 0 004.75 18h9.5A2.75 2.75 0 0017 15.25V10a.75.75 0 00-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5z" />
+              </svg>
+              <span className="text-gray-600 dark:text-gray-300 truncate max-w-xs">Editing: {editingMessage.message}</span>
+            </div>
+            <button onClick={() => { setEditingMessage(null); setNewMessage(""); }} className="text-red-500 hover:text-red-700 text-xs font-medium px-2 py-1 hover:bg-red-50 rounded transition-colors">Cancel</button>
           </div>
         )}
         <form
           onSubmit={handleSendMessage}
-          className="flex items-end gap-2 max-w-4xl mx-auto bg-[var(--surface)] border border-[var(--border)] rounded-3xl p-2 shadow-sm focus-within:shadow-md focus-within:border-[var(--brand-1)] transition-all"
+          className="flex items-end gap-2 max-w-4xl mx-auto bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[24px] p-1.5 shadow-sm focus-within:shadow-md focus-within:border-[var(--brand-1)]/50 focus-within:ring-2 focus-within:ring-[var(--brand-1)]/10 transition-all"
         >
           <input
             type="text"
@@ -480,7 +483,7 @@ const ChatWindow = ({ group }) => {
               handleTyping();
             }}
             placeholder={editingMessage ? "Edit your message..." : "Type a message..."}
-            className="flex-1 bg-transparent border-none focus:ring-0 px-4 py-3 max-h-32 min-h-[48px] resize-none overflow-y-auto"
+            className="flex-1 bg-transparent border-none focus:ring-0 px-4 py-3 max-h-32 min-h-[48px] resize-none overflow-y-auto text-sm"
             disabled={sending}
             maxLength={3000}
           />
@@ -492,7 +495,7 @@ const ChatWindow = ({ group }) => {
               h-10 w-10 rounded-full flex items-center justify-center mb-1 mr-1 transition-all duration-200
               ${!newMessage.trim() || sending
                 ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                : "bg-[var(--brand-1)] text-white hover:bg-[var(--brand-2)] hover:scale-105 active:scale-95 shadow-md"
+                : "bg-gradient-to-r from-[var(--brand-1)] to-[var(--brand-2)] text-white hover:shadow-lg hover:scale-105 active:scale-95"
               }
             `}
           >
