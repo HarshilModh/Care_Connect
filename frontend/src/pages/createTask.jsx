@@ -16,7 +16,6 @@ export default function CreateTask() {
 
   const navigate = useNavigate();
 
-  // Get userId from localStorage
   let storedUser = localStorage.getItem("user");
   let userId = "";
   try {
@@ -25,7 +24,6 @@ export default function CreateTask() {
     console.error("Invalid user data in localStorage", err);
   }
 
-  // Fetch user-specific groups
   useEffect(() => {
     if (!userId) return;
     async function fetchGroups() {
@@ -37,7 +35,7 @@ export default function CreateTask() {
         const data = await res.json();
         console.log("Fetched groups:", data);
         for (const item of data) {
-          if (item.createdBy === userId) {
+          if (item.createdBy._id === userId) {
             adminGroups.push(item);
           }
         }
@@ -50,7 +48,6 @@ export default function CreateTask() {
     fetchGroups();
   }, [userId]);
 
-  // Fetch members whenever a group is selected
   useEffect(() => {
     if (!selectedGroup) return;
 
@@ -136,7 +133,6 @@ export default function CreateTask() {
 
         <div className="card mx-auto max-w-2xl">
           <form className="card-pad form-grid" onSubmit={handleSubmit}>
-            {/* Title */}
             <div className={`floater ${title ? "filled" : ""}`}>
               <label className="float-label">Task Title</label>
               <input
@@ -149,7 +145,6 @@ export default function CreateTask() {
               />
             </div>
 
-            {/* Description */}
             <div className={`floater ${desc ? "filled" : ""}`}>
               <label className="float-label">Description</label>
               <textarea
@@ -161,7 +156,6 @@ export default function CreateTask() {
               />
             </div>
 
-            {/* Group */}
             <div className={`floater ${selectedGroup ? "filled" : ""}`}>
               <label className="float-label"></label>
               <select
@@ -178,7 +172,7 @@ export default function CreateTask() {
                 ))}
               </select>
             </div>
-            {/* Recipient */}
+
             <div className={`floater ${recipient ? "filled" : ""}`}>
               <label className="float-label"></label>
               <select
@@ -197,7 +191,6 @@ export default function CreateTask() {
               </select>
             </div>
 
-            {/* Type */}
             <div className={`floater ${type ? "filled" : ""}`}>
               <label className="float-label">Task Type</label>
               <select
@@ -212,20 +205,18 @@ export default function CreateTask() {
               </select>
             </div>
 
-            {/* Due Date (updated: min + readOnly) */}
             <div className={`floater ${dueDate ? "filled" : ""}`}>
               <label className="float-label"></label>
               <input
                 className="input"
                 type="date"
                 value={dueDate}
-                min={new Date().toISOString().split("T")[0]} // disable past dates
-                onKeyDown={(e) => e.preventDefault()} // disable typing
-                onChange={(e) => setDueDate(e.target.value)} // allow selection
+                min={new Date().toISOString().split("T")[0]}
+                onKeyDown={(e) => e.preventDefault()}
+                onChange={(e) => setDueDate(e.target.value)}
               />
             </div>
 
-            {/* Actions */}
             <div className="sm:col-span-2 flex items-center justify-end gap-3 mt-4">
               <button
                 type="button"

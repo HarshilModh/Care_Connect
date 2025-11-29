@@ -1,28 +1,36 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import TaskList from "../components/tasks/TaskList.jsx";
+import TaskList from "../components/tasks/taskList.jsx";
 import TaskFilters from "../components/tasks/TaskFilters.jsx";
+import EditTaskModal from "../components/tasks/taskEdit.jsx";
 
 export default function Tasks() {
-  const [tasksByGroup, setTasksByGroup] = useState({});
-  const [filter, setFilter] = useState("all");
-  const navigate = useNavigate();
+  const [tasks, setTasks] = useState([]);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState(null);
+  const [loading, setLoading] = useState(false);
 
+  const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
   const userId = user?._id;
 
-  // Fetch tasks grouped by groupId
-  const fetchTasks = async () => {
+  const fetchTasks = async (filters = {}) => {
     if (!userId) return;
 
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/tasks?userId=${userId}`
+      setLoading(true);
+      const query = new URLSearchParams({ userId, ...filters }).toString();
+      const res = await fetch(
+        `http://localhost:3000/api/tasks/search?${query}`
       );
-      const data = await response.json();
-      setTasksByGroup(data);
+      if (!res.ok) throw new Error("Failed to fetch tasks");
+      const data = await res.json();
+      setTasks(data);
     } catch (err) {
       console.error("Error fetching tasks:", err);
+      alert(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -30,10 +38,8 @@ export default function Tasks() {
     fetchTasks();
   }, []);
 
-  // Mark task complete
   const markComplete = async (taskId) => {
     if (!userId) return;
-
     try {
       const res = await fetch(
         `http://localhost:3000/api/tasks/${taskId}/complete`,
@@ -44,7 +50,6 @@ export default function Tasks() {
         }
       );
       if (!res.ok) throw new Error("Failed to complete task");
-
       fetchTasks();
     } catch (err) {
       console.error(err);
@@ -52,16 +57,39 @@ export default function Tasks() {
     }
   };
 
-  // Filter tasks within a group
-  const filterTasks = (tasks) => {
-    return tasks.filter((t) => {
-      if (filter === "completed") return t.status === "completed";
-      if (filter === "today")
-        return (
-          t.dueAt?.split("T")[0] === new Date().toISOString().split("T")[0]
-        );
-      return true;
-    });
+  const deleteTask = async (taskId) => {
+    try {
+      const res = await fetch(`http://localhost:3000/api/tasks/${taskId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete task");
+      fetchTasks();
+    } catch (err) {
+      console.error(err);
+      alert("Error deleting task: " + err.message);
+    }
+  };
+
+  const saveTaskUpdates = async (updatedTask) => {
+    try {
+      const res = await fetch(
+        `http://localhost:3000/api/tasks/${updatedTask._id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...updatedTask,
+            groupId: updatedTask.groupId?._id || updatedTask.groupId,
+          }),
+        }
+      );
+      if (!res.ok) throw new Error("Failed to update task");
+      await fetchTasks();
+      setShowEditModal(false);
+    } catch (err) {
+      console.error(err);
+      alert("Error updating task: " + err.message);
+    }
   };
 
   return (
@@ -77,35 +105,38 @@ export default function Tasks() {
           </button>
         </div>
 
-        <TaskFilters filter={filter} setFilter={setFilter} />
+        <TaskFilters
+          userId={userId}
+          onFilterChange={(filteredData) => setTasks(filteredData)}
+        />
 
-        {Object.keys(tasksByGroup).length === 0 && <p>No tasks found.</p>}
+        {loading && <p>Loading tasks...</p>}
+        {!loading && tasks.length === 0 && <p>No tasks found.</p>}
 
-        {Object.entries(tasksByGroup).map(([groupId, groupData]) => {
-          const filtered = filterTasks(groupData.tasks);
-
-          return (
-            <div key={groupId} className="mb-8">
-              <h3 className="text-lg font-semibold mb-4">
-                {groupData.groupName || "Unknown Group"}
-              </h3>
-
-              {filtered.length > 0 ? (
-                <TaskList
-                  tasks={filtered}
-                  onComplete={markComplete}
-                  onView={(t) => navigate(`/tasks/${t._id}`)}
-                  onEdit={(id) => navigate(`/tasks/${id}/edit`)}
-                />
-              ) : (
-                <p className="text-slate-500 text-sm">
-                  No tasks in this group for the selected filter.
-                </p>
-              )}
-            </div>
-          );
-        })}
+        {!loading &&
+          tasks.map((task) => (
+            <TaskList
+              key={task._id}
+              tasks={[task]}
+              onComplete={markComplete}
+              onView={(t) => navigate(`/tasks/${t._id}`)}
+              onEdit={(t) => {
+                setTaskToEdit(t);
+                setShowEditModal(true);
+              }}
+              onDelete={deleteTask}
+            />
+          ))}
       </div>
+
+      {showEditModal && (
+        <EditTaskModal
+          task={taskToEdit}
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onSave={saveTaskUpdates}
+        />
+      )}
     </main>
   );
 }

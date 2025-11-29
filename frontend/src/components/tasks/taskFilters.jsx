@@ -1,26 +1,101 @@
-export default function TaskFilters({ filter, setFilter }) {
-  const buttons = [
-    { label: "All", value: "all" },
-    { label: "Due Today", value: "today" },
-    { label: "Completed", value: "completed" },
-  ];
+import { useState, useEffect } from "react";
+
+export default function TaskFilters({ userId, onFilterChange }) {
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("");
+  const [type, setType] = useState("");
+  const [priority, setPriority] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
+  const fetchTasks = async () => {
+    if (!userId) return;
+
+    const params = new URLSearchParams({
+      userId,
+      query,
+      status,
+      type,
+      priority,
+      startDate,
+      endDate,
+    });
+
+    try {
+      const res = await fetch(
+        `http://localhost:3000/api/tasks/search?${params}`
+      );
+      const data = await res.json();
+      onFilterChange(data);
+    } catch (err) {
+      console.error("Error fetching tasks:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchTasks();
+  }, [query, status, type, priority, startDate, endDate]);
 
   return (
-    <div className="flex gap-3 mb-6">
-      {buttons.map((btn) => (
-        <button
-          key={btn.value}
-          className={`px-4 py-2 rounded-lg text-sm border 
-            ${
-              filter === btn.value
-                ? "bg-blue-600 text-white"
-                : "bg-white border-slate-200 text-slate-600"
-            }`}
-          onClick={() => setFilter(btn.value)}
+    <div className="mb-6 space-y-2">
+      <input
+        type="text"
+        placeholder="Search by title or description..."
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        className="input w-full"
+      />
+
+      <div className="flex gap-2">
+        <input
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          className="input flex-1"
+        />
+        <input
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          className="input flex-1"
+        />
+      </div>
+
+      <div className="flex gap-2">
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          className="input flex-1"
         >
-          {btn.label}
-        </button>
-      ))}
+          <option value="">All Types</option>
+          <option value="task">Task</option>
+          <option value="medication">Medication</option>
+          <option value="event">Event</option>
+          <option value="note">Note</option>
+        </select>
+
+        <select
+          value={priority}
+          onChange={(e) => setPriority(e.target.value)}
+          className="input flex-1"
+        >
+          <option value="">All Priorities</option>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
+
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          className="input flex-1"
+        >
+          <option value="">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="completed">Completed</option>
+          <option value="missed">Missed</option>
+        </select>
+      </div>
     </div>
   );
 }

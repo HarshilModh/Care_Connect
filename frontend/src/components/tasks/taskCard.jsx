@@ -1,14 +1,34 @@
 import { FaCalendarAlt } from "react-icons/fa";
 
-export default function TaskCard({ task, onComplete, onView, onEdit }) {
+export default function TaskCard({
+  task,
+  onComplete,
+  onView,
+  onEdit,
+  onDelete,
+}) {
   const user = JSON.parse(localStorage.getItem("user"));
   const userId = user?._id;
 
   return (
     <div
-      className="card w-full p-4 cursor-pointer"
+      className="card w-full p-4 relative cursor-pointer"
       onClick={() => onView(task)}
     >
+      {task.createdBy === userId && onDelete && (
+        <button
+          className="btn-danger absolute top-3 right-3 text-xs px-2 py-1"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (window.confirm("Are you sure you want to delete this task?")) {
+              onDelete(task._id);
+            }
+          }}
+        >
+          ✖
+        </button>
+      )}
+
       <div className="flex items-start justify-between">
         <h3 className="text-lg font-semibold">{task.title}</h3>
 
@@ -40,7 +60,6 @@ export default function TaskCard({ task, onComplete, onView, onEdit }) {
         </div>
 
         <div className="flex gap-2">
-          {/* Mark Done Button */}
           <button
             className="btn-primary"
             onClick={(e) => {
@@ -51,13 +70,12 @@ export default function TaskCard({ task, onComplete, onView, onEdit }) {
             {task.status === "completed" ? "Completed" : "Mark Done"}
           </button>
 
-          {/* Edit Task Button (same style) */}
           {task.createdBy === userId && onEdit && (
             <button
               className="btn-primary"
               onClick={(e) => {
                 e.stopPropagation();
-                onEdit(task._id);
+                onEdit(task);
               }}
             >
               Edit Task
