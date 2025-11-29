@@ -1,6 +1,12 @@
 import TaskCard from "./TaskCard.jsx";
 
-export default function TaskList({ tasks, onComplete, onView, onEdit }) {
+export default function TaskList({
+  tasks,
+  onComplete,
+  onView,
+  onEdit,
+  onDelete,
+}) {
   return (
     <div className="flex flex-col gap-4">
       {tasks.map((task) => (
@@ -10,6 +16,7 @@ export default function TaskList({ tasks, onComplete, onView, onEdit }) {
           onComplete={onComplete}
           onView={onView}
           onEdit={onEdit}
+          onDelete={onDelete}
         />
       ))}
     </div>

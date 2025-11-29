@@ -206,14 +206,11 @@ export const deleteTask = async (taskId) => {
   }
 };
 
-//markTaskCompleted
-//need to change model to add completedBy field
 export const markTaskCompleted = async (taskId, completedBy) => {
   try {
     if (!taskId) {
       throw new Error("Invalid or missing taskId");
     }
-    //check if task exists
     if (!completedBy) {
       throw new Error("Invalid or missing completedBy");
     }
@@ -227,15 +224,12 @@ export const markTaskCompleted = async (taskId, completedBy) => {
     if (!task) {
       throw new Error("Task not found");
     }
-    //check if completedBy is a group member
     const memberRole = await assertActiveMember(completedBy, task.groupId);
-    //now only care takers can mark task as completed
-    if (memberRole !== "caregiver") {
+    if (memberRole !== "caregiver" && memberRole !== "admin") {
       throw new Error(
         "User does not have permission to mark task as completed"
       );
     }
-    //update task
     const updatedTask = await taskModel.findByIdAndUpdate(
       taskId,
       {
@@ -249,6 +243,44 @@ export const markTaskCompleted = async (taskId, completedBy) => {
   } catch (error) {
     throw new Error(`Error marking task as completed: ${error.message}`);
   }
+};
+
+export const getFilteredTasks = async ({
+  userId,
+  query,
+  status,
+  type,
+  priority,
+  startDate,
+  endDate,
+  sortDue,
+}) => {
+  if (!userId) throw new Error("User ID is required");
+
+  const filter = { createdBy: userId };
+
+  if (query) {
+    filter.$or = [
+      { title: { $regex: query, $options: "i" } },
+      { description: { $regex: query, $options: "i" } },
+    ];
+  }
+
+  if (status) filter.status = status;
+  if (type) filter.type = type;
+  if (priority) filter.priority = priority;
+
+  if (startDate || endDate) {
+    filter.dueAt = {};
+    if (startDate) filter.dueAt.$gte = new Date(startDate);
+    if (endDate) filter.dueAt.$lte = new Date(endDate);
+  }
+
+  const queryBuilder = taskModel.find(filter);
+
+  if (sortDue) queryBuilder.sort({ dueAt: 1 });
+
+  return await queryBuilder.exec();
 };
 
 //reassignTask

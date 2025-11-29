@@ -7,6 +7,7 @@ import {
   reassignTask,
   updateTask,
   getTasksGroupedByGroup,
+  getFilteredTasks,
 } from "../data/taskController.js";
 import { isValidString } from "../utils/validation.utils.js";
 import { FamilyGroup } from "../models/familyGroups.model.js";
@@ -464,6 +465,37 @@ router.post("/:taskId/complete", async (req, res) => {
     res.status(200).json(completedTask);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+router.get("/search", async (req, res) => {
+  try {
+    const {
+      userId,
+      query,
+      status,
+      type,
+      priority,
+      startDate,
+      endDate,
+      sortDue,
+    } = req.query;
+
+    const tasks = await getFilteredTasks({
+      userId,
+      query,
+      status,
+      type,
+      priority,
+      startDate,
+      endDate,
+      sortDue: sortDue === "true",
+    });
+
+    res.json(tasks);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
 });
 //reassignTask
