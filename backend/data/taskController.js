@@ -255,6 +255,7 @@ export const getFilteredTasks = async ({
   endDate,
   sortDue,
 }) => {
+  console.log("Function called, no issue with router");
   if (!userId) throw new Error("User ID is required");
 
   const filter = { createdBy: userId };

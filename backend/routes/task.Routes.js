@@ -193,6 +193,40 @@ router.post("/", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+router.get("/search", async (req, res) => {
+  try {
+    const {
+      userId,
+      query,
+      status,
+      type,
+      priority,
+      startDate,
+      endDate,
+      sortDue,
+    } = req.query;
+
+    console.log("Search Tasks called with params:", req.query);
+
+    const tasks = await getFilteredTasks({
+      userId,
+      query,
+      status,
+      type,
+      priority,
+      startDate,
+      endDate,
+      sortDue: sortDue === "true",
+    });
+
+    res.json(tasks);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 //Get Task by ID
 router.get("/:taskId", async (req, res) => {
   try {
@@ -468,98 +502,65 @@ router.post("/:taskId/complete", async (req, res) => {
   }
 });
 
-router.get("/search", async (req, res) => {
+//reassignTask
+router.post("/:taskId/reassign", async (req, res) => {
   try {
-    const {
-      userId,
-      query,
-      status,
-      type,
-      priority,
-      startDate,
-      endDate,
-      sortDue,
-    } = req.query;
+    let taskId = req.params.taskId;
+    let { newAssignee } = req.body;
+    if (!taskId) {
+      return res.status(400).json({ error: "Task ID is required" });
+    }
+    if (!newAssignee) {
+      return res.status(400).json({ error: "New Assignee ID is required" });
+    }
+    if (!mongoose.Types.ObjectId.isValid(taskId)) {
+      return res.status(400).json({ error: "Invalid Task ID" });
+    }
+    if (!mongoose.Types.ObjectId.isValid(newAssignee)) {
+      return res.status(400).json({ error: "Invalid New Assignee ID" });
+    }
 
-    const tasks = await getFilteredTasks({
-      userId,
-      query,
-      status,
-      type,
-      priority,
-      startDate,
-      endDate,
-      sortDue: sortDue === "true",
+    //check if task exists
+    const taskExists = await getTaskById(taskId);
+    if (!taskExists) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+    //check if newAssignee user exists
+    const userExists = await User.findById(newAssignee);
+    if (!userExists) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    //check if newAssignee is a member of the group
+    const member = await Membership.findOne({
+      groupId: taskExists.groupId,
+      userId: newAssignee,
+      status: "active",
     });
-
-    res.json(tasks);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
+    if (!member) {
+      return res
+        .status(403)
+        .json({ error: "User is not an active member of the group" });
+    }
+    const reassignedTask = await reassignTask(taskId, newAssignee);
+    res.status(200).json(reassignedTask);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
-//reassignTask
-router.post(
-  "/:taskId/reassign",
-  async (req, res) => {
-    try {
-      let taskId = req.params.taskId;
-      let { newAssignee } = req.body;
-      if (!taskId) {
-        return res.status(400).json({ error: "Task ID is required" });
-      }
-      if (!newAssignee) {
-        return res.status(400).json({ error: "New Assignee ID is required" });
-      }
-      if (!mongoose.Types.ObjectId.isValid(taskId)) {
-        return res.status(400).json({ error: "Invalid Task ID" });
-      }
-      if (!mongoose.Types.ObjectId.isValid(newAssignee)) {
-        return res.status(400).json({ error: "Invalid New Assignee ID" });
-      }
 
-      //check if task exists
-      const taskExists = await getTaskById(taskId);
-      if (!taskExists) {
-        return res.status(404).json({ error: "Task not found" });
-      }
-      //check if newAssignee user exists
-      const userExists = await User.findById(newAssignee);
-      if (!userExists) {
-        return res.status(404).json({ error: "User not found" });
-      }
-      //check if newAssignee is a member of the group
-      const member = await Membership.findOne({
-        groupId: taskExists.groupId,
-        userId: newAssignee,
-        status: "active",
-      });
-      if (!member) {
-        return res
-          .status(403)
-          .json({ error: "User is not an active member of the group" });
-      }
-      const reassignedTask = await reassignTask(taskId, newAssignee);
-      res.status(200).json(reassignedTask);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  },
-
-  router.get("/", async (req, res) => {
-    const userId = req.query.userId;
-    if (!userId) {
-      return res
-        .status(400)
-        .json({ error: "userId query parameter is required" });
-    }
-    try {
-      const tasksByGroup = await getTasksGroupedByGroup(userId);
-      res.status(200).json(tasksByGroup);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  })
-);
+router.get("/", async (req, res) => {
+  const userId = req.query.userId;
+  if (!userId) {
+    return res
+      .status(400)
+      .json({ error: "userId query parameter is required" });
+  }
+  try {
+    const tasksByGroup = await getTasksGroupedByGroup(userId);
+    res.status(200).json(tasksByGroup);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 export default router;
