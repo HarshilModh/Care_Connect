@@ -20,9 +20,11 @@ export default function Tasks() {
     try {
       setLoading(true);
       const query = new URLSearchParams({ userId, ...filters }).toString();
+      console.log("Fetching tasks with query:", query);
       const res = await fetch(
         `http://localhost:3000/api/tasks/search?${query}`
       );
+      console.log("Fetch response:", res);
       if (!res.ok) throw new Error("Failed to fetch tasks");
       const data = await res.json();
       setTasks(data);
