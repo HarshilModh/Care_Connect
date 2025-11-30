@@ -9,6 +9,7 @@ import {
   MoonIcon,
   UserCircleIcon,
   ArrowRightOnRectangleIcon,
+  SquaresPlusIcon
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -61,27 +62,7 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* center - nav links for large screens */}
-          <nav className="hidden lg:flex lg:gap-8" aria-label="Primary">
-            <Link
-              to="/about"
-              className="text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-300 transition"
-            >
-              About
-            </Link>
-            <Link
-              to="/features"
-              className="text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-300 transition"
-            >
-              Features
-            </Link>
-            <Link
-              to="/contact"
-              className="text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-300 transition"
-            >
-              Contact
-            </Link>
-          </nav>
+
 
           {/* right - actions */}
           <div className="flex items-center gap-3">
@@ -134,6 +115,18 @@ export default function Navbar() {
                       </div>
 
                       <div className="px-1 py-1">
+                        <Menu.Item>
+                          {({ active }) => (
+                            <Link
+                              to="/home"
+                              className={`${active ? "bg-indigo-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-300" : "text-slate-700 dark:text-slate-200"
+                                } group flex w-full items-center rounded-md px-2 py-2 text-sm transition-colors`}
+                            >
+                              <SquaresPlusIcon className="mr-2 h-5 w-5" aria-hidden="true" />
+                              Dashboard
+                            </Link>
+                          )}
+                        </Menu.Item>
                         <Menu.Item>
                           {({ active }) => (
                             <Link
