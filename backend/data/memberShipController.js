@@ -156,6 +156,19 @@ export const createMultipleMemberships = async (membershipsData) => {
 
       const rolesRequiringOnboarding = ["careGiver", "careRecipient"];
 
+      // check if the user is already done onboarding for this role
+      const existingOnboardingMembership = await Membership.findOne({
+        userId,
+        role,
+        onboardingStatus: "completed"
+      }).lean();
+
+      if (existingOnboardingMembership && rolesRequiringOnboarding.includes(role)) {
+        data.onboardingStatus = "completed";
+      }
+
+
+
       if (!data.onboardingStatus) {
         data.onboardingStatus = rolesRequiringOnboarding.includes(role)
           ? "required"
