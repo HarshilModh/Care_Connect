@@ -1,14 +1,17 @@
+// src/pages/Tasks.jsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TaskList from "../components/tasks/taskList.jsx";
 import TaskFilters from "../components/tasks/TaskFilters.jsx";
 import EditTaskModal from "../components/tasks/taskEdit.jsx";
+import TaskCalendar from "../components/tasks/TaskCalendar.jsx";
 
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [viewMode, setViewMode] = useState("list"); // "list" | "calendar"
 
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
@@ -38,6 +41,7 @@ export default function Tasks() {
 
   useEffect(() => {
     fetchTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const markComplete = async (taskId) => {
@@ -81,6 +85,7 @@ export default function Tasks() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ...updatedTask,
+            // ensure groupId is an id, not full object
             groupId: updatedTask.groupId?._id || updatedTask.groupId,
           }),
         }
@@ -94,41 +99,94 @@ export default function Tasks() {
     }
   };
 
+  const handleTaskEdit = (t) => {
+    setTaskToEdit(t);
+    setShowEditModal(true);
+  };
+
+  const handleTaskView = (t) => {
+    navigate(`/tasks/${t._id}`);
+  };
+
   return (
     <main className="page">
       <div className="container-n">
         <div className="flex justify-between items-center mb-6">
           <h2 className="section-title">Tasks</h2>
-          <button
-            className="btn-primary"
-            onClick={() => navigate("/tasks/create")}
-          >
-            + Create Task
-          </button>
+
+          <div className="flex items-center gap-3">
+            {/* View toggle */}
+            <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden text-sm">
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={`px-3 py-1.5 ${viewMode === "list"
+                    ? "bg-blue-600 text-white"
+                    : "bg-white text-gray-700 hover:bg-gray-100"
+                  }`}
+              >
+                List
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("calendar")}
+                className={`px-3 py-1.5 border-l border-gray-200 ${viewMode === "calendar"
+                    ? "bg-blue-600 text-white"
+                    : "bg-white text-gray-700 hover:bg-gray-100"
+                  }`}
+              >
+                Calendar
+              </button>
+            </div>
+
+            <button
+              className="btn-primary"
+              onClick={() => navigate("/tasks/create")}
+            >
+              + Create Task
+            </button>
+          </div>
         </div>
 
+        {/* Filters work for both views */}
         <TaskFilters
           userId={userId}
           onFilterChange={(filteredData) => setTasks(filteredData)}
         />
 
-        {loading && <p>Loading tasks...</p>}
-        {!loading && tasks.length === 0 && <p>No tasks found.</p>}
+        {loading && <p className="mt-4">Loading tasks...</p>}
+        {!loading && tasks.length === 0 && (
+          <p className="mt-4">No tasks found.</p>
+        )}
 
-        {!loading &&
-          tasks.map((task) => (
-            <TaskList
-              key={task._id}
-              tasks={[task]}
-              onComplete={markComplete}
-              onView={(t) => navigate(`/tasks/${t._id}`)}
-              onEdit={(t) => {
-                setTaskToEdit(t);
-                setShowEditModal(true);
-              }}
-              onDelete={deleteTask}
-            />
-          ))}
+        {!loading && tasks.length > 0 && (
+          <>
+            {viewMode === "list" ? (
+              // Existing list view
+              <div className="mt-4 space-y-4">
+                {tasks.map((task) => (
+                  <TaskList
+                    key={task._id}
+                    tasks={[task]}
+                    onComplete={markComplete}
+                    onView={handleTaskView}
+                    onEdit={handleTaskEdit}
+                    onDelete={deleteTask}
+                  />
+                ))}
+              </div>
+            ) : (
+              // New calendar view
+              <div className="mt-4">
+                <TaskCalendar
+                  tasks={tasks}
+                  onTaskClick={handleTaskView}
+                  onTaskEdit={handleTaskEdit}
+                />
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {showEditModal && (
