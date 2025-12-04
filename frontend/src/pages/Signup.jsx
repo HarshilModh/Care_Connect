@@ -60,6 +60,7 @@ export default function Signup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (
       !formData.firstName ||
       !formData.lastName ||
@@ -74,19 +75,25 @@ export default function Signup() {
       toast.error("Passwords do not match");
       return;
     }
+    console.log("Submitting signup form with data:", formData);
+
 
     try {
       setLoading(true);
+      console.log("Creating Firebase user");
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         formData.email,
         formData.password
       );
+      console.log("Firebase user created:", userCredential);
       const user = userCredential.user;
 
+      console.log("Sending email verification");
       await sendEmailVerification(user, {
         url: "http://localhost:5173/verify-success",
       });
+      console.log("Email verification sent");
       toast.success("Verification email sent! Redirecting to login...");
 
       const payload = {
@@ -98,12 +105,15 @@ export default function Signup() {
         uid: user.uid,
       };
 
+      console.log("Sending signup data to backend:", payload);
       const response = await api.post("users/signUp", payload);
       if (!response.success) {
         toast.error(response.message);
         setLoading(false);
         return;
       }
+      console.log("User created in backend:", response.data);
+      toast.success("Signup successful! Please verify your email.");
 
       // Redirect after a short delay so user sees toast
       setTimeout(() => {
