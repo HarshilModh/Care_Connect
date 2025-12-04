@@ -125,8 +125,8 @@ const GroupMembers = () => {
   // remove member
   const handleRemove = async (membership) => {
     if (!membership || !membership._id) return
-    if (membership.role === "owner") {
-      toast.error("Cannot remove the owner")
+    if (membership.role === "owner" || membership.role === "admin") {
+      toast.error("Cannot remove owners or admins")
       return
     }
 
@@ -151,11 +151,7 @@ const GroupMembers = () => {
     }
   }
 
-  // small helper to navigate to profile if exists
-  const handleGoProfile = (membership) => {
-    const user = typeof membership.userId === "object" ? membership.userId : null
-    if (user?._id) navigate(`/users/${user._id}`)
-  }
+  
 
   if (loading) {
     return (
@@ -264,18 +260,11 @@ const GroupMembers = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <button
-                      className="btn-ghost"
-                      onClick={() => handleGoProfile(m)}
-                      disabled={!user?._id}
-                    >
-                      Profile
-                    </button>
 
                     <button
                       className="btn-ghost"
                       onClick={() => handleRemove(m)}
-                      disabled={m.role === "owner" || removingId === m._id}
+                      disabled={m.role === "owner" || m.role === "admin" || removingId === m._id}
                     >
                       {removingId === m._id ? "Removing…" : "Remove"}
                     </button>
