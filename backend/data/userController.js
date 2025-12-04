@@ -65,17 +65,18 @@ const generateAccessAndRefereshTokens = async (userId) => {
 };
 //Create User
 export const createUser = async (
-  firstName,
-  lastName,
+  firstNamlastName,
   email,
   password,
   confirmPassword,
-  role,
   needPasswordReset,
   uid
 ) => {
   try {
     //validation
+    console.log("Creating user with data:", {
+      firstName, lastName, email, password, confirmPassword, needPasswordReset, uid,
+    });
 
     if (!firstName || !lastName || !email || !password || !confirmPassword) {
       throw new Error("All fields are required");
@@ -119,12 +120,12 @@ export const createUser = async (
     const normEmail = email.trim().toLowerCase();
     //check if user already exists
     const existingUser = await User.findOne({ email: normEmail });
+    console.log("existingUser", existingUser);
     if (existingUser) {
       throw new Error("User with this email already exists");
     }
 
     console.log("needPasswordReset value", needPasswordReset);
-
 
     let resetPasswordLink = null;
 
@@ -189,6 +190,8 @@ Care Connect Team`,
       uid: uid || null,
     });
 
+    console.log("New user created:", newUser);
+
     // Create welcome notification
     try {
       await createNotification({
@@ -207,6 +210,7 @@ Care Connect Team`,
   } catch (error) {
     console.error("Error in createUser:", error);
     if (error?.code === 11000 && error?.keyPattern?.email) {
+      console.log("Duplicate email error caught");
       throw new Error("User with this email already exists");
     }
     throw new Error(`Error creating user: ${error.message}`);

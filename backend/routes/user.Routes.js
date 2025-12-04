@@ -22,24 +22,39 @@ const router = express.Router();
 // Route to create a new user
 router.post("/signUp", async (req, res) => {
   try {
-    const {
-      firstName,
-      lastName,
-      email,
-      password,
-      confirmPassword,
-      phone,
-      role,
-      needPasswordReset,
-      firebaseUid,
-    } = req.body;
+    console.log("In signup route");
+    const { firstName, lastName, email, password, confirmPassword, needPasswordReset, firebaseUid, } = req.body;
+
+    console.log("Received data:", { firstName, lastName, email, password, confirmPassword, needPasswordReset, firebaseUid, });
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
+      throw new Error("All fields are required");
+    }
+    if (
+      typeof firstName !== "string" ||
+      typeof lastName !== "string" ||
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      typeof confirmPassword !== "string"
+    ) {
+      throw new Error("All fields must be strings");
+    }
+
+    if (
+      firstName.trim() === "" ||
+      lastName.trim() === "" ||
+      email.trim() === "" ||
+      password.trim() === "" ||
+      confirmPassword.trim() === ""
+    ) {
+      throw new Error("Fields cannot be empty");
+    }
+
     const newUser = await createUser(
       firstName,
       lastName,
       email,
       password,
       confirmPassword,
-      role,
       needPasswordReset,
       firebaseUid
     );
@@ -165,11 +180,11 @@ router.get("/me", requireAuth, async (req, res, next) => {
 
 router.patch("/me", async (req, res, next) => {
   try {
-    let id=req.body.id;
-    let firstname=req.body.firstName;
-    let lastname=req.body.lastName;
-    let email=req.body.email;
-    let firebaseUid=req.body.firebaseUid;
+    let id = req.body.id;
+    let firstname = req.body.firstName;
+    let lastname = req.body.lastName;
+    let email = req.body.email;
+    let firebaseUid = req.body.firebaseUid;
 
     console.log("In update route", id, firstname, lastname, email, firebaseUid);
     const updateData = {
@@ -291,7 +306,7 @@ router.post("/verify-email", verifyFirebaseToken, async (req, res) => {
 router.delete("/delete/:id", requireAuth, async (req, res) => {
   try {
     console.log("in delete Routes");
-    
+
     const userId = req.params.id;
     if (req.user._id.toString() !== userId) {
       return res.status(403).json({ error: "Unauthorized to delete this user" });
