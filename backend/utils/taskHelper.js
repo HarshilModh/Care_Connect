@@ -17,8 +17,10 @@ export const assertActiveMember = async (userId, groupId) => {
 };
 
 export const assertRecipientInGroup = async (recipientId, groupId) => {
+
+  console.log("Asserting recipient:", recipientId, "in group:", groupId);
   const recipient = await CareRecipient.findOne({
-    _id: recipientId,
+    userId: recipientId,
     groupId,
   }).lean();
   if (!recipient) {

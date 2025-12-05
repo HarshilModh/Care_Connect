@@ -127,7 +127,7 @@ export const getCareRecipientById = async (careRecipientId) => {
             throw new Error("Invalid or missing careRecipientId");
         }
 
-        const recipient = await CareRecipient.findById(careRecipientId);
+        const recipient = await CareRecipient.findById(careRecipientId).populate("userId", "firstName lastName");
 
         if (!recipient) {
             throw new Error("Care recipient not found");
@@ -289,7 +289,7 @@ export const getCareRecipientsByGroupId = async (groupId) => {
             throw new Error("Invalid or missing groupId");
         }
 
-        const recipients = await CareRecipient.find({ groupId });
+        const recipients = await CareRecipient.find({ groupId }).populate("userId", "firstName lastName");
         if (!recipients || recipients.length === 0) {
             throw new Error("No care recipients found for this group");
         }

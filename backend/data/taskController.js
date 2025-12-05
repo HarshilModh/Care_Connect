@@ -64,8 +64,7 @@ export const createTask = async (
       );
     }
     // Assert care recipient belongs to group
-    //will uncomment later after care recipient model is fixed
-    // await assertRecipientInGroup(recipientId, groupId);
+    await assertRecipientInGroup(recipientId, groupId);
     // Create task object
     //There are already defaults in schema for assignedTo,timezone,type,notificationConfig,attachments
     //so only set them if they are provided
@@ -225,10 +224,14 @@ export const markTaskCompleted = async (taskId, completedBy) => {
       throw new Error("Task not found");
     }
     const memberRole = await assertActiveMember(completedBy, task.groupId);
-    if (memberRole !== "caregiver" && memberRole !== "admin") {
-      throw new Error(
-        "User does not have permission to mark task as completed"
-      );
+    // FIX: Enforce strict permissions
+    // 1. Admin/Owner can always complete
+    // 2. The specific Assigned User can complete
+    const isAssignedUser = task.assignedTo && task.assignedTo.toString() === completedBy;
+    const isAdmin = ["admin", "owner"].includes(memberRole);
+
+    if (!isAdmin && !isAssignedUser) {
+      throw new Error("Permission denied: Only the assigned user or group admin can complete this task.");
     }
     const updatedTask = await taskModel.findByIdAndUpdate(
       taskId,
@@ -258,7 +261,12 @@ export const getFilteredTasks = async ({
   console.log("Function called, no issue with router");
   if (!userId) throw new Error("User ID is required");
 
-  const filter = { createdBy: userId };
+  const filter = {
+    $or: [
+      { createdBy: userId },
+      { assignedTo: userId }
+    ]
+  };
 
   if (query) {
     filter.$or = [
@@ -341,16 +349,16 @@ export const listMyTasks = async (
   groupId,
   userId,
   { status, from, to } = {}
-) => {};
+) => { };
 
 //Methods to add later
 
 //addAttachmentToTask and removeAttachmentFromTask can be added later
-export const addAttachmentToTask = async (taskId, documentId) => {};
-export const removeAttachmentFromTask = async (taskId, documentId) => {};
+export const addAttachmentToTask = async (taskId, documentId) => { };
+export const removeAttachmentFromTask = async (taskId, documentId) => { };
 
 //listUpcomingDueTasks
-export const listUpcomingDueTasks = async (groupId, withinMinutes = 60) => {};
+export const listUpcomingDueTasks = async (groupId, withinMinutes = 60) => { };
 
 export const getTasksGroupedByGroup = async (userId) => {
   try {

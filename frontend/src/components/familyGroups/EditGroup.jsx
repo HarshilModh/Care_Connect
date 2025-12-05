@@ -3,6 +3,7 @@ import api from '../../api/axios';
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
 import { Users, Save, ArrowLeft, Globe, Lock } from 'lucide-react';
+import { validateGroupName, validateDescription } from '../../utils/validation';
 
 const EditGroup = () => {
   const { id } = useParams();
@@ -38,9 +39,21 @@ const EditGroup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!groupName.trim()) {
-      toast.error("Group name is required");
+    
+    // Validate group name
+    const nameError = validateGroupName(groupName);
+    if (nameError) {
+      toast.error(nameError);
       return;
+    }
+
+    // Validate description if provided
+    if (groupDesc && groupDesc.trim()) {
+      const descError = validateDescription(groupDesc);
+      if (descError) {
+        toast.error(descError);
+        return;
+      }
     }
 
     setSaving(true);

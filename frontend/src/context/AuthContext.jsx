@@ -37,6 +37,7 @@ export const AuthProvider = ({ children }) => {
 
     const storeSession = (userData, accessToken) => {
         const expiry = Date.now() + 60 * 60 * 1000; // 1 hour from now
+        // const expiry = Date.now() + 5 * 60 * 1000; // 5 minutes from now
         localStorage.setItem("user", JSON.stringify(userData));
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("tokenExpiry", expiry.toString());
@@ -84,6 +85,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     useEffect(() => {
+        console.log("Initializing AuthContext");
         let unsubscribe = () => { };
 
         const initAuth = async () => {
@@ -107,14 +109,14 @@ export const AuthProvider = ({ children }) => {
                         console.log("idToken from onAuthStateChanged:", idToken);
 
                         // Make sure axios baseURL is http://localhost:3000
-                        const res = await api.post("/users/google", { idToken });
-                        const { user: backendUser, tokens } = res.data || {};
-                        console.log("Backend user after Google login:", backendUser);
+                        // const res = await api.post("/users/google", { idToken });
+                        // const { user: backendUser, tokens } = res.data || {};
+                        // console.log("Backend user after Google login:", backendUser);
 
-                        if (backendUser && backendUser._id) {
-                            const accessToken = tokens?.accessToken || idToken;
-                            storeSession(backendUser, accessToken);
-                        }
+                        // if (backendUser && backendUser._id) {
+                        //     const accessToken = tokens?.accessToken || idToken;
+                        //     storeSession(backendUser, accessToken);
+                        // }
                     } catch (err) {
                         console.error("Backend login error in onAuthStateChanged:", err);
                     }

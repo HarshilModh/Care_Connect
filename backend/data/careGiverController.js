@@ -121,7 +121,7 @@ export const getCareGiverById = async (careGiverId) => {
             throw new Error("Invalid or missing careGiverId");
         }
 
-        const careGiver = await CareGiver.findById(careGiverId);
+        const careGiver = await CareGiver.findById(careGiverId).populate("userId", "firstName lastName");
 
         if (!careGiver) {
             throw new Error("Care giver not found");

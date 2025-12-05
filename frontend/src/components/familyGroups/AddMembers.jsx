@@ -3,9 +3,24 @@ import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import { auth } from "../../firebase.js";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-// import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { createRandomPassword } from "../../../../backend/utils/randomGenerator.js";
 import { sendJoinRequest } from "../../api/notifications";
+import {
+  Search,
+  UserPlus,
+  Users,
+  Mail,
+  X,
+  Check,
+  Loader2,
+  Trash2,
+  ArrowLeft,
+  Shield,
+  Plus,
+} from "lucide-react";
+import "react-toastify/dist/ReactToastify.css";
+import { validateEmail, validateRequired } from "../../utils/validation";
 
 /**
  AddMembers.jsx
@@ -20,11 +35,11 @@ import { sendJoinRequest } from "../../api/notifications";
 const ROLE_OPTIONS = [
   { value: "careGiver", label: "Care Giver" },
   { value: "familyMember", label: "Family Member" },
-  { value: "careRecipient", label: "Care recipient" },
+  { value: "careRecipient", label: "Care Recipient" },
 ];
 
 const AddMembers = () => {
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
 
   // core lists
   const [groups, setGroups] = useState([]);
@@ -214,6 +229,8 @@ const AddMembers = () => {
     };
     setPending((p) => [...p, newRow]);
     toast.success("Added to pending list");
+    setSearchResults([]);
+    setEmail(""); // clear search
   };
 
   // add a manual empty row
@@ -224,7 +241,13 @@ const AddMembers = () => {
     }
     setPending((p) => [
       ...p,
-      { groupId, userId: "", email: "", role: "familyMember", status: "pending" },
+      {
+        groupId,
+        userId: "",
+        email: "",
+        role: "familyMember",
+        status: "pending",
+      },
     ]);
   };
 
@@ -244,20 +267,36 @@ const AddMembers = () => {
 
   // prepare payload and submit
   const handleSubmit = async () => {
-    if (!groupId) {
-      toast.error("Select a group first");
+    // Validate group selection
+    const groupError = validateRequired(groupId, "Group");
+    if (groupError) {
+      toast.error(groupError);
       return;
     }
+
     if (pending.length === 0) {
       toast.error("No pending members to submit");
       return;
     }
     console.log("pending", pending);
 
-    const invalid = pending.find((r) => !(r.userId || r.email) || !r.role);
-    if (invalid) {
-      toast.error("Every pending row must have an email or user and a role");
-      return;
+    // Validate each pending member
+    for (const r of pending) {
+      if (r.email) {
+        const emailError = validateEmail(r.email);
+        if (emailError) {
+          toast.error(`Invalid email: ${r.email}`);
+          return;
+        }
+      }
+      if (!r.userId && !r.email) {
+        toast.error("Every pending row must have an email or user");
+        return;
+      }
+      if (!r.role) {
+        toast.error("Every pending row must have a role");
+        return;
+      }
     }
 
     const uniques = [];
@@ -277,11 +316,9 @@ const AddMembers = () => {
       }
     }
 
-    console.log("uniques", uniques);
-
     const memberships = uniques.map((u) => u.payload);
 
-    console.log("memberships", memberships)
+    console.log("memberships", memberships);
 
     try {
       setSubmitting(true);
@@ -290,27 +327,27 @@ const AddMembers = () => {
         { memberships },
         { withCredentials: true }
       );
-      toast.success("Members added");
+      toast.success("Members added successfully");
       setPending([]);
       setIsLoadingMembers(true);
-      let updatedMembers = [];
+
+      // Refresh members list
       try {
         const mm = await axios.get(
           `http://localhost:3000/api/memberships/group/${groupId}`,
           { withCredentials: true }
         );
-        updatedMembers = Array.isArray(mm.data)
+        const updatedMembers = Array.isArray(mm.data)
           ? mm.data
           : mm.data?.members ?? [];
         setExistingMembers(updatedMembers);
       } catch (err) {
-        // ignore
-        console.log("err", err);
+        console.error("Refresh error", err);
       } finally {
         setIsLoadingMembers(false);
       }
 
-      // Send notifications to each new member
+      // Send notifications
       const senderId = (() => {
         const userRaw = localStorage.getItem("user");
         if (!userRaw) return null;
@@ -326,12 +363,11 @@ const AddMembers = () => {
       const groupName = selectedGroup?.groupName || "the group";
 
       for (const member of memberships) {
-        // only notify real users (not just email-only rows)
         if (!member.userId) continue;
         try {
           await sendJoinRequest(
             groupId,
-            member.userId, // recipientId on backend
+            member.userId,
             senderId,
             `You have been invited to join ${groupName}`
           );
@@ -355,8 +391,25 @@ const AddMembers = () => {
   // invite flow
   const handleInviteSubmit = async (e) => {
     e.preventDefault();
-    if (!inviteEmail || !inviteFirstName || !inviteLastName) {
-      toast.error("All fields are required");
+
+    // Validate email
+    const emailError = validateEmail(inviteEmail);
+    if (emailError) {
+      toast.error(emailError);
+      return;
+    }
+
+    // Validate first name
+    const firstNameError = validateRequired(inviteFirstName, "First name");
+    if (firstNameError) {
+      toast.error(firstNameError);
+      return;
+    }
+
+    // Validate last name
+    const lastNameError = validateRequired(inviteLastName, "Last name");
+    if (lastNameError) {
+      toast.error(lastNameError);
       return;
     }
 
@@ -371,10 +424,8 @@ const AddMembers = () => {
         password
       );
 
-      console.log("user added in firebase", userCredential)
+      console.log("user added in firebase", userCredential);
       const user = userCredential.user;
-      console.log("user>>>", user);
-      console.log("inviteRole", inviteRole);
 
       // 2. Create user in backend
       const resp = await axios.post(
@@ -393,8 +444,7 @@ const AddMembers = () => {
         { withCredentials: true }
       );
 
-      console.log("user added in db", resp)
-      console.log(">>>")
+      console.log("user added in db", resp);
 
       // 3. Create membership (single create, not bulk)
       await axios.post(
@@ -407,16 +457,15 @@ const AddMembers = () => {
         },
         { withCredentials: true }
       );
-      console.log("user added in membership")
+      console.log("user added in membership");
 
       // 4. Send join-request notification
       const senderId = (() => {
         const userRaw = localStorage.getItem("user");
-        console.log("userRaw", userRaw)
+        console.log("userRaw", userRaw);
         if (!userRaw) return null;
         try {
           const user = JSON.parse(userRaw);
-          console.log("user parse", user);
           return user?._id || user?.userId || user?.uid || null;
         } catch {
           return null;
@@ -426,302 +475,376 @@ const AddMembers = () => {
       const selectedGroup = groups.find((g) => g._id === groupId);
       const groupName = selectedGroup?.groupName || "the group";
 
-      console.log("<><>");
-      console.log("groupName", groupName, groupId)
-      console.log("resp.data.user._id", resp.data.user._id)
-
       await sendJoinRequest(
         groupId,
-        resp.data.user._id, // recipientId
+        resp.data.user._id,
         senderId,
         `You have been invited to join ${groupName}`
       );
 
-      console.log("sednd the join request notification")
-
+      toast.success("Invitation sent successfully");
+      console.log("sednd the join request notification");
 
       toast.success("Invitation sent");
       setInviteEmail("");
       setInviteFirstName("");
       setInviteLastName("");
-      setInviteRole("family");
+      setInviteRole("familyMember");
     } catch (err) {
       console.error("Invite error", err);
-      toast.error("Failed to send invite");
+      toast.error("Failed to send invite: " + err.message);
     } finally {
       setInviteSubmitting(false);
     }
   };
 
-  const existingCount = existingMembers?.length ?? 0;
   const pendingCount = pending?.length ?? 0;
   const canSubmit = groupId && pendingCount > 0 && !submitting;
 
+  const initials = (name) => {
+    if (!name) return "?";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   return (
-    <main className="page">
-      <div className="container-n">
-        <header className="text-center mb-6">
-          <h2 className="section-title">Add members</h2>
-          <p className="section-sub">
-            Choose a group, search by email, add results to a pending list and
-            submit in bulk
-          </p>
-        </header>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* left column: group select and search */}
+    <main className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="card mb-4">
-              <div className="card-pad">
-                <label className="card-sub font-semibold">Select group</label>
-                <div className="mt-2 flex items-center gap-3">
-                  <select
-                    className="input"
-                    value={groupId}
-                    onChange={(e) => setGroupId(e.target.value)}
-                  >
-                    <option value="">-- choose group --</option>
-                    {groups.map((g) => (
-                      <option key={g._id || g.id} value={g._id || g.id}>
-                        {g.groupName}
-                      </option>
-                    ))}
-                  </select>
+            <div className="flex items-center gap-2 text-gray-500 mb-1">
+              <button
+                onClick={() => navigate("/family-groups")}
+                className="hover:text-gray-900 flex items-center gap-1 text-sm font-medium transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" /> Back to groups
+              </button>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <UserPlus className="w-7 h-7 text-indigo-600" />
+              Add Members
+            </h1>
+            <p className="text-gray-500 mt-1">
+              Grow your care circle by adding family members and caregivers.
+            </p>
+          </div>
 
-                  <div className="text-sm text-slate-500">
-                    {isLoadingGroups
-                      ? "loading..."
-                      : `${groups.length || 0} group(s)`}
-                  </div>
-                </div>
+          <div className="w-full sm:w-72">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              Select Group To Manage
+            </label>
+            <div className="relative">
+              <select
+                className="w-full pl-3 pr-10 py-2.5 bg-white border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none appearance-none transition-all"
+                value={groupId}
+                onChange={(e) => setGroupId(e.target.value)}
+              >
+                <option value="">-- Choose Group --</option>
+                {groups.map((g) => (
+                  <option key={g._id || g.id} value={g._id || g.id}>
+                    {g.groupName}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                {isLoadingGroups ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                ) : (
+                  <Users className="w-4 h-4 text-gray-400" />
+                )}
               </div>
             </div>
+          </div>
+        </header>
 
-            <div className="card mb-4">
-              <div className="card-pad">
-                <label className="card-sub font-semibold">
-                  Search existing users
-                </label>
-                <div className="mt-3">
-                  <div className="flex gap-3">
-                    <input
-                      className="input"
-                      placeholder="Email to search (requires group selection)"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      disabled={!groupId}
-                      type="email"
-                    />
+        <div className="grid gap-6 lg:grid-cols-12">
+          {/* LEFT COLUMN: Search & Invite */}
+          <div className="lg:col-span-7 space-y-6">
+            {/* 1. Search existing users */}
+            <div
+              className={`bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 ${
+                !groupId ? "opacity-60 grayscale-[0.5] pointer-events-none" : ""
+              }`}
+            >
+              <div className="p-6 border-b border-gray-100">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Search className="w-5 h-5 text-gray-400" />
+                  Find Existing Users
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Search by email to find users already registered in the
+                  system.
+                </p>
+
+                <div className="mt-4 relative">
+                  <input
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                    placeholder="Enter email address..."
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={!groupId}
+                    type="email"
+                  />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  {email && (
                     <button
-                      className="btn-ghost"
-                      type="button"
                       onClick={() => {
                         setEmail("");
                         setSearchResults([]);
                       }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 rounded-full text-gray-400 hover:text-gray-600"
                     >
-                      Clear
+                      <X className="w-4 h-4" />
                     </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Search Results Area */}
+              <div className="bg-gray-50/50 min-h-[100px]">
+                {searchLoading ? (
+                  <div className="flex items-center justify-center py-8 text-gray-500 gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" /> Searching...
                   </div>
+                ) : searchResults.length > 0 ? (
+                  <div className="divide-y divide-gray-100">
+                    {searchResults.map((u) => {
+                      const uid = u._id || u.id;
+                      const alreadyMember = isAlreadyMember(uid);
+                      const inPending = pendingHas(uid);
+                      const isAdded = alreadyMember || inPending;
 
-                  <div className="mt-3">
-                    {searchLoading ? (
-                      <div className="text-sm text-slate-500">Searching…</div>
-                    ) : searchError ? (
-                      <div className="alert-error">{searchError}</div>
-                    ) : searchResults?.length > 0 ? (
-                      <div className="space-y-2">
-                        {searchResults.map((u) => {
-                          const uid = u._id || u.id;
-                          const already =
-                            isAlreadyMember(uid) || pendingHas(uid);
-                          return (
-                            <div
-                              key={uid || u.email}
-                              className="flex items-center justify-between gap-3 p-3 rounded-lg border border-slate-100"
-                            >
-                              <div>
-                                <div className="font-medium">
-                                  {u.displayName ||
-                                    `${u.firstName || ""} ${u.lastName || ""
-                                      }`.trim() ||
-                                    u.email}
-                                </div>
-                                <div className="text-sm text-slate-500">
-                                  {u.email}
-                                </div>
+                      return (
+                        <div
+                          key={uid || u.email}
+                          className="p-4 hover:bg-white transition-colors flex items-center justify-between gap-4"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm">
+                              {initials(
+                                u.firstName
+                                  ? `${u.firstName} ${u.lastName}`
+                                  : u.email
+                              )}
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {u.firstName
+                                  ? `${u.firstName} ${u.lastName}`
+                                  : u.email}
                               </div>
-
-                              <div className="flex items-center gap-2">
-                                <select
-                                  className="input"
-                                  value={
-                                    pending.find((p) => p.userId === uid)
-                                      ?.role ?? "familyMember"
-                                  }
-                                  onChange={(e) => {
-                                    const idx = pending.findIndex(
-                                      (p) => p.userId === uid
-                                    );
-                                    if (idx >= 0) {
-                                      handleUpdateRow(idx, {
-                                        role: e.target.value,
-                                      });
-                                    } else {
-                                      setPending((p) => [
-                                        ...p,
-                                        {
-                                          groupId,
-                                          userId: uid,
-                                          email: u.email,
-                                          role: e.target.value,
-                                          status: "pending",
-                                        },
-                                      ]);
-                                    }
-                                  }}
-                                >
-                                  {ROLE_OPTIONS.map((r) => (
-                                    <option key={r.value} value={r.value}>
-                                      {r.label}
-                                    </option>
-                                  ))}
-                                </select>
-
-                                <button
-                                  className="btn-primary"
-                                  type="button"
-                                  onClick={() => handleAddFromSearch(u)}
-                                  disabled={already}
-                                >
-                                  {already ? "Added" : "Add"}
-                                </button>
+                              <div className="text-xs text-gray-500">
+                                {u.email}
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    ) : email ? (
-                      <div className="text-sm text-slate-500">
-                        No users found
-                      </div>
-                    ) : (
-                      <div className="text-sm text-slate-400">
-                        Type an email to search existing users
-                      </div>
-                    )}
+                          </div>
+
+                          <button
+                            onClick={() => handleAddFromSearch(u)}
+                            disabled={isAdded}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                              isAdded
+                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
+                            }`}
+                          >
+                            {isAdded ? (
+                              <>
+                                {" "}
+                                <Check className="w-4 h-4" />{" "}
+                                {alreadyMember ? "Member" : "Pending"}{" "}
+                              </>
+                            ) : (
+                              <>
+                                {" "}
+                                <Plus className="w-4 h-4" /> Add{" "}
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
+                ) : email && !searchLoading ? (
+                  <div className="py-8 text-center text-gray-400 text-sm">
+                    No users found matching "{email}"
+                  </div>
+                ) : (
+                  <div className="py-8 text-center text-gray-400 text-sm">
+                    Search results will appear here
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Invite card */}
-            <div className="card">
-              <div className="card-pad">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <div className="card-title">Invite a new user</div>
-                    <div className="card-sub">
-                      Send an email invite when user not registered
+            {/* 2. Invite New User */}
+            <div
+              className={`bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 ${
+                !groupId ? "opacity-60 grayscale-[0.5] pointer-events-none" : ""
+              }`}
+            >
+              <div className="p-6 border-b border-gray-100">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-gray-400" />
+                  Invite New User via Email
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Send an invitation to someone who isn't on the platform yet.
+                </p>
+              </div>
+
+              <div className="p-6">
+                <form onSubmit={handleInviteSubmit} className="space-y-4">
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        First Name
+                      </label>
+                      <input
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                        placeholder="e.g. Jane"
+                        value={inviteFirstName}
+                        onChange={(e) => setInviteFirstName(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Last Name
+                      </label>
+                      <input
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                        placeholder="e.g. Doe"
+                        value={inviteLastName}
+                        onChange={(e) => setInviteLastName(e.target.value)}
+                      />
                     </div>
                   </div>
-                </div>
 
-                <form onSubmit={handleInviteSubmit} className="grid gap-3">
-                  <fieldset
-                    disabled={!groupId}
-                    className={!groupId ? "opacity-50" : ""}
-                  >
-                    {!groupId && (
-                      <div className="text-sm text-slate-400 mb-2">
-                        Select a group first to invite a new user
-                      </div>
-                    )}
-
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Email Address
+                    </label>
                     <input
-                      className="input"
-                      placeholder="Email"
+                      className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                      placeholder="jane@example.com"
                       type="email"
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
                       required
                     />
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      <input
-                        className="input"
-                        placeholder="First name"
-                        value={inviteFirstName}
-                        onChange={(e) => setInviteFirstName(e.target.value)}
-                      />
-                      <input
-                        className="input"
-                        placeholder="Last name"
-                        value={inviteLastName}
-                        onChange={(e) => setInviteLastName(e.target.value)}
-                      />
-                    </div>
+                  </div>
 
-                    <select
-                      className="input"
-                      value={inviteRole}
-                      onChange={(e) => setInviteRole(e.target.value)}
-                    >
-                      {ROLE_OPTIONS.map((r) => (
-                        <option key={r.value} value={r.value}>
-                          {r.label}
-                        </option>
-                      ))}
-                    </select>
-
-                    <div className="flex justify-end gap-3">
-                      <button
-                        type="submit"
-                        className="btn-primary"
-                        disabled={inviteSubmitting}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Assign Role
+                    </label>
+                    <div className="relative">
+                      <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <select
+                        className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                        value={inviteRole}
+                        onChange={(e) => setInviteRole(e.target.value)}
                       >
-                        {inviteSubmitting ? "Sending…" : "Send invite"}
-                      </button>
+                        {ROLE_OPTIONS.map((r) => (
+                          <option key={r.value} value={r.value}>
+                            {r.label}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                  </fieldset>
+                  </div>
+
+                  <div className="pt-2 flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={inviteSubmitting}
+                      className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-70 disabled:cursor-not-allowed transition-all shadow-sm"
+                    >
+                      {inviteSubmitting ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Mail className="w-4 h-4" />
+                      )}
+                      {inviteSubmitting
+                        ? "Sending Invite..."
+                        : "Send Invitation"}
+                    </button>
+                  </div>
                 </form>
               </div>
             </div>
           </div>
 
-          {/* right column: pending list and existing members */}
-          <div>
-            <div className="card mb-4">
-              <div className="card-pad">
-                <div className="flex items-center justify-between">
-                  <div className="font-semibold">Pending members</div>
-                  <button className="btn-ghost" onClick={handleAddRow}>
-                    + Add row
-                  </button>
+          {/* RIGHT COLUMN: Pending & Existing */}
+          <div className="lg:col-span-5 space-y-6">
+            {/* 3. Pending List */}
+            <div
+              className={`bg-white rounded-2xl shadow-lg border border-indigo-100 overflow-hidden flex flex-col h-[500px] transition-all duration-300 ${
+                !groupId ? "opacity-60 grayscale-[0.5] pointer-events-none" : ""
+              }`}
+            >
+              <div className="p-5 bg-indigo-50 border-b border-indigo-100 flex justify-between items-center">
+                <div>
+                  <h2 className="font-bold text-indigo-900 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-indigo-600" />
+                    Pending List
+                  </h2>
+                  <p className="text-xs text-indigo-600 mt-0.5">
+                    {pendingCount} members ready to add
+                  </p>
                 </div>
+                <button
+                  onClick={handleAddRow}
+                  className="px-3 py-1.5 bg-white text-indigo-600 text-xs font-bold rounded-lg border border-indigo-200 hover:bg-indigo-50 transition-colors"
+                >
+                  + Add Empty Row
+                </button>
+              </div>
 
-
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/30">
                 {pending.length === 0 ? (
-                  <div className="text-sm text-slate-400 mt-2">
-                    No pending members
+                  <div className="h-full flex flex-col items-center justify-center text-center p-6 text-gray-400 border-2 border-dashed border-gray-200 rounded-xl m-2">
+                    <Users className="w-10 h-10 mb-2 opacity-20" />
+                    <p className="text-sm">
+                      Add users from search or create rows manually to populate
+                      this list.
+                    </p>
                   </div>
                 ) : (
-                  <div className="mt-2 space-y-2">
-                    {pending.map((p, idx) => (
+                  pending.map((p, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm group"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-xs font-bold uppercase text-gray-400">
+                          Member {idx + 1}
+                        </span>
+                        <button
+                          onClick={() => handleRemoveRow(idx)}
+                          className="text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
 
-                      <div
-                        key={idx}
-                        className="flex items-center gap-3 p-2 border rounded"
-                      >
+                      <div className="space-y-2">
                         <input
-                          className="input flex-1"
-                          placeholder="Email"
+                          className="w-full px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                          placeholder="Email address"
                           value={p.email}
                           onChange={(e) =>
                             handleUpdateRow(idx, { email: e.target.value })
                           }
+                          disabled={!!p.userId} // Disable editing email if added from existing user
                         />
                         <select
-                          className="input"
+                          className="w-full px-3 py-1.5 text-sm bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                           value={p.role}
                           onChange={(e) =>
                             handleUpdateRow(idx, { role: e.target.value })
@@ -733,64 +856,88 @@ const AddMembers = () => {
                             </option>
                           ))}
                         </select>
-                        <button
-                          className="btn-danger"
-                          onClick={() => handleRemoveRow(idx)}
-                        >
-                          Remove
-                        </button>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))
                 )}
+              </div>
 
-                <div className="flex justify-end mt-3">
-                  <button
-                    className="btn-primary"
-                    disabled={!canSubmit}
-                    onClick={handleSubmit}
-                  >
-                    {submitting ? "Submitting…" : "Submit Pending"}
-                  </button>
-                </div>
+              <div className="p-4 border-t border-gray-100 bg-white">
+                <button
+                  className="w-full py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold rounded-xl shadow-md shadow-indigo-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  disabled={!canSubmit}
+                  onClick={handleSubmit}
+                >
+                  {submitting ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Check className="w-5 h-5" />
+                  )}
+                  {submitting
+                    ? "Processing..."
+                    : `Confirm & Add ${pendingCount} Members`}
+                </button>
               </div>
             </div>
 
-            {/* existing members */}
-            <div className="card">
-              <div className="card-pad">
-                <div className="font-semibold">
-                  Existing members ({existingCount})
-                </div>
+            {/* 4. Existing Members Reference */}
+            <div
+              className={`bg-white rounded-2xl border border-gray-200 p-5 ${
+                !groupId ? "opacity-50" : ""
+              }`}
+            >
+              <h3 className="font-semibold text-gray-900 mb-3 flex justify-between items-center">
+                <span>Existing Members</span>
+                <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                  {existingMembers.length}
+                </span>
+              </h3>
+
+              <div className="max-h-[200px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                 {isLoadingMembers ? (
-                  <div className="text-sm text-slate-500 mt-2">Loading…</div>
+                  <div className="text-center py-4 text-gray-400 text-xs">
+                    Loading members...
+                  </div>
                 ) : existingMembers.length === 0 ? (
-                  <div className="text-sm text-slate-400 mt-2">
-                    No members in this group yet
+                  <div className="text-center py-4 text-gray-400 text-xs italic">
+                    No members yet
                   </div>
                 ) : (
-                  <div className="mt-2 space-y-2">
-                    {existingMembers.map((m) => (
-                      <div
-                        key={m._id || m.id || m.email}
-                        className="p-2 border rounded flex justify-between"
-                      >
-                        <div>
+                  existingMembers.map((m) => (
+                    <div
+                      key={m._id || m.id || m.email}
+                      className="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-gray-100 text-sm"
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-500">
+                          {initials(
+                            m.userId?.firstName
+                              ? `${m.userId.firstName}`
+                              : m.email
+                          )}
+                        </div>
+                        <span className="truncate max-w-[120px]">
                           {m.userId?.firstName
                             ? `${m.userId.firstName} ${m.userId.lastName}`
-                            : m.email || m.userId?.email || "Unknown"}
-                        </div>
-                        <div className="text-sm text-slate-500">{m.role}</div>
+                            : m.email || "Unknown"}
+                        </span>
                       </div>
-                    ))}
-                  </div>
+                      <span className="text-xs text-gray-500 bg-white px-2 py-0.5 rounded border border-gray-100 capitalize">
+                        {m.role === "familyMember" ? "Family" : m.role}
+                      </span>
+                    </div>
+                  ))
                 )}
               </div>
             </div>
           </div>
         </div>
 
-        <ToastContainer position="top-right" autoClose={3000} />
+        <ToastContainer
+          position="bottom-right"
+          autoClose={3000}
+          theme="colored"
+        />
       </div>
     </main>
   );
