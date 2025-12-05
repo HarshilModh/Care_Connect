@@ -21,21 +21,20 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen overflow-hidden bg-gray-50 flex flex-col">
       <ToastContainer position="top-right" />
 
       {!hideSidebar && (
         <div
-          className={`fixed inset-0 bg-black/40 z-30 transition-opacity md:hidden ${
-            sidebarOpen
-              ? "opacity-100 pointer-events-auto"
-              : "opacity-0 pointer-events-none"
-          }`}
+          className={`fixed inset-0 bg-black/40 z-30 transition-opacity md:hidden ${sidebarOpen
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
+            }`}
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      <div className="flex">
+      <div className="flex h-full overflow-hidden">
         {/* Sidebar for md and up */}
         {!hideSidebar && (
           <aside className="hidden md:block md:sticky md:top-0 md:h-screen">
@@ -43,7 +42,7 @@ function App() {
           </aside>
         )}
 
-        <div className="flex-1 min-h-screen flex flex-col">
+        <div className="flex-1 h-full flex flex-col overflow-hidden">
           {/* Mobile header with toggle */}
           {!hideSidebar && (
             <div className="md:hidden bg-white border-b">{/* … */}</div>
@@ -52,8 +51,8 @@ function App() {
           {/* Navbar */}
           {!hideNavbar && <NavbarTwo />}
 
-          <main className="flex-1 p-4 md:p-6">
-            <div className="max-w-6xl mx-auto">
+          <main className="flex-1 p-4 md:p-6 overflow-hidden flex flex-col">
+            <div className="max-w-6xl mx-auto h-full w-full overflow-y-auto custom-scrollbar">
               <AppRoutes />
             </div>
           </main>
@@ -62,9 +61,8 @@ function App() {
         {/* Mobile sliding sidebar */}
         {!hideSidebar && (
           <div
-            className={`fixed z-40 top-0 left-0 h-full w-64 transform bg-white border-r shadow-lg transition-transform md:hidden ${
-              sidebarOpen ? "translate-x-0" : "-translate-x-full"
-            }`}
+            className={`fixed z-40 top-0 left-0 h-full w-64 transform bg-white border-r shadow-lg transition-transform md:hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+              }`}
           >
             {/* … */}
           </div>

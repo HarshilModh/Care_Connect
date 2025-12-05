@@ -10,15 +10,9 @@ import {
   Pill,
   CalendarDays,
   StickyNote,
-  ChevronDown,
+  ChevronDown
 } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
-import {
-  validateTaskTitle,
-  validateDescription,
-  validateFutureDate,
-  validateRequired,
-} from "../utils/validation";
 
 export default function CreateTask() {
   const [title, setTitle] = useState("");
@@ -38,30 +32,10 @@ export default function CreateTask() {
 
   // Task Type Visual Helper
   const taskTypes = [
-    {
-      id: "task",
-      label: "Task",
-      icon: CheckSquare,
-      color: "bg-blue-100 text-blue-600 border-blue-200",
-    },
-    {
-      id: "medication",
-      label: "Meds",
-      icon: Pill,
-      color: "bg-red-100 text-red-600 border-red-200",
-    },
-    {
-      id: "event",
-      label: "Event",
-      icon: CalendarDays,
-      color: "bg-purple-100 text-purple-600 border-purple-200",
-    },
-    {
-      id: "note",
-      label: "Note",
-      icon: StickyNote,
-      color: "bg-yellow-100 text-yellow-600 border-yellow-200",
-    },
+    { id: 'task', label: 'Task', icon: CheckSquare, color: 'bg-blue-100 text-blue-600 border-blue-200' },
+    { id: 'medication', label: 'Meds', icon: Pill, color: 'bg-red-100 text-red-600 border-red-200' },
+    { id: 'event', label: 'Event', icon: CalendarDays, color: 'bg-purple-100 text-purple-600 border-purple-200' },
+    { id: 'note', label: 'Note', icon: StickyNote, color: 'bg-yellow-100 text-yellow-600 border-yellow-200' },
   ];
 
   let storedUser = localStorage.getItem("user");
@@ -77,11 +51,12 @@ export default function CreateTask() {
     if (!userId) return;
     async function fetchGroups() {
       try {
-        const res = await fetch(
-          `http://localhost:3000/api/family-groups/user/${userId}`
-        );
-        const data = await res.json();
+        const res = await fetch(`http://localhost:3000/api/family-groups/user/${userId}`);
+        let data = await res.json();
+        console.log("Fetched Groups:", data);
         // Keep logic: user is part of group or admin
+        //where data.createdBy._id === userId
+        data = data.filter((g) => g.members.some((m) => m.userId === userId) || g.createdBy._id === userId);
         setGroups(data);
       } catch (err) {
         toast.error("Failed to fetch groups.");
@@ -101,14 +76,12 @@ export default function CreateTask() {
     async function fetchData() {
       try {
         // A. Fetch Recipients first
-        const resRecipients = await fetch(
-          `http://localhost:3000/api/care-recipients/group/${selectedGroup}`
-        );
+        const resRecipients = await fetch(`http://localhost:3000/api/care-recipients/group/${selectedGroup}`);
         const dataRecipients = await resRecipients.json();
 
         const formattedRecipients = dataRecipients
-          .filter((item) => item.userId)
-          .map((item) => ({
+          .filter(item => item.userId)
+          .map(item => ({
             id: item.userId._id,
             name: `${item.userId.firstName} ${item.userId.lastName}`,
           }));
@@ -116,9 +89,7 @@ export default function CreateTask() {
         setRecipients(formattedRecipients);
 
         // B. Fetch Members (and filter using the recipients list we just got)
-        const resMembers = await fetch(
-          `http://localhost:3000/api/memberships/group/${selectedGroup}`
-        );
+        const resMembers = await fetch(`http://localhost:3000/api/memberships/group/${selectedGroup}`);
         const dataMembers = await resMembers.json();
 
         const formattedMembers = [];
@@ -127,16 +98,14 @@ export default function CreateTask() {
           if (!user) continue;
 
           // Exclude if they are a recipient
-          const isRecipient = formattedRecipients.some(
-            (r) => r.id === user._id
-          );
+          const isRecipient = formattedRecipients.some((r) => r.id === user._id);
           if (isRecipient) continue;
 
           // Exclude admins, inactive, etc (based on your logic)
-          if (item.role === "admin") continue;
-          if (item.onboardingStatus === "required") continue;
-          if (item.status !== "active") continue;
-          if (item.role === "careRecipient") continue;
+          if (item.role === 'admin') continue;
+          if (item.onboardingStatus === 'required') continue;
+          if (item.status !== 'active') continue;
+          if (item.role === 'careRecipient') continue;
 
           formattedMembers.push({
             id: user._id,
@@ -144,6 +113,7 @@ export default function CreateTask() {
           });
         }
         setMembers(formattedMembers);
+
       } catch (err) {
         console.error(err);
         toast.error("Failed to fetch group details.");
@@ -154,40 +124,8 @@ export default function CreateTask() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Validate task title
-    const titleError = validateTaskTitle(title);
-    if (titleError) {
-      toast.error(titleError);
-      return;
-    }
-
-    // Validate description
-    const descError = validateDescription(desc, 2000, true);
-    if (descError) {
-      toast.error(descError);
-      return;
-    }
-
-    // Validate due date if provided
-    if (dueDate) {
-      const dateError = validateFutureDate(dueDate, "Due date");
-      if (dateError) {
-        toast.error(dateError);
-        return;
-      }
-    }
-
-    // Validate required fields
-    const groupError = validateRequired(selectedGroup, "Family Group");
-    if (groupError) {
-      toast.error(groupError);
-      return;
-    }
-
-    const recipientError = validateRequired(recipient, "Care Recipient");
-    if (recipientError) {
-      toast.error(recipientError);
+    if (!title.trim() || !selectedGroup || !recipient) {
+      toast.error("Please fill in all required fields.");
       return;
     }
 
@@ -223,24 +161,19 @@ export default function CreateTask() {
   return (
     <main className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto">
+
         {/* Header */}
         <header className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-gray-900">Create New Task</h1>
-          <p className="mt-2 text-gray-600">
-            Coordinate care and assign responsibilities.
-          </p>
+          <p className="mt-2 text-gray-600">Coordinate care and assign responsibilities.</p>
         </header>
 
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white shadow-xl rounded-2xl overflow-hidden"
-        >
+        <form onSubmit={handleSubmit} className="bg-white shadow-xl rounded-2xl overflow-hidden">
+
           {/* Section 1: Task Type & Basics */}
           <div className="p-6 border-b border-gray-100 space-y-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Task Category
-              </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">Task Category</label>
               <div className="grid grid-cols-4 gap-3">
                 {taskTypes.map((t) => {
                   const Icon = t.icon;
@@ -250,17 +183,12 @@ export default function CreateTask() {
                       key={t.id}
                       type="button"
                       onClick={() => setType(t.id)}
-                      className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200 ${
-                        isSelected
-                          ? `${t.color} ring-2 ring-offset-1 ring-blue-500`
-                          : "bg-white border-gray-200 hover:bg-gray-50 text-gray-600"
-                      }`}
-                    >
-                      <Icon
-                        className={`w-6 h-6 mb-1 ${
-                          isSelected ? "scale-110" : ""
+                      className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200 ${isSelected
+                        ? `${t.color} ring-2 ring-offset-1 ring-blue-500`
+                        : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-600'
                         }`}
-                      />
+                    >
+                      <Icon className={`w-6 h-6 mb-1 ${isSelected ? 'scale-110' : ''}`} />
                       <span className="text-xs font-medium">{t.label}</span>
                     </button>
                   );
@@ -270,9 +198,7 @@ export default function CreateTask() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Title
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
                 <input
                   type="text"
                   value={title}
@@ -284,16 +210,13 @@ export default function CreateTask() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
                   rows={3}
                   value={desc}
                   onChange={(e) => setDesc(e.target.value)}
                   placeholder="Add details, dosage instructions, or notes..."
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
-                  required
                 />
               </div>
             </div>
@@ -301,16 +224,12 @@ export default function CreateTask() {
 
           {/* Section 2: Assignment Context */}
           <div className="p-6 bg-gray-50/50 space-y-6">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-              Assignment Details
-            </h3>
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Assignment Details</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Group Selection */}
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Family Group
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Family Group</label>
                 <div className="relative">
                   <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <select
@@ -321,9 +240,7 @@ export default function CreateTask() {
                   >
                     <option value="">Select Group</option>
                     {groups.map((g) => (
-                      <option key={g._id} value={g._id}>
-                        {g.groupName || "Unnamed Group"}
-                      </option>
+                      <option key={g._id} value={g._id}>{g.groupName || "Unnamed Group"}</option>
                     ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
@@ -332,9 +249,7 @@ export default function CreateTask() {
 
               {/* Recipient Selection */}
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Care Recipient
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Care Recipient</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <select
@@ -344,15 +259,9 @@ export default function CreateTask() {
                     className="w-full pl-10 pr-10 py-3 rounded-lg border border-gray-300 bg-white disabled:bg-gray-100 disabled:text-gray-400 focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
                     required
                   >
-                    <option value="">
-                      {selectedGroup
-                        ? "Select Recipient"
-                        : "Select Group First"}
-                    </option>
+                    <option value="">{selectedGroup ? "Select Recipient" : "Select Group First"}</option>
                     {recipients.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name}
-                      </option>
+                      <option key={r.id} value={r.id}>{r.name}</option>
                     ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
@@ -361,9 +270,7 @@ export default function CreateTask() {
 
               {/* Assign To */}
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Assign To (Optional)
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Assign To (Optional)</label>
                 <div className="relative">
                   <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-5 h-5 bg-blue-100 rounded-full text-blue-600 text-xs font-bold">
                     @
@@ -376,9 +283,7 @@ export default function CreateTask() {
                   >
                     <option value="">Unassigned</option>
                     {members.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
+                      <option key={m.id} value={m.id}>{m.name}</option>
                     ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
@@ -387,27 +292,25 @@ export default function CreateTask() {
 
               {/* Due Date */}
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Due Date
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
                     type="datetime-local"
                     value={dueDate}
-                    min={new Date().toISOString().split("T")[0]}
+                    min={new Date().toISOString().slice(0,16)}
                     onChange={(e) => setDueDate(e.target.value)}
                     onKeyDown={(e) => e.preventDefault()} // Prevent typing manually
                     className="w-full pl-10 py-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                    // only show today's date or later
+                    
                   />
                 </div>
               </div>
 
               {/* Repeat Rule */}
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Repeat
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Repeat</label>
                 <div className="relative">
                   <select
                     value={repeatRule}
@@ -429,7 +332,7 @@ export default function CreateTask() {
           <div className="p-6 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
             <button
               type="button"
-              onClick={() => navigate("/tasks")}
+              onClick={() => navigate('/tasks')}
               className="px-6 py-2.5 rounded-lg text-gray-600 font-medium hover:bg-gray-200 transition-colors"
               disabled={loading}
             >
