@@ -62,6 +62,7 @@ router.get("/user/:userId", async (req, res) => {
     }
 
     const careGiver = await getCareGiverByUserId(userId);
+    console.log("careGiver", careGiver)
 
     return res.status(200).json(careGiver);
   } catch (error) {

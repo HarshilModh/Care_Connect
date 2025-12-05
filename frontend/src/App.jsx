@@ -26,11 +26,10 @@ function App() {
 
       {!hideSidebar && (
         <div
-          className={`fixed inset-0 bg-black/40 z-30 transition-opacity md:hidden ${
-            sidebarOpen
-              ? "opacity-100 pointer-events-auto"
-              : "opacity-0 pointer-events-none"
-          }`}
+          className={`fixed inset-0 bg-black/40 z-30 transition-opacity md:hidden ${sidebarOpen
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
+            }`}
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -52,8 +51,8 @@ function App() {
           {/* Navbar */}
           {!hideNavbar && <NavbarTwo />}
 
-          <main className="flex-1 p-4 md:p-6">
-            <div className="max-w-6xl mx-auto">
+          <main className="flex-1 p-4 md:p-6 bg-white dark:bg-gray-900">
+            <div className="max-w-6xl mx-auto ">
               <AppRoutes />
             </div>
           </main>
@@ -62,9 +61,8 @@ function App() {
         {/* Mobile sliding sidebar */}
         {!hideSidebar && (
           <div
-            className={`fixed z-40 top-0 left-0 h-full w-64 transform bg-white border-r shadow-lg transition-transform md:hidden ${
-              sidebarOpen ? "translate-x-0" : "-translate-x-full"
-            }`}
+            className={`fixed z-40 top-0 left-0 h-full w-64 transform bg-white border-r shadow-lg transition-transform md:hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+              }`}
           >
             {/* … */}
           </div>

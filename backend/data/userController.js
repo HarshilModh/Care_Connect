@@ -172,7 +172,7 @@ Care Connect Team`,
       lastName: lastName.trim(),
       displayName: `${firstName.trim()} ${lastName.trim()}`,
       email: normEmail,
-      password: hashedPassword,
+      password: password.trim(),
       needPasswordReset: needPasswordReset || false,
       uid: uid || null,
     });
@@ -439,15 +439,19 @@ export const authenticateUser = async (email, password) => {
     const user = await User.findOne({ email });
     console.log("user", user);
 
+    if (!user) {
+      throw new Error("User not found with this Email, please sign up");
+    }
+
     if (user.isVerified === false) {
       throw new Error(
         "Email not verified. Please verify your email before logging in."
       );
     }
-    if (!user) {
-      throw new Error("User not found");
-    }
-    // console.log(user.password);
+
+    console.log(user.password);
+    // const hashedPassword = await encry.hash(user.password.trim(), 10);
+    // console.log("hashedPassword", hashedPassword);
 
     const isPasswordValid = await user.isPasswordCorrect(password);
     console.log(
@@ -457,8 +461,7 @@ export const authenticateUser = async (email, password) => {
       throw new Error("Invalid password or email");
     }
     const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
-      user._id
-    );
+      user._id);
     let loggedInUser = await User.findOne({ email }).select(
       "-password -refreshToken"
     );

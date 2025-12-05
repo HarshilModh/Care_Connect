@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import {
   validateRequired,
-  validatePhone,
+  // validatePhone,
   validateAge,
   validateEmergencyContact,
 } from "../utils/validation";
@@ -98,6 +98,8 @@ const CareRecipientOnboarding = () => {
         ],
       };
 
+      console.log("Submitting careRecipient onboarding payload:", payload);
+
       const accessToken = localStorage.getItem("accessToken");
 
       const res = await axios.post(
@@ -122,8 +124,8 @@ const CareRecipientOnboarding = () => {
       console.error("Error saving care recipient onboarding", err);
       setError(
         err.response?.data?.error ||
-          err.message ||
-          "Failed to save care recipient onboarding"
+        err.message ||
+        "Failed to save care recipient onboarding"
       );
       toast.error("Failed to save onboarding");
     } finally {
