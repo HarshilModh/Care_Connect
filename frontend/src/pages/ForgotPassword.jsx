@@ -3,6 +3,7 @@ import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../firebase";
 import { toast, ToastContainer } from "react-toastify";
 import { Link, useNavigate } from "react-router-dom";
+import { validateEmail } from "../utils/validation";
 
 export default function ForgotPassword() {
     const [email, setEmail] = useState("");
@@ -11,8 +12,11 @@ export default function ForgotPassword() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!email.trim()) {
-            toast.error("Please enter your email address");
+        
+        // Validate email
+        const emailError = validateEmail(email);
+        if (emailError) {
+            toast.error(emailError);
             return;
         }
 

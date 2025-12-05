@@ -10,6 +10,12 @@ import {
 import { auth, googleProvider } from "../firebase";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
+import {
+  validateEmail,
+  validatePassword,
+  validateConfirmPassword,
+  validateName,
+} from "../utils/validation";
 
 // import { useTheme } from "../context/ThemeContext";
 
@@ -52,7 +58,6 @@ export default function Signup() {
       toast.success("Logged in successfully!");
       // navigate("/home", { replace: true });
       setTimeout(() => navigate("/home", { replace: true }), 1000);
-
     } catch (err) {
       console.error("Google login error:", err);
       toast.error("Google Sign-In failed. Try again.");
@@ -62,22 +67,33 @@ export default function Signup() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (
-      !formData.firstName ||
-      !formData.lastName ||
-      !formData.email ||
-      !formData.password ||
-      !formData.confirmpassword
-    ) {
-      toast.error("All fields are required");
-      return;
-    }
-    if (formData.password !== formData.confirmpassword) {
-      toast.error("Passwords do not match");
+    // Validate all fields
+    const newErrors = {};
+
+    const firstNameError = validateName(formData.firstName, "First name");
+    if (firstNameError) newErrors.firstName = firstNameError;
+
+    const lastNameError = validateName(formData.lastName, "Last name");
+    if (lastNameError) newErrors.lastName = lastNameError;
+
+    const emailError = validateEmail(formData.email);
+    if (emailError) newErrors.email = emailError;
+
+    const passwordError = validatePassword(formData.password);
+    if (passwordError) newErrors.password = passwordError;
+
+    const confirmPasswordError = validateConfirmPassword(
+      formData.password,
+      formData.confirmpassword
+    );
+    if (confirmPasswordError) newErrors.confirmpassword = confirmPasswordError;
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error("Please fix the errors in the form");
       return;
     }
     console.log("Submitting signup form with data:", formData);
-
 
     try {
       setLoading(true);
@@ -260,6 +276,7 @@ export default function Signup() {
                     onChange={handleChange}
                     placeholder="John"
                     className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
+                    required
                   />
                 </div>
                 <div>
@@ -277,6 +294,7 @@ export default function Signup() {
                     onChange={handleChange}
                     placeholder="Doe"
                     className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
+                    required
                   />
                 </div>
               </div>
@@ -296,6 +314,7 @@ export default function Signup() {
                   onChange={handleChange}
                   placeholder="you@example.com"
                   className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
+                  required
                 />
               </div>
 
@@ -314,6 +333,7 @@ export default function Signup() {
                   onChange={handleChange}
                   placeholder="••••••••"
                   className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
+                  required
                 />
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   Must be at least 8 characters
@@ -335,6 +355,7 @@ export default function Signup() {
                   onChange={handleChange}
                   placeholder="••••••••"
                   className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
+                  required
                 />
               </div>
 
@@ -345,6 +366,7 @@ export default function Signup() {
                   name="terms"
                   type="checkbox"
                   className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                  required
                 />
                 <label
                   htmlFor="terms"
