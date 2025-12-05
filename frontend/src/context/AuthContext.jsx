@@ -36,8 +36,8 @@ export const AuthProvider = ({ children }) => {
     };
 
     const storeSession = (userData, accessToken) => {
-        // const expiry = Date.now() + 60 * 60 * 1000; // 1 hour from now
-        const expiry = Date.now() + 5 * 60 * 1000; // 5 minutes from now
+        const expiry = Date.now() + 60 * 60 * 1000; // 1 hour from now
+        // const expiry = Date.now() + 5 * 60 * 1000; // 5 minutes from now
         localStorage.setItem("user", JSON.stringify(userData));
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("tokenExpiry", expiry.toString());
