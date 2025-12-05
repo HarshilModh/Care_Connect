@@ -467,7 +467,7 @@ export const getCareGiverByUserId = async (userId) => {
         const careGiver = await CareGiver.findOne({ userId });
 
         if (!careGiver) {
-            throw new Error("Care giver not found for this user");
+            return []; // Return empty array if no care givers found
         }
 
         return careGiver;

@@ -309,7 +309,8 @@ export const getCareRecipientsByUserId = async (userId) => {
         const recipients = await CareRecipient.find({ userId });
 
         if (!recipients || recipients.length === 0) {
-            throw new Error("No care recipients found");
+            return [];
+            // throw new Error("No care recipients found");
         }
 
         return recipients;

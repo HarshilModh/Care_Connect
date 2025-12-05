@@ -167,6 +167,31 @@ export const validateAge = (age) => {
   if (!age) {
     return "Age is required";
   }
+
+  // Check if age is a date string (YYYY-MM-DD format)
+  if (typeof age === 'string' && age.includes('-')) {
+    const birthDate = new Date(age);
+    if (isNaN(birthDate.getTime())) {
+      return "Please enter a valid birth date";
+    }
+
+    const today = new Date();
+    const calculatedAge = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+
+    // Adjust age if birthday hasn't occurred this year
+    const finalAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())
+      ? calculatedAge - 1
+      : calculatedAge;
+
+    if (finalAge < 0 || finalAge > 150) {
+      return "Please enter a valid birth date (age must be between 0 and 150)";
+    }
+
+    return "";
+  }
+
+  // Handle numeric age input
   const ageNum = parseInt(age);
   if (isNaN(ageNum) || ageNum < 0 || ageNum > 150) {
     return "Please enter a valid age between 0 and 150";

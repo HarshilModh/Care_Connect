@@ -70,6 +70,7 @@ export default function Signup() {
     // Validate all fields
     const newErrors = {};
 
+
     const firstNameError = validateName(formData.firstName, "First name");
     if (firstNameError) newErrors.firstName = firstNameError;
 
@@ -88,6 +89,7 @@ export default function Signup() {
     );
     if (confirmPasswordError) newErrors.confirmpassword = confirmPasswordError;
 
+    console.log("Validating form data:", newErrors);
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       toast.error("Please fix the errors in the form");
