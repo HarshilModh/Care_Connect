@@ -70,12 +70,14 @@ export const createUser = async (
   email,
   password,
   confirmPassword,
-  role,
   needPasswordReset,
   uid
 ) => {
   try {
     //validation
+    console.log("Creating user with data:", {
+      firstName, lastName, email, password, confirmPassword, needPasswordReset, uid,
+    });
 
     if (!firstName || !lastName || !email || !password || !confirmPassword) {
       throw new Error("All fields are required");
@@ -98,20 +100,7 @@ export const createUser = async (
     ) {
       throw new Error("Fields cannot be empty");
     }
-    // if (
-    //   // !isValidString(firstName, "firstName") ||
-    //   // !isValidString(lastName, "lastName") ||
-    //   // !isValidEmail(email) ||
-    //   // !isValidPassword(password) ||
-    //   // !isValidPassword(confirmPassword)
-    // ) {
-    //   throw new Error("Invalid input data");
-    // }
-    // if (phone) {
-    //   if (!isValidPhone(phone)) {
-    //     throw new Error('Invalid phone number');
-    //   }
-    // }
+
     if (password !== confirmPassword) {
       throw new Error("Passwords do not match");
     }
@@ -119,12 +108,12 @@ export const createUser = async (
     const normEmail = email.trim().toLowerCase();
     //check if user already exists
     const existingUser = await User.findOne({ email: normEmail });
+    console.log("existingUser", existingUser);
     if (existingUser) {
       throw new Error("User with this email already exists");
     }
 
     console.log("needPasswordReset value", needPasswordReset);
-
 
     let resetPasswordLink = null;
 
@@ -175,7 +164,7 @@ Care Connect Team`,
       console.log("Account creation email sent, message ID:", response);
     }
 
-    // const hashedPassword = await bcrypt.hash(password.trim(), 10);
+    const hashedPassword = await bcrypt.hash(password.trim(), 10);
 
     //create new user
     const newUser = await User.create({
@@ -183,11 +172,12 @@ Care Connect Team`,
       lastName: lastName.trim(),
       displayName: `${firstName.trim()} ${lastName.trim()}`,
       email: normEmail,
-      password: password.trim(),
+      password: hashedPassword,
       needPasswordReset: needPasswordReset || false,
-      role: role || null,
       uid: uid || null,
     });
+
+    console.log("New user created:", newUser);
 
     // Create welcome notification
     try {
@@ -207,6 +197,7 @@ Care Connect Team`,
   } catch (error) {
     console.error("Error in createUser:", error);
     if (error?.code === 11000 && error?.keyPattern?.email) {
+      console.log("Duplicate email error caught");
       throw new Error("User with this email already exists");
     }
     throw new Error(`Error creating user: ${error.message}`);
@@ -459,6 +450,9 @@ export const authenticateUser = async (email, password) => {
     // console.log(user.password);
 
     const isPasswordValid = await user.isPasswordCorrect(password);
+    console.log(
+      "isPasswordValid:", isPasswordValid
+    )
     if (!isPasswordValid) {
       throw new Error("Invalid password or email");
     }

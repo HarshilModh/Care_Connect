@@ -64,6 +64,7 @@ export default function Tasks() {
 
   useEffect(() => {
     fetchTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Filter Logic (Client Side for snappiness)
@@ -141,6 +142,7 @@ export default function Tasks() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ...updatedTask,
+            // ensure groupId is an id, not full object
             groupId: updatedTask.groupId?._id || updatedTask.groupId,
           }),
         }
@@ -225,6 +227,8 @@ export default function Tasks() {
                 className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${statusFilter === status
                   ? 'bg-blue-100 text-blue-700'
                   : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
                   }`}
               >
                 {status}
@@ -274,6 +278,8 @@ export default function Tasks() {
                     <div className="flex items-center gap-2 mb-1">
                       {/* Type Badge */}
                       <span className={`flex items-center gap-1 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border ${task.type === 'medication' ? 'bg-red-50 text-red-600 border-red-100' :
+                        task.type === 'event' ? 'bg-purple-50 text-purple-600 border-purple-100' :
+                          'bg-blue-50 text-blue-600 border-blue-100'
                         task.type === 'event' ? 'bg-purple-50 text-purple-600 border-purple-100' :
                           'bg-blue-50 text-blue-600 border-blue-100'
                         }`}>
