@@ -2,6 +2,12 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import {
+  validateTaskTitle,
+  validateDescription,
+  validateFutureDate,
+  validateRequired,
+} from "../utils/validation";
 
 export default function CreateTask() {
   const [title, setTitle] = useState("");
@@ -85,8 +91,40 @@ export default function CreateTask() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim() || !selectedGroup || !recipient) {
-      toast.error("Please fill in all required fields.");
+
+    // Validate task title
+    const titleError = validateTaskTitle(title);
+    if (titleError) {
+      toast.error(titleError);
+      return;
+    }
+
+    // Validate description
+    const descError = validateDescription(desc, 2000, true);
+    if (descError) {
+      toast.error(descError);
+      return;
+    }
+
+    // Validate due date if provided
+    if (dueDate) {
+      const dateError = validateFutureDate(dueDate, "Due date");
+      if (dateError) {
+        toast.error(dateError);
+        return;
+      }
+    }
+
+    // Validate required fields
+    const groupError = validateRequired(selectedGroup, "Family Group");
+    if (groupError) {
+      toast.error(groupError);
+      return;
+    }
+
+    const recipientError = validateRequired(recipient, "Care Recipient");
+    if (recipientError) {
+      toast.error(recipientError);
       return;
     }
 
@@ -153,6 +191,7 @@ export default function CreateTask() {
                 rows={4}
                 value={desc}
                 onChange={(e) => setDesc(e.target.value)}
+                required
               />
             </div>
 
@@ -197,6 +236,7 @@ export default function CreateTask() {
                 className="input"
                 value={type}
                 onChange={(e) => setType(e.target.value)}
+                required
               >
                 <option value="task">Task</option>
                 <option value="medication">Medication</option>

@@ -1,4 +1,10 @@
 import { useState, useEffect } from "react";
+import { toast } from "react-toastify";
+import {
+  validateTaskTitle,
+  validateDescription,
+  validateFutureDate,
+} from "../../utils/validation";
 
 export default function EditTaskModal({
   task,
@@ -39,6 +45,7 @@ export default function EditTaskModal({
           className="w-full border rounded p-2 mb-4"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          required
         />
 
         {/* Description */}
@@ -50,6 +57,7 @@ export default function EditTaskModal({
           rows="3"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          required
         ></textarea>
 
         {/* Type */}
@@ -88,7 +96,30 @@ export default function EditTaskModal({
 
           <button
             className="btn-primary"
-            onClick={() =>
+            onClick={() => {
+              // Validate title
+              const titleError = validateTaskTitle(title);
+              if (titleError) {
+                toast.error(titleError);
+                return;
+              }
+
+              // Validate description
+              const descError = validateDescription(description, 2000, true);
+              if (descError) {
+                toast.error(descError);
+                return;
+              }
+
+              // Validate due date if provided
+              if (dueAt) {
+                const dateError = validateFutureDate(dueAt, "Due date");
+                if (dateError) {
+                  toast.error(dateError);
+                  return;
+                }
+              }
+
               onSave({
                 ...task,
                 title,
@@ -96,8 +127,8 @@ export default function EditTaskModal({
                 dueAt,
                 groupId: task.groupId?._id || task.groupId,
                 recipientId: recipient || task.recipientId,
-              })
-            }
+              });
+            }}
           >
             Save Changes
           </button>

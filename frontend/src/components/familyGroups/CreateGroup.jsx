@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import axios from "axios";
 // import { useNavigate } from "react-router-dom"; // enable when you want to route to Add Members
-import { ToastContainer, toast } from 'react-toastify';
+import { ToastContainer, toast } from "react-toastify";
+import { validateGroupName, validateDescription } from "../../utils/validation";
 
 const CreateGroup = () => {
   // const navigate = useNavigate();
@@ -13,7 +14,6 @@ const CreateGroup = () => {
   const [msg, setMsg] = useState({ type: "", text: "" });
 
   let createdBy = localStorage.getItem("user") || "";
-
 
   createdBy = JSON.parse(createdBy)._id || "";
 
@@ -28,19 +28,33 @@ const CreateGroup = () => {
     e.preventDefault();
     setMsg({ type: "", text: "" });
 
-    if (!groupName.trim()) {
-      setMsg({ type: "error", text: "Group name is required." });
+    // Validate group name
+    const groupNameError = validateGroupName(groupName);
+    if (groupNameError) {
+      setMsg({ type: "error", text: groupNameError });
+      toast.error(groupNameError);
+      return;
+    }
+
+    // Validate description
+    const descriptionError = validateDescription(description);
+    if (descriptionError) {
+      setMsg({ type: "error", text: descriptionError });
+      toast.error(descriptionError);
       return;
     }
 
     setLoading(true);
     try {
-      const response = await axios.post("http://localhost:3000/api/family-groups", {
-        groupName: groupName.trim(),
-        description: description.trim(),
-        isPublic,
-        createdBy,
-      });
+      const response = await axios.post(
+        "http://localhost:3000/api/family-groups",
+        {
+          groupName: groupName.trim(),
+          description: description.trim(),
+          isPublic,
+          createdBy,
+        }
+      );
       console.log(response);
 
       const data = response.data;
@@ -52,8 +66,16 @@ const CreateGroup = () => {
       // navigate(`/addMember`, { state: { groupId: data.familyGroup._id } });
     } catch (err) {
       console.error("Error creating family group:", err);
-      toast.error("Error creating family group: " + (err.response?.data?.error || err.message));
-      setMsg({ type: "error", text: "Error creating family group: " + (err.response?.data?.error || err.message) });
+      toast.error(
+        "Error creating family group: " +
+          (err.response?.data?.error || err.message)
+      );
+      setMsg({
+        type: "error",
+        text:
+          "Error creating family group: " +
+          (err.response?.data?.error || err.message),
+      });
     } finally {
       setLoading(false);
     }
@@ -64,7 +86,9 @@ const CreateGroup = () => {
       <div className="container-n">
         <header className="text-center mb-8">
           <h1 className="section-title">Create Family Group</h1>
-          <p className="section-sub">Organize caregiving with a shared space for your family.</p>
+          <p className="section-sub">
+            Organize caregiving with a shared space for your family.
+          </p>
         </header>
 
         <div className="card mx-auto max-w-2xl">
@@ -83,9 +107,12 @@ const CreateGroup = () => {
                   value={groupName}
                   onChange={(e) => setGroupName(e.target.value)}
                   autoFocus
+                  required
                 />
               </div>
-              <p className="help">Pick a clear name that everyone will recognize.</p>
+              <p className="help">
+                Pick a clear name that everyone will recognize.
+              </p>
             </div>
 
             {/* Description */}
@@ -128,8 +155,12 @@ const CreateGroup = () => {
 
             {/* Messages */}
             <div className="sm:col-span-2">
-              {msg.type === "success" && <div className="alert-success">{msg.text}</div>}
-              {msg.type === "error" && <div className="alert-error">{msg.text}</div>}
+              {msg.type === "success" && (
+                <div className="alert-success">{msg.text}</div>
+              )}
+              {msg.type === "error" && (
+                <div className="alert-error">{msg.text}</div>
+              )}
             </div>
 
             {/* Actions */}
@@ -164,10 +195,7 @@ const CreateGroup = () => {
         draggable
         pauseOnHover
         theme="colored"
-
       />
-
-
     </main>
   );
 };

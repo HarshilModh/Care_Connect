@@ -6,6 +6,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 // import { useNavigate } from "react-router-dom";
 import { createRandomPassword } from "../../../../backend/utils/randomGenerator.js";
 import { sendJoinRequest } from "../../api/notifications";
+import { validateEmail, validateRequired } from "../../utils/validation";
 
 /**
  AddMembers.jsx
@@ -224,7 +225,13 @@ const AddMembers = () => {
     }
     setPending((p) => [
       ...p,
-      { groupId, userId: "", email: "", role: "familyMember", status: "pending" },
+      {
+        groupId,
+        userId: "",
+        email: "",
+        role: "familyMember",
+        status: "pending",
+      },
     ]);
   };
 
@@ -244,20 +251,36 @@ const AddMembers = () => {
 
   // prepare payload and submit
   const handleSubmit = async () => {
-    if (!groupId) {
-      toast.error("Select a group first");
+    // Validate group selection
+    const groupError = validateRequired(groupId, "Group");
+    if (groupError) {
+      toast.error(groupError);
       return;
     }
+
     if (pending.length === 0) {
       toast.error("No pending members to submit");
       return;
     }
     console.log("pending", pending);
 
-    const invalid = pending.find((r) => !(r.userId || r.email) || !r.role);
-    if (invalid) {
-      toast.error("Every pending row must have an email or user and a role");
-      return;
+    // Validate each pending member
+    for (const r of pending) {
+      if (r.email) {
+        const emailError = validateEmail(r.email);
+        if (emailError) {
+          toast.error(`Invalid email: ${r.email}`);
+          return;
+        }
+      }
+      if (!r.userId && !r.email) {
+        toast.error("Every pending row must have an email or user");
+        return;
+      }
+      if (!r.role) {
+        toast.error("Every pending row must have a role");
+        return;
+      }
     }
 
     const uniques = [];
@@ -281,7 +304,7 @@ const AddMembers = () => {
 
     const memberships = uniques.map((u) => u.payload);
 
-    console.log("memberships", memberships)
+    console.log("memberships", memberships);
 
     try {
       setSubmitting(true);
@@ -355,8 +378,25 @@ const AddMembers = () => {
   // invite flow
   const handleInviteSubmit = async (e) => {
     e.preventDefault();
-    if (!inviteEmail || !inviteFirstName || !inviteLastName) {
-      toast.error("All fields are required");
+
+    // Validate email
+    const emailError = validateEmail(inviteEmail);
+    if (emailError) {
+      toast.error(emailError);
+      return;
+    }
+
+    // Validate first name
+    const firstNameError = validateRequired(inviteFirstName, "First name");
+    if (firstNameError) {
+      toast.error(firstNameError);
+      return;
+    }
+
+    // Validate last name
+    const lastNameError = validateRequired(inviteLastName, "Last name");
+    if (lastNameError) {
+      toast.error(lastNameError);
       return;
     }
 
@@ -371,7 +411,7 @@ const AddMembers = () => {
         password
       );
 
-      console.log("user added in firebase", userCredential)
+      console.log("user added in firebase", userCredential);
       const user = userCredential.user;
       console.log("user>>>", user);
       console.log("inviteRole", inviteRole);
@@ -393,8 +433,8 @@ const AddMembers = () => {
         { withCredentials: true }
       );
 
-      console.log("user added in db", resp)
-      console.log(">>>")
+      console.log("user added in db", resp);
+      console.log(">>>");
 
       // 3. Create membership (single create, not bulk)
       await axios.post(
@@ -407,12 +447,12 @@ const AddMembers = () => {
         },
         { withCredentials: true }
       );
-      console.log("user added in membership")
+      console.log("user added in membership");
 
       // 4. Send join-request notification
       const senderId = (() => {
         const userRaw = localStorage.getItem("user");
-        console.log("userRaw", userRaw)
+        console.log("userRaw", userRaw);
         if (!userRaw) return null;
         try {
           const user = JSON.parse(userRaw);
@@ -427,8 +467,8 @@ const AddMembers = () => {
       const groupName = selectedGroup?.groupName || "the group";
 
       console.log("<><>");
-      console.log("groupName", groupName, groupId)
-      console.log("resp.data.user._id", resp.data.user._id)
+      console.log("groupName", groupName, groupId);
+      console.log("resp.data.user._id", resp.data.user._id);
 
       await sendJoinRequest(
         groupId,
@@ -437,8 +477,7 @@ const AddMembers = () => {
         `You have been invited to join ${groupName}`
       );
 
-      console.log("sednd the join request notification")
-
+      console.log("sednd the join request notification");
 
       toast.success("Invitation sent");
       setInviteEmail("");
@@ -543,8 +582,9 @@ const AddMembers = () => {
                               <div>
                                 <div className="font-medium">
                                   {u.displayName ||
-                                    `${u.firstName || ""} ${u.lastName || ""
-                                      }`.trim() ||
+                                    `${u.firstName || ""} ${
+                                      u.lastName || ""
+                                    }`.trim() ||
                                     u.email}
                                 </div>
                                 <div className="text-sm text-slate-500">
@@ -699,7 +739,6 @@ const AddMembers = () => {
                   </button>
                 </div>
 
-
                 {pending.length === 0 ? (
                   <div className="text-sm text-slate-400 mt-2">
                     No pending members
@@ -707,7 +746,6 @@ const AddMembers = () => {
                 ) : (
                   <div className="mt-2 space-y-2">
                     {pending.map((p, idx) => (
-
                       <div
                         key={idx}
                         className="flex items-center gap-3 p-2 border rounded"
