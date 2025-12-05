@@ -10,6 +10,7 @@ import {
 import { auth, googleProvider } from "../firebase";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
+
 // import { useTheme } from "../context/ThemeContext";
 
 export default function Signup() {
@@ -103,6 +104,7 @@ export default function Signup() {
         password: formData.password,
         confirmPassword: formData.confirmpassword,
         uid: user.uid,
+        needPasswordReset: false,
       };
 
       console.log("Sending signup data to backend:", payload);
@@ -115,6 +117,13 @@ export default function Signup() {
       console.log("User created in backend:", response.data);
       toast.success("Signup successful! Please verify your email.");
 
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+        confirmpassword: "",
+      });
       // Redirect after a short delay so user sees toast
       setTimeout(() => {
         navigate("/signin", { replace: true });

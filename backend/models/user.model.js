@@ -50,11 +50,11 @@ const userSchema = new mongoose.Schema({
     default: false,
 
   },
-  role: {
-    type: String,
-    enum: ['admin', 'familyMember', 'careGiver', 'careRecipient'],
-    default: 'familyMember'
-  },
+  // role: {
+  //   type: String,
+  //   enum: ['admin', 'familyMember', 'careGiver', 'careRecipient'],
+  //   default: 'familyMember'
+  // },
   refreshToken: {
     type: String,
     default: null

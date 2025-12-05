@@ -65,7 +65,8 @@ const generateAccessAndRefereshTokens = async (userId) => {
 };
 //Create User
 export const createUser = async (
-  firstNamlastName,
+  firstName,
+  lastName,
   email,
   password,
   confirmPassword,
@@ -99,20 +100,7 @@ export const createUser = async (
     ) {
       throw new Error("Fields cannot be empty");
     }
-    // if (
-    //   // !isValidString(firstName, "firstName") ||
-    //   // !isValidString(lastName, "lastName") ||
-    //   // !isValidEmail(email) ||
-    //   // !isValidPassword(password) ||
-    //   // !isValidPassword(confirmPassword)
-    // ) {
-    //   throw new Error("Invalid input data");
-    // }
-    // if (phone) {
-    //   if (!isValidPhone(phone)) {
-    //     throw new Error('Invalid phone number');
-    //   }
-    // }
+
     if (password !== confirmPassword) {
       throw new Error("Passwords do not match");
     }
@@ -176,7 +164,7 @@ Care Connect Team`,
       console.log("Account creation email sent, message ID:", response);
     }
 
-    // const hashedPassword = await bcrypt.hash(password.trim(), 10);
+    const hashedPassword = await bcrypt.hash(password.trim(), 10);
 
     //create new user
     const newUser = await User.create({
@@ -184,9 +172,8 @@ Care Connect Team`,
       lastName: lastName.trim(),
       displayName: `${firstName.trim()} ${lastName.trim()}`,
       email: normEmail,
-      password: password.trim(),
+      password: hashedPassword,
       needPasswordReset: needPasswordReset || false,
-      role: role || null,
       uid: uid || null,
     });
 
@@ -463,6 +450,9 @@ export const authenticateUser = async (email, password) => {
     // console.log(user.password);
 
     const isPasswordValid = await user.isPasswordCorrect(password);
+    console.log(
+      "isPasswordValid:", isPasswordValid
+    )
     if (!isPasswordValid) {
       throw new Error("Invalid password or email");
     }
