@@ -24,6 +24,7 @@ import CareRecipientOnboarding from "../pages/CareRecipientOnboarding.jsx";
 import UserProfile from "../components/userProfile/UserProfile.jsx";
 import EditProfile from "../components/userProfile/EditProfile.jsx";
 import EditGroup from "../components/familyGroups/EditGroup";
+import GroupDetails from "../components/familyGroups/GroupDetails.jsx";
 
 
 const AppRoutes = () => {
@@ -42,6 +43,7 @@ const AppRoutes = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/chat" element={<ChatLayout />} />
       <Route path="/groups/edit/:id" element={<EditGroup />} />
+      <Route path="/groups/details/:groupId" element={<GroupDetails />} />
       <Route
         path="/edit-profile"
         element={

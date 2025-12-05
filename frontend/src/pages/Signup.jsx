@@ -16,6 +16,7 @@ import {
   validateConfirmPassword,
   validateName,
 } from "../utils/validation";
+
 // import { useTheme } from "../context/ThemeContext";
 
 export default function Signup() {
@@ -92,19 +93,24 @@ export default function Signup() {
       toast.error("Please fix the errors in the form");
       return;
     }
+    console.log("Submitting signup form with data:", formData);
 
     try {
       setLoading(true);
+      console.log("Creating Firebase user");
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         formData.email,
         formData.password
       );
+      console.log("Firebase user created:", userCredential);
       const user = userCredential.user;
 
+      console.log("Sending email verification");
       await sendEmailVerification(user, {
         url: "http://localhost:5173/verify-success",
       });
+      console.log("Email verification sent");
       toast.success("Verification email sent! Redirecting to login...");
 
       const payload = {
@@ -114,15 +120,26 @@ export default function Signup() {
         password: formData.password,
         confirmPassword: formData.confirmpassword,
         uid: user.uid,
+        needPasswordReset: false,
       };
 
+      console.log("Sending signup data to backend:", payload);
       const response = await api.post("users/signUp", payload);
       if (!response.success) {
         toast.error(response.message);
         setLoading(false);
         return;
       }
+      console.log("User created in backend:", response.data);
+      toast.success("Signup successful! Please verify your email.");
 
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+        confirmpassword: "",
+      });
       // Redirect after a short delay so user sees toast
       setTimeout(() => {
         navigate("/signin", { replace: true });

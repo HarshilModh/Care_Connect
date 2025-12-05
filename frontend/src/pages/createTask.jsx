@@ -1,6 +1,17 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
+import {
+  Calendar,
+  Users,
+  User,
+  FileText,
+  CheckSquare,
+  Pill,
+  CalendarDays,
+  StickyNote,
+  ChevronDown,
+} from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
 import {
   validateTaskTitle,
@@ -15,79 +26,131 @@ export default function CreateTask() {
   const [dueDate, setDueDate] = useState("");
   const [groups, setGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState("");
-  const [members, setMembers] = useState([]);
+  const [recipients, setRecipients] = useState([]);
   const [recipient, setRecipient] = useState("");
   const [type, setType] = useState("task");
   const [loading, setLoading] = useState(false);
+  const [assignedTo, setAssignedTo] = useState("");
+  const [repeatRule, setRepeatRule] = useState("");
+  const [members, setMembers] = useState([]);
 
   const navigate = useNavigate();
+
+  // Task Type Visual Helper
+  const taskTypes = [
+    {
+      id: "task",
+      label: "Task",
+      icon: CheckSquare,
+      color: "bg-blue-100 text-blue-600 border-blue-200",
+    },
+    {
+      id: "medication",
+      label: "Meds",
+      icon: Pill,
+      color: "bg-red-100 text-red-600 border-red-200",
+    },
+    {
+      id: "event",
+      label: "Event",
+      icon: CalendarDays,
+      color: "bg-purple-100 text-purple-600 border-purple-200",
+    },
+    {
+      id: "note",
+      label: "Note",
+      icon: StickyNote,
+      color: "bg-yellow-100 text-yellow-600 border-yellow-200",
+    },
+  ];
 
   let storedUser = localStorage.getItem("user");
   let userId = "";
   try {
     userId = storedUser ? JSON.parse(storedUser)._id : "";
   } catch (err) {
-    console.error("Invalid user data in localStorage", err);
+    console.error("Invalid user data", err);
   }
 
+  // 1. Fetch Groups
   useEffect(() => {
     if (!userId) return;
     async function fetchGroups() {
-      const adminGroups = [];
       try {
         const res = await fetch(
           `http://localhost:3000/api/family-groups/user/${userId}`
         );
         const data = await res.json();
-        console.log("Fetched groups:", data);
-        for (const item of data) {
-          if (item.createdBy._id === userId) {
-            adminGroups.push(item);
-          }
-        }
-        setGroups(adminGroups);
+        // Keep logic: user is part of group or admin
+        setGroups(data);
       } catch (err) {
-        console.error("Error fetching groups:", err);
         toast.error("Failed to fetch groups.");
       }
     }
     fetchGroups();
   }, [userId]);
 
+  // 2. Fetch Recipients AND Members (Chained to fix race condition)
   useEffect(() => {
-    if (!selectedGroup) return;
-
-    async function fetchMembers() {
-      const members = [];
-      try {
-        const res = await fetch(
-          `http://localhost:3000/api/memberships/group/${selectedGroup}`
-        );
-        const data = await res.json();
-        for (const item of data) {
-          members.push({
-            id: item.userId._id,
-            name: item.userId.firstName + " " + item.userId.lastName,
-          });
-        }
-        setMembers(members);
-      } catch (err) {
-        console.error("Error fetching members:", err);
-        toast.error("Failed to fetch members.");
-      }
+    if (!selectedGroup) {
+      setRecipients([]);
+      setMembers([]);
+      return;
     }
 
-    fetchMembers();
-  }, [selectedGroup]);
+    async function fetchData() {
+      try {
+        // A. Fetch Recipients first
+        const resRecipients = await fetch(
+          `http://localhost:3000/api/care-recipients/group/${selectedGroup}`
+        );
+        const dataRecipients = await resRecipients.json();
 
-  const resetForm = () => {
-    setTitle("");
-    setDesc("");
-    setDueDate("");
-    setSelectedGroup("");
-    setRecipient("");
-    setType("task");
-  };
+        const formattedRecipients = dataRecipients
+          .filter((item) => item.userId)
+          .map((item) => ({
+            id: item.userId._id,
+            name: `${item.userId.firstName} ${item.userId.lastName}`,
+          }));
+
+        setRecipients(formattedRecipients);
+
+        // B. Fetch Members (and filter using the recipients list we just got)
+        const resMembers = await fetch(
+          `http://localhost:3000/api/memberships/group/${selectedGroup}`
+        );
+        const dataMembers = await resMembers.json();
+
+        const formattedMembers = [];
+        for (const item of dataMembers) {
+          const user = item.userId;
+          if (!user) continue;
+
+          // Exclude if they are a recipient
+          const isRecipient = formattedRecipients.some(
+            (r) => r.id === user._id
+          );
+          if (isRecipient) continue;
+
+          // Exclude admins, inactive, etc (based on your logic)
+          if (item.role === "admin") continue;
+          if (item.onboardingStatus === "required") continue;
+          if (item.status !== "active") continue;
+          if (item.role === "careRecipient") continue;
+
+          formattedMembers.push({
+            id: user._id,
+            name: `${user.firstName} ${user.lastName}`,
+          });
+        }
+        setMembers(formattedMembers);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to fetch group details.");
+      }
+    }
+    fetchData();
+  }, [selectedGroup]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -135,24 +198,22 @@ export default function CreateTask() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           groupId: selectedGroup,
-          assignedTo: recipient,
+          assignedTo: assignedTo || undefined,
           recipientId: recipient,
           createdBy: userId,
           title,
           description: desc,
           dueAt: dueDate || undefined,
+          repeatRule: repeatRule || undefined,
           type,
         }),
       });
-      console.log("Create task response:", res);
-      if (!res.ok) {
-        throw new Error("Failed to create task");
-      }
+
+      if (!res.ok) throw new Error("Failed to create task");
+
       toast.success("Task created successfully!");
-      resetForm();
       navigate("/tasks");
     } catch (err) {
-      console.error(err);
       toast.error("Error creating task: " + err.message);
     } finally {
       setLoading(false);
@@ -160,130 +221,241 @@ export default function CreateTask() {
   };
 
   return (
-    <main className="page">
-      <div className="container-n">
-        <header className="text-center mb-8">
-          <h1 className="section-title">Create Task</h1>
-          <p className="section-sub">
-            Assign tasks to your family group members.
+    <main className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6">
+      <div className="max-w-3xl mx-auto">
+        {/* Header */}
+        <header className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-gray-900">Create New Task</h1>
+          <p className="mt-2 text-gray-600">
+            Coordinate care and assign responsibilities.
           </p>
         </header>
 
-        <div className="card mx-auto max-w-2xl">
-          <form className="card-pad form-grid" onSubmit={handleSubmit}>
-            <div className={`floater ${title ? "filled" : ""}`}>
-              <label className="float-label">Task Title</label>
-              <input
-                className="input"
-                placeholder=" "
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-                autoFocus
-              />
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white shadow-xl rounded-2xl overflow-hidden"
+        >
+          {/* Section 1: Task Type & Basics */}
+          <div className="p-6 border-b border-gray-100 space-y-6">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                Task Category
+              </label>
+              <div className="grid grid-cols-4 gap-3">
+                {taskTypes.map((t) => {
+                  const Icon = t.icon;
+                  const isSelected = type === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setType(t.id)}
+                      className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200 ${
+                        isSelected
+                          ? `${t.color} ring-2 ring-offset-1 ring-blue-500`
+                          : "bg-white border-gray-200 hover:bg-gray-50 text-gray-600"
+                      }`}
+                    >
+                      <Icon
+                        className={`w-6 h-6 mb-1 ${
+                          isSelected ? "scale-110" : ""
+                        }`}
+                      />
+                      <span className="text-xs font-medium">{t.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className={`floater ${desc ? "filled" : ""}`}>
-              <label className="float-label">Description</label>
-              <textarea
-                className="textarea"
-                placeholder=" "
-                rows={4}
-                value={desc}
-                onChange={(e) => setDesc(e.target.value)}
-                required
-              />
-            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g., Morning Medication check"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  required
+                />
+              </div>
 
-            <div className={`floater ${selectedGroup ? "filled" : ""}`}>
-              <label className="float-label"></label>
-              <select
-                className="input"
-                value={selectedGroup}
-                onChange={(e) => setSelectedGroup(e.target.value)}
-                required
-              >
-                <option value="">Select Group</option>
-                {groups.map((g) => (
-                  <option key={g._id} value={g._id}>
-                    {g.groupName || g._id}
-                  </option>
-                ))}
-              </select>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  rows={3}
+                  value={desc}
+                  onChange={(e) => setDesc(e.target.value)}
+                  placeholder="Add details, dosage instructions, or notes..."
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
+                  required
+                />
+              </div>
             </div>
+          </div>
 
-            <div className={`floater ${recipient ? "filled" : ""}`}>
-              <label className="float-label"></label>
-              <select
-                className="input"
-                value={recipient}
-                onChange={(e) => setRecipient(e.target.value)}
-                required
-                disabled={!members.length}
-              >
-                <option value="">Select Recipient</option>
-                {members.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* Section 2: Assignment Context */}
+          <div className="p-6 bg-gray-50/50 space-y-6">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+              Assignment Details
+            </h3>
 
-            <div className={`floater ${type ? "filled" : ""}`}>
-              <label className="float-label">Task Type</label>
-              <select
-                className="input"
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                required
-              >
-                <option value="task">Task</option>
-                <option value="medication">Medication</option>
-                <option value="event">Event</option>
-                <option value="note">Note</option>
-              </select>
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Group Selection */}
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Family Group
+                </label>
+                <div className="relative">
+                  <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <select
+                    value={selectedGroup}
+                    onChange={(e) => setSelectedGroup(e.target.value)}
+                    className="w-full pl-10 pr-10 py-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
+                    required
+                  >
+                    <option value="">Select Group</option>
+                    {groups.map((g) => (
+                      <option key={g._id} value={g._id}>
+                        {g.groupName || "Unnamed Group"}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
+                </div>
+              </div>
 
-            <div className={`floater ${dueDate ? "filled" : ""}`}>
-              <label className="float-label"></label>
-              <input
-                className="input"
-                type="date"
-                value={dueDate}
-                min={new Date().toISOString().split("T")[0]}
-                onKeyDown={(e) => e.preventDefault()}
-                onChange={(e) => setDueDate(e.target.value)}
-              />
-            </div>
+              {/* Recipient Selection */}
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Care Recipient
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <select
+                    value={recipient}
+                    onChange={(e) => setRecipient(e.target.value)}
+                    disabled={!selectedGroup}
+                    className="w-full pl-10 pr-10 py-3 rounded-lg border border-gray-300 bg-white disabled:bg-gray-100 disabled:text-gray-400 focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
+                    required
+                  >
+                    <option value="">
+                      {selectedGroup
+                        ? "Select Recipient"
+                        : "Select Group First"}
+                    </option>
+                    {recipients.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
+                </div>
+              </div>
 
-            <div className="sm:col-span-2 flex items-center justify-end gap-3 mt-4">
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={resetForm}
-                disabled={loading}
-              >
-                Reset
-              </button>
-              <button type="submit" className="btn-primary" disabled={loading}>
-                {loading ? "Creating…" : "Create Task"}
-              </button>
+              {/* Assign To */}
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Assign To (Optional)
+                </label>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-5 h-5 bg-blue-100 rounded-full text-blue-600 text-xs font-bold">
+                    @
+                  </div>
+                  <select
+                    value={assignedTo}
+                    onChange={(e) => setAssignedTo(e.target.value)}
+                    disabled={!selectedGroup}
+                    className="w-full pl-10 pr-10 py-3 rounded-lg border border-gray-300 bg-white disabled:bg-gray-100 disabled:text-gray-400 focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
+                  >
+                    <option value="">Unassigned</option>
+                    {members.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Due Date */}
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Due Date
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="date"
+                    value={dueDate}
+                    min={new Date().toISOString().split("T")[0]}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    onKeyDown={(e) => e.preventDefault()} // Prevent typing manually
+                    className="w-full pl-10 py-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Repeat Rule */}
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Repeat
+                </label>
+                <div className="relative">
+                  <select
+                    value={repeatRule}
+                    onChange={(e) => setRepeatRule(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
+                  >
+                    <option value="">None</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
+                </div>
+              </div>
             </div>
-          </form>
-        </div>
+          </div>
+
+          {/* Footer Actions */}
+          <div className="p-6 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => navigate("/tasks")}
+              className="px-6 py-2.5 rounded-lg text-gray-600 font-medium hover:bg-gray-200 transition-colors"
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex items-center gap-2 px-8 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-md shadow-blue-500/30"
+            >
+              {loading ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                "Create Task"
+              )}
+            </button>
+          </div>
+        </form>
 
         <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
+          position="bottom-right"
           theme="colored"
+          autoClose={3000}
         />
       </div>
     </main>
