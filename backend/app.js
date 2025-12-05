@@ -6,6 +6,7 @@ import { connectDB } from "./dbConfig/index.js";
 import { createClient } from "redis";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import { initCronJobs } from "./services/cronService.js";
 
 dotenv.config();
 const app = express();
@@ -25,9 +26,9 @@ apiRouter(app);
 // Create HTTP server and Socket.IO
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
-  cors: { 
-    origin: process.env.FRONTEND_URL || "http://localhost:5173", 
-    credentials: true 
+  cors: {
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    credentials: true
   },
   pingTimeout: 60000,
   pingInterval: 25000
@@ -43,7 +44,7 @@ io.on("connection", (socket) => {
   // Store user info from handshake (you'll pass from frontend)
   const userId = socket.handshake.query.userId;
   const userName = socket.handshake.query.userName || "Anonymous";
-  
+
   socket.userId = userId;
   socket.userName = userName;
 
@@ -55,13 +56,13 @@ io.on("connection", (socket) => {
   socket.on("join-group", (groupId) => {
     socket.join(`group:${groupId}`);
     console.log(`📥 ${userName} joined group: ${groupId}`);
-    
+
     socket.to(`group:${groupId}`).emit("user-joined", {
       userId,
       userName,
       timestamp: new Date()
     });
-    
+
     socket.emit("joined-group", { groupId });
   });
 
@@ -69,7 +70,7 @@ io.on("connection", (socket) => {
   socket.on("leave-group", (groupId) => {
     socket.leave(`group:${groupId}`);
     console.log(`📤 ${userName} left group: ${groupId}`);
-    
+
     socket.to(`group:${groupId}`).emit("user-left", {
       userId,
       userName,
@@ -108,10 +109,15 @@ io.on("connection", (socket) => {
   });
 });
 
+
+
 // Connect to Database and Start Server
 const client = createClient();
 connectDB()
   .then(() => {
+    // Initialize Cron Jobs
+    initCronJobs();
+
     client
       .connect()
       .then(() => console.log("Connected to Redis"))

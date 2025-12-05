@@ -56,7 +56,10 @@ const ChatWindow = ({ group }) => {
         // Listen for new messages
         socket.on("new-message", (data) => {
           if (data.groupId === group._id) {
-            setMessages((prev) => [...prev, data.message]);
+            setMessages((prev) => {
+              if (prev.some(m => m._id === data.message._id)) return prev;
+              return [...prev, data.message];
+            });
             scrollToBottom();
             // Auto mark as read
             markAllAsRead(group._id);

@@ -293,7 +293,7 @@ export default function CreateTask() {
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
-                    type="date"
+                    type="datetime-local"
                     value={dueDate}
                     min={new Date().toISOString().split("T")[0]}
                     onChange={(e) => setDueDate(e.target.value)}
