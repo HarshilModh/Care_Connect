@@ -7,11 +7,11 @@ export const initCronJobs = () => {
     // JOB 1: Recurring Task Creation
     // Run every hour
     // cron.schedule('0 * * * *', async () => {
-    //     console.log('🔄 Running hourly recurring task check...');
+    //     console.log('Running hourly recurring task check...');
     //     try {
     //         await processRecurringTasks();
     //     } catch (error) {
-    //         console.error('❌ Error in recurring task cron:', error);
+    //         console.error('Error in recurring task cron:', error);
     //     }
     // });
 

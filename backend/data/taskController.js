@@ -338,7 +338,10 @@ export const listGroupTasks = async (groupId) => {
     if (!mongoose.Types.ObjectId.isValid(groupId)) {
       throw new Error("Invalid groupId");
     }
-    const tasks = await taskModel.find({ groupId });
+    const tasks = await taskModel.find({ groupId })
+      .populate('assignedTo', 'firstName lastName email')
+      .populate('completedBy', 'firstName lastName email')
+      .sort({ createdAt: -1 });
     return tasks;
   } catch (error) {
     throw new Error(`Error listing group tasks: ${error.message}`);

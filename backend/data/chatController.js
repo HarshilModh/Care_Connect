@@ -4,9 +4,6 @@ import { FamilyGroup } from "../models/familyGroups.model.js";
 import mongoose from "mongoose"; 
 import {createChatMessageNotification,markChatNotificationsAsRead} from "./notificationController.js";
 
-/**
- * Send a new message to a group
- */
 export const sendMessage = async (groupId, userId, message, meta = {}, io = null) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(groupId)) throw new Error("Invalid groupId");
@@ -41,7 +38,7 @@ export const sendMessage = async (groupId, userId, message, meta = {}, io = null
     const savedMessage = await newMessage.save();
     await savedMessage.populate("senderId", "firstName lastName profilePicture displayName email");
 
-    // 🔥 EMIT SOCKET EVENT TO ALL GROUP MEMBERS
+    // EMIT SOCKET EVENT TO ALL GROUP MEMBERS
     if (io) {
       io.to(`group:${groupId}`).emit("new-message", {
         message: savedMessage,
@@ -50,7 +47,6 @@ export const sendMessage = async (groupId, userId, message, meta = {}, io = null
       });
       console.log(`📨 Message emitted to group:${groupId}`);
     }
-    // Create notifications for group members about the new message createChatMessageNotification(chatId,senderID,groupId,message)
     await createChatMessageNotification(savedMessage._id, userId, groupId, savedMessage.message);
     return savedMessage;
   } catch (error) {
