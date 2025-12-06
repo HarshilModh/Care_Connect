@@ -5,12 +5,11 @@ import {
   Calendar,
   Users,
   User,
-  FileText,
   CheckSquare,
   Pill,
   CalendarDays,
   StickyNote,
-  ChevronDown
+  ChevronDown,
 } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -27,15 +26,35 @@ export default function CreateTask() {
   const [assignedTo, setAssignedTo] = useState("");
   const [repeatRule, setRepeatRule] = useState("");
   const [members, setMembers] = useState([]);
+  const [files, setFiles] = useState([]); // NEW: attachments
 
   const navigate = useNavigate();
 
-  // Task Type Visual Helper
   const taskTypes = [
-    { id: 'task', label: 'Task', icon: CheckSquare, color: 'bg-blue-100 text-blue-600 border-blue-200' },
-    { id: 'medication', label: 'Meds', icon: Pill, color: 'bg-red-100 text-red-600 border-red-200' },
-    { id: 'event', label: 'Event', icon: CalendarDays, color: 'bg-purple-100 text-purple-600 border-purple-200' },
-    { id: 'note', label: 'Note', icon: StickyNote, color: 'bg-yellow-100 text-yellow-600 border-yellow-200' },
+    {
+      id: "task",
+      label: "Task",
+      icon: CheckSquare,
+      color: "bg-blue-100 text-blue-600 border-blue-200",
+    },
+    {
+      id: "medication",
+      label: "Meds",
+      icon: Pill,
+      color: "bg-red-100 text-red-600 border-red-200",
+    },
+    {
+      id: "event",
+      label: "Event",
+      icon: CalendarDays,
+      color: "bg-purple-100 text-purple-600 border-purple-200",
+    },
+    {
+      id: "note",
+      label: "Note",
+      icon: StickyNote,
+      color: "bg-yellow-100 text-yellow-600 border-yellow-200",
+    },
   ];
 
   let storedUser = localStorage.getItem("user");
@@ -46,17 +65,20 @@ export default function CreateTask() {
     console.error("Invalid user data", err);
   }
 
-  // 1. Fetch Groups
+  // Fetch Groups
   useEffect(() => {
     if (!userId) return;
     async function fetchGroups() {
       try {
-        const res = await fetch(`http://localhost:3000/api/family-groups/user/${userId}`);
+        const res = await fetch(
+          `http://localhost:3000/api/family-groups/user/${userId}`
+        );
         let data = await res.json();
-        console.log("Fetched Groups:", data);
-        // Keep logic: user is part of group or admin
-        //where data.createdBy._id === userId
-        data = data.filter((g) => g.members.some((m) => m.userId === userId) || g.createdBy._id === userId);
+        data = data.filter(
+          (g) =>
+            g.members.some((m) => m.userId === userId) ||
+            g.createdBy._id === userId
+        );
         setGroups(data);
       } catch (err) {
         toast.error("Failed to fetch groups.");
@@ -65,7 +87,7 @@ export default function CreateTask() {
     fetchGroups();
   }, [userId]);
 
-  // 2. Fetch Recipients AND Members (Chained to fix race condition)
+  // Fetch Recipients and Members when group changes
   useEffect(() => {
     if (!selectedGroup) {
       setRecipients([]);
@@ -75,21 +97,25 @@ export default function CreateTask() {
 
     async function fetchData() {
       try {
-        // A. Fetch Recipients first
-        const resRecipients = await fetch(`http://localhost:3000/api/care-recipients/group/${selectedGroup}`);
+        // Recipients
+        const resRecipients = await fetch(
+          `http://localhost:3000/api/care-recipients/group/${selectedGroup}`
+        );
         const dataRecipients = await resRecipients.json();
 
         const formattedRecipients = dataRecipients
-          .filter(item => item.userId)
-          .map(item => ({
+          .filter((item) => item.userId)
+          .map((item) => ({
             id: item.userId._id,
             name: `${item.userId.firstName} ${item.userId.lastName}`,
           }));
 
         setRecipients(formattedRecipients);
 
-        // B. Fetch Members (and filter using the recipients list we just got)
-        const resMembers = await fetch(`http://localhost:3000/api/memberships/group/${selectedGroup}`);
+        // Members
+        const resMembers = await fetch(
+          `http://localhost:3000/api/memberships/group/${selectedGroup}`
+        );
         const dataMembers = await resMembers.json();
 
         const formattedMembers = [];
@@ -97,15 +123,14 @@ export default function CreateTask() {
           const user = item.userId;
           if (!user) continue;
 
-          // Exclude if they are a recipient
-          const isRecipient = formattedRecipients.some((r) => r.id === user._id);
+          const isRecipient = formattedRecipients.some(
+            (r) => r.id === user._id
+          );
           if (isRecipient) continue;
-
-          // Exclude admins, inactive, etc (based on your logic)
-          if (item.role === 'admin') continue;
-          if (item.onboardingStatus === 'required') continue;
-          if (item.status !== 'active') continue;
-          if (item.role === 'careRecipient') continue;
+          if (item.role === "admin") continue;
+          if (item.onboardingStatus === "required") continue;
+          if (item.status !== "active") continue;
+          if (item.role === "careRecipient") continue;
 
           formattedMembers.push({
             id: user._id,
@@ -113,7 +138,6 @@ export default function CreateTask() {
           });
         }
         setMembers(formattedMembers);
-
       } catch (err) {
         console.error(err);
         toast.error("Failed to fetch group details.");
@@ -131,49 +155,87 @@ export default function CreateTask() {
 
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:3000/api/tasks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          groupId: selectedGroup,
-          assignedTo: assignedTo || undefined,
-          recipientId: recipient,
-          createdBy: userId,
-          title,
-          description: desc,
-          dueAt: dueDate || undefined,
-          repeatRule: repeatRule || undefined,
-          type,
-        }),
-      });
+      const hasFiles = files && files.length > 0;
 
-      if (!res.ok) throw new Error("Failed to create task");
+      let response;
+      if (!hasFiles) {
+        // OLD BEHAVIOR: JSON request (no files)
+        response = await fetch("http://localhost:3000/api/tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            groupId: selectedGroup,
+            assignedTo: assignedTo || undefined,
+            recipientId: recipient,
+            createdBy: userId,
+            title,
+            description: desc,
+            dueAt: dueDate || undefined,
+            repeatRule: repeatRule || undefined,
+            type,
+          }),
+        });
+      } else {
+        // NEW BEHAVIOR: multipart/form-data with files
+        const formData = new FormData();
+        formData.append("groupId", selectedGroup);
+        formData.append("recipientId", recipient);
+        formData.append("createdBy", userId);
+        formData.append("title", title);
+        formData.append("description", desc || "");
+        if (assignedTo) formData.append("assignedTo", assignedTo);
+        if (dueDate) formData.append("dueAt", dueDate);
+        if (repeatRule) formData.append("repeatRule", repeatRule);
+        if (type) formData.append("type", type);
+
+        // attachments go as dataFiles -> matches req.files.dataFiles
+        files.forEach((file) => {
+          formData.append("dataFiles", file);
+        });
+
+        response = await fetch("http://localhost:3000/api/tasks", {
+          method: "POST",
+          body: formData, // do NOT set Content-Type manually
+        });
+      }
+
+      if (!response.ok) throw new Error("Failed to create task");
 
       toast.success("Task created successfully!");
       navigate("/tasks");
     } catch (err) {
+      console.error(err);
       toast.error("Error creating task: " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleFileChange = (e) => {
+    const selected = Array.from(e.target.files || []);
+    setFiles(selected);
+  };
+
   return (
     <main className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto">
-
-        {/* Header */}
         <header className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-gray-900">Create New Task</h1>
-          <p className="mt-2 text-gray-600">Coordinate care and assign responsibilities.</p>
+          <p className="mt-2 text-gray-600">
+            Coordinate care and assign responsibilities.
+          </p>
         </header>
 
-        <form onSubmit={handleSubmit} className="bg-white shadow-xl rounded-2xl overflow-hidden">
-
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white shadow-xl rounded-2xl overflow-hidden"
+        >
           {/* Section 1: Task Type & Basics */}
           <div className="p-6 border-b border-gray-100 space-y-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">Task Category</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                Task Category
+              </label>
               <div className="grid grid-cols-4 gap-3">
                 {taskTypes.map((t) => {
                   const Icon = t.icon;
@@ -183,12 +245,17 @@ export default function CreateTask() {
                       key={t.id}
                       type="button"
                       onClick={() => setType(t.id)}
-                      className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200 ${isSelected
-                        ? `${t.color} ring-2 ring-offset-1 ring-blue-500`
-                        : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-600'
-                        }`}
+                      className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200 ${
+                        isSelected
+                          ? `${t.color} ring-2 ring-offset-1 ring-blue-500`
+                          : "bg-white border-gray-200 hover:bg-gray-50 text-gray-600"
+                      }`}
                     >
-                      <Icon className={`w-6 h-6 mb-1 ${isSelected ? 'scale-110' : ''}`} />
+                      <Icon
+                        className={`w-6 h-6 mb-1 ${
+                          isSelected ? "scale-110" : ""
+                        }`}
+                      />
                       <span className="text-xs font-medium">{t.label}</span>
                     </button>
                   );
@@ -198,7 +265,9 @@ export default function CreateTask() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Title
+                </label>
                 <input
                   type="text"
                   value={title}
@@ -210,7 +279,9 @@ export default function CreateTask() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
                 <textarea
                   rows={3}
                   value={desc}
@@ -219,17 +290,40 @@ export default function CreateTask() {
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
                 />
               </div>
+
+              {/* NEW: Attachments */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Attachments (optional)
+                </label>
+                <input
+                  type="file"
+                  multiple
+                  name="dataFiles"
+                  onChange={handleFileChange}
+                  className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+                {files.length > 0 && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    {files.length} file(s) selected.
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Section 2: Assignment Context */}
           <div className="p-6 bg-gray-50/50 space-y-6">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Assignment Details</h3>
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+              Assignment Details
+            </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Group Selection */}
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Family Group</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Family Group
+                </label>
                 <div className="relative">
                   <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <select
@@ -240,7 +334,9 @@ export default function CreateTask() {
                   >
                     <option value="">Select Group</option>
                     {groups.map((g) => (
-                      <option key={g._id} value={g._id}>{g.groupName || "Unnamed Group"}</option>
+                      <option key={g._id} value={g._id}>
+                        {g.groupName || "Unnamed Group"}
+                      </option>
                     ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
@@ -249,7 +345,9 @@ export default function CreateTask() {
 
               {/* Recipient Selection */}
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Care Recipient</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Care Recipient
+                </label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <select
@@ -259,9 +357,15 @@ export default function CreateTask() {
                     className="w-full pl-10 pr-10 py-3 rounded-lg border border-gray-300 bg-white disabled:bg-gray-100 disabled:text-gray-400 focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
                     required
                   >
-                    <option value="">{selectedGroup ? "Select Recipient" : "Select Group First"}</option>
+                    <option value="">
+                      {selectedGroup
+                        ? "Select Recipient"
+                        : "Select Group First"}
+                    </option>
                     {recipients.map((r) => (
-                      <option key={r.id} value={r.id}>{r.name}</option>
+                      <option key={r.id} value={r.id}>
+                        {r.name}
+                      </option>
                     ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
@@ -270,7 +374,9 @@ export default function CreateTask() {
 
               {/* Assign To */}
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Assign To (Optional)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Assign To (Optional)
+                </label>
                 <div className="relative">
                   <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-5 h-5 bg-blue-100 rounded-full text-blue-600 text-xs font-bold">
                     @
@@ -283,7 +389,9 @@ export default function CreateTask() {
                   >
                     <option value="">Unassigned</option>
                     {members.map((m) => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
                     ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
@@ -292,25 +400,27 @@ export default function CreateTask() {
 
               {/* Due Date */}
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Due Date
+                </label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
                     type="datetime-local"
                     value={dueDate}
-                    min={new Date().toISOString().slice(0,16)}
+                    min={new Date().toISOString().slice(0, 16)}
                     onChange={(e) => setDueDate(e.target.value)}
-                    onKeyDown={(e) => e.preventDefault()} // Prevent typing manually
+                    onKeyDown={(e) => e.preventDefault()}
                     className="w-full pl-10 py-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 outline-none"
-                    // only show today's date or later
-                    
                   />
                 </div>
               </div>
 
               {/* Repeat Rule */}
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Repeat</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Repeat
+                </label>
                 <div className="relative">
                   <select
                     value={repeatRule}
@@ -332,7 +442,7 @@ export default function CreateTask() {
           <div className="p-6 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
             <button
               type="button"
-              onClick={() => navigate('/tasks')}
+              onClick={() => navigate("/tasks")}
               className="px-6 py-2.5 rounded-lg text-gray-600 font-medium hover:bg-gray-200 transition-colors"
               disabled={loading}
             >

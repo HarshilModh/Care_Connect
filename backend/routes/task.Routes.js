@@ -16,6 +16,7 @@ import { Task as taskModel } from "../models/task.model.js";
 
 import express from "express";
 import { Membership } from "../models/memberShip.model.js";
+import { uploadFileToS3 } from "../integrations/s3.js";
 import mongoose from "mongoose";
 const router = express.Router();
 
@@ -115,7 +116,16 @@ router.post("/", async (req, res) => {
     }
     description = isValidString(description, "description");
     title = isValidString(title, "title");
-    //check if group exists
+
+    console.log("Files in request:", req.files);
+    if (req.files) {
+      const filesToUpload = req.files.dataFiles || [];
+      for (const file of filesToUpload) {
+        const { documentId } = await uploadFileToS3(file, groupId, createdBy);
+        attachments.push(documentId);
+      }
+    }
+
     const groupExists = await FamilyGroup.findById(groupId);
     if (!groupExists) {
       return res.status(404).json({ error: "Group not found" });
