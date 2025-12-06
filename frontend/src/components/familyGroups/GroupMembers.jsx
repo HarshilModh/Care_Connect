@@ -3,15 +3,8 @@ import axios from "axios"
 import { useParams, useNavigate } from "react-router-dom"
 import { toast, ToastContainer } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
+import { CheckCircleIcon, ClockIcon } from "@heroicons/react/24/solid"
 
-/**
- GroupMembers.jsx
- - Improved visual list UI
- - client side search and filters (role and status)
- - loading skeleton, error states
- - remove member with confirmation and optimistic UI
- - safe requests with abort controller
-*/
 
 const ROLE_LABEL = {
   owner: "Owner",
@@ -151,7 +144,7 @@ const GroupMembers = () => {
     }
   }
 
-  
+
 
   if (loading) {
     return (
@@ -226,6 +219,7 @@ const GroupMembers = () => {
             const role = m.role ?? "family"
             const status = m.status ?? "unknown"
             const badgeColor = ROLE_COLOR[role] ?? ROLE_COLOR.family
+            const onboardingStatus = m.onboardingStatus
 
             return (
               <div key={id} className="flex items-center justify-between gap-4 p-4 bg-white rounded-lg shadow-sm">
@@ -257,8 +251,22 @@ const GroupMembers = () => {
                         {status}
                       </span>
                     </div>
+                    {(onboardingStatus === "required" || onboardingStatus === "completed") && (
+                      <div>
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${onboardingStatus === "completed"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : "bg-amber-50 text-amber-700 border-amber-200"
+                          }`}>
+                          {onboardingStatus === "completed" ? (
+                            <CheckCircleIcon className="w-3.5 h-3.5" />
+                          ) : (
+                            <ClockIcon className="w-3.5 h-3.5" />
+                          )}
+                          {onboardingStatus === "completed" ? "Onboarding Complete" : "Onboarding Required"}
+                        </span>
+                      </div>
+                    )}
                   </div>
-
                   <div className="flex items-center gap-2">
 
                     <button

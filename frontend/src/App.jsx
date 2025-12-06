@@ -21,7 +21,7 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen overflow-hidden bg-gray-50 flex flex-col">
       <ToastContainer position="top-right" />
 
       {!hideSidebar && (
@@ -34,7 +34,7 @@ function App() {
         />
       )}
 
-      <div className="flex">
+      <div className="flex h-full overflow-hidden">
         {/* Sidebar for md and up */}
         {!hideSidebar && (
           <aside className="hidden md:block md:sticky md:top-0 md:h-screen">
@@ -42,7 +42,7 @@ function App() {
           </aside>
         )}
 
-        <div className="flex-1 min-h-screen flex flex-col">
+        <div className="flex-1 h-full flex flex-col overflow-hidden">
           {/* Mobile header with toggle */}
           {!hideSidebar && (
             <div className="md:hidden bg-white border-b">{/* … */}</div>
@@ -51,8 +51,8 @@ function App() {
           {/* Navbar */}
           {!hideNavbar && <NavbarTwo />}
 
-          <main className="flex-1 p-4 md:p-6 bg-white dark:bg-gray-900">
-            <div className="max-w-6xl mx-auto ">
+          <main className="flex-1 p-4 md:p-6 overflow-hidden flex flex-col">
+            <div className="max-w-6xl mx-auto h-full w-full overflow-y-auto custom-scrollbar">
               <AppRoutes />
             </div>
           </main>

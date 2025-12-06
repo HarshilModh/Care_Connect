@@ -6,7 +6,7 @@ const ChatLayout = () => {
   const [selectedGroup, setSelectedGroup] = useState(null);
 
   return (
-    <div className="h-screen flex bg-[var(--surface-2)]">
+    <div className="h-full flex bg-[var(--surface-2)]">
       {/* Left Sidebar - Group List */}
       <div className="w-full md:w-80 lg:w-96 border-r border-[var(--border)] overflow-hidden bg-white dark:bg-gray-900">
         <GroupList

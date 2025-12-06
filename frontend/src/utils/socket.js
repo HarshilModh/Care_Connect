@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 let socket = null;
 
 export const initializeSocket = (userId, userName) => {
-  if (socket?.connected) return socket;
+  if (socket) return socket;
 
   const base = "http://localhost:3000";
   socket = io(base, {

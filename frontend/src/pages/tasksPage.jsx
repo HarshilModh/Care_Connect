@@ -64,7 +64,6 @@ export default function Tasks() {
 
   useEffect(() => {
     fetchTasks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Filter Logic (Client Side for snappiness)
@@ -77,9 +76,7 @@ export default function Tasks() {
       // 2. Status Filter
       const matchesStatus = statusFilter === 'all'
         ? true
-        : statusFilter === 'completed'
-          ? task.status === 'completed'
-          : task.status !== 'completed';
+        : task.status === statusFilter;
 
       return matchesSearch && matchesStatus;
     });
@@ -88,7 +85,8 @@ export default function Tasks() {
   // Derived Stats
   const stats = {
     total: tasks.length,
-    pending: tasks.filter(t => t.status !== 'completed').length,
+    pending: tasks.filter(t => t.status === 'pending').length,
+    missed: tasks.filter(t => t.status === 'missed').length,
     completed: tasks.filter(t => t.status === 'completed').length
   };
 
@@ -142,7 +140,6 @@ export default function Tasks() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ...updatedTask,
-            // ensure groupId is an id, not full object
             groupId: updatedTask.groupId?._id || updatedTask.groupId,
           }),
         }
@@ -191,7 +188,7 @@ export default function Tasks() {
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
             <p className="text-gray-500 text-xs font-semibold uppercase">Total Tasks</p>
             <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
@@ -199,6 +196,10 @@ export default function Tasks() {
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
             <p className="text-yellow-600 text-xs font-semibold uppercase">Pending</p>
             <p className="text-2xl font-bold text-yellow-700">{stats.pending}</p>
+          </div>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            <p className="text-red-600 text-xs font-semibold uppercase">Missed</p>
+            <p className="text-2xl font-bold text-red-700">{stats.missed}</p>
           </div>
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
             <p className="text-green-600 text-xs font-semibold uppercase">Completed</p>
@@ -220,7 +221,7 @@ export default function Tasks() {
           </div>
 
           <div className="flex gap-2 w-full sm:w-auto overflow-x-auto">
-            {['all', 'pending', 'completed'].map((status) => (
+            {['all', 'pending', 'missed', 'completed'].map((status) => (
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
@@ -256,7 +257,9 @@ export default function Tasks() {
             filteredTasks.map((task) => (
               <div
                 key={task._id}
-                className={`group bg-white rounded-xl p-5 border transition-all hover:shadow-md ${task.status === 'completed' ? 'border-gray-100 bg-gray-50/50' : 'border-gray-200'
+                className={`group bg-white rounded-xl p-5 border transition-all hover:shadow-md ${task.status === 'completed' ? 'border-gray-100 bg-gray-50/50' :
+                  task.status === 'missed' ? 'border-red-200 bg-red-50/30' :
+                    'border-gray-200'
                   }`}
               >
                 <div className="flex items-start gap-4">
@@ -288,7 +291,7 @@ export default function Tasks() {
                         <span className={`flex items-center gap-1 text-[11px] font-medium ${new Date(task.dueAt) < new Date() && task.status !== 'completed' ? 'text-red-600' : 'text-gray-500'
                           }`}>
                           <Clock className="w-3 h-3" />
-                          {new Date(task.dueAt).toLocaleDateString()}
+                          {new Date(task.dueAt).toLocaleString([], { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
 
                         </span>
                       )}
@@ -312,29 +315,28 @@ export default function Tasks() {
                       )}
                     </div>
                   </div>
-
-                  {/* Actions */}
-                  <div className="flex flex-col gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                    {task.status !== 'completed' && (
+                  {/* only show if created by current user */}
+                  {task.createdBy === userId && (
+                    <div className="flex flex-col gap-2 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => {
                           setTaskToEdit(task);
                           setShowEditModal(true);
                         }}
-                        className="p-2 hover:bg-blue-50 text-gray-400 hover:text-blue-600 rounded-lg transition-colors"
-                        title="Edit"
+                        className="text-gray-400 hover:text-blue-600 transition"
+                        title="Edit Task"
                       >
-                        <Edit3 className="w-4 h-4" />
+                        <Edit3 className="w-5 h-5" />
                       </button>
-                    )}
-                    <button
-                      onClick={() => deleteTask(task._id)}
-                      className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-lg transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                      <button
+                        onClick={() => deleteTask(task._id)}
+                        className="text-gray-400 hover:text-red-600 transition"
+                        title="Delete Task"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))
