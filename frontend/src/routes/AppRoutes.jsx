@@ -47,9 +47,9 @@ const AppRoutes = () => {
       <Route
         path="/edit-profile"
         element={
-          // <PrivateRoute>
-          <EditProfile />
-          // </PrivateRoute>
+          <PrivateRoute>
+            <EditProfile />
+          </PrivateRoute>
         }
       />
 
@@ -102,9 +102,9 @@ const AppRoutes = () => {
       <Route
         path="/user-profile"
         element={
-          // <PrivateRoute>
-          <UserProfile />
-          // </PrivateRoute>
+          <PrivateRoute>
+            <UserProfile />
+          </PrivateRoute>
         }
       />
 
