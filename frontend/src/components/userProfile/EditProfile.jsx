@@ -4,9 +4,13 @@ import { getAuth } from "firebase/auth";
 import api from "../../api/axios";
 import { toast } from "react-toastify";
 import { validateName, validateEmail } from "../../utils/validation";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+
 const EditProfile = () => {
   const auth = getAuth();
-  const { logout } = useAuth();
+  const navigate = useNavigate();
+  //const { logout } = useAuth();
   const firebaseUser = auth.currentUser;
   const { setUserData } = useAuth();
 
@@ -62,25 +66,36 @@ const EditProfile = () => {
   const updateProfile = async () => {
     try {
       setSaving(true);
+  
       const res = await api.patch("/users/me", {
         firebaseUid: uid,
         id: JSON.parse(localStorage.getItem("user"))._id,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        email: email.trim(),
       });
-      // logout user from firebase to refresh token
-      await logout();
-      setUserData(null);
-      localStorage.removeItem("user");
+  
+      const updatedUser = res.data;
+      const accessToken = localStorage.getItem("accessToken");
+  
+      if (updatedUser && accessToken) {
+        login(updatedUser, accessToken);
+      } else if (updatedUser) {
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+      }
+  
       toast.success("Profile updated");
     } catch (err) {
-      console.error(err);
-      toast.error(err);
+      console.error("Update profile error:", err);
+      const message =
+        err?.response?.data?.error ||
+        err.message ||
+        "Failed to update profile";
+      toast.error(message);
     } finally {
       setSaving(false);
     }
   };
+  
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -100,17 +115,25 @@ const EditProfile = () => {
     }
 
     // Validate email
-    const emailError = validateEmail(email);
-    if (emailError) {
-      toast.error(emailError);
-      return;
-    }
+    // const emailError = validateEmail(email);
+    // if (emailError) {
+    //   toast.error(emailError);
+    //   return;
+    // }
 
     updateProfile();
   };
 
   return (
     <div className="max-w-2xl mx-auto pt-8 px-4">
+      <button
+        type="button"
+        onClick={() => navigate("/user-profile")}
+        className="mb-4 inline-flex items-center text-sm text-indigo-600 hover:text-indigo-800"
+      >
+        <ArrowLeft className="w-4 h-4 mr-1" />
+        Back to profile
+      </button>
       <div className="card card-pad shadow-xl">
         <div className="mb-8 text-center">
           <h2 className="section-title text-3xl">Edit Profile</h2>
@@ -148,10 +171,11 @@ const EditProfile = () => {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="input"
+              readOnly
+              // onChange={(e) => setEmail(e.target.value)}
+              className="input bg-gray-100 cursor-not-allowed"
               maxLength={120}
-              required
+              //required
             />
             <span className="float-label">Email Address</span>
           </div>

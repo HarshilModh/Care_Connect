@@ -417,7 +417,21 @@ const UserProfile = () => {
     // Render Caregivers Tab
     const renderCaregiversTab = () => (
         <div className="max-w-5xl w-full bg-white rounded-3xl shadow-2xl p-8">
-
+                <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h2 className="text-2xl font-semibold text-gray-900">Caregivers</h2>
+                    <p className="text-sm text-gray-500">
+                    Manage caregivers connected to your account.
+                    </p>
+                </div>
+                <button
+                    onClick={() => navigate("/addMember")}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                >
+                    <Plus className="w-4 h-4" />
+                    Add Caregiver
+                </button>
+                </div>
 
             {/* 🔹 My Caregiver Profile card */}
 
@@ -698,7 +712,21 @@ const UserProfile = () => {
     // Render Care Recipients Tab
     const renderCareRecipientsTab = () => (
         <div className="max-w-5xl w-full bg-white rounded-3xl shadow-2xl p-8">
-
+            <div className="flex items-center justify-between mb-6">
+            <div>
+                <h2 className="text-2xl font-semibold text-gray-900">Care Recipients</h2>
+                <p className="text-sm text-gray-500">
+                Manage the people receiving care in your network.
+                </p>
+            </div>
+            <button
+                onClick={() => navigate("/addMember")}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            >
+                <Plus className="w-4 h-4" />
+                Add Recipient
+            </button>
+            </div>
 
             {loading ? (
                 <div className="text-center py-8 text-gray-500">Loading...</div>
@@ -706,7 +734,7 @@ const UserProfile = () => {
                 <div className="text-center py-12 text-gray-500">
                     <Heart className="w-16 h-16 mx-auto mb-4 text-gray-300" />
                     <p className="text-lg">No care recipients added yet</p>
-                    <p className="text-sm mt-2">Click "Add Recipient" to get started</p>
+                    <p className="text-sm mt-2">Click <span className="font-semibold">Add Recipient</span> to get started</p>
                 </div>
             ) : (
                 <div className="space-y-4">
