@@ -4,7 +4,7 @@ import { toast, ToastContainer } from "react-toastify";
 import { auth } from "../../firebase.js";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
-import { createRandomPassword } from "../../../../backend/utils/randomGenerator.js";
+import { createRandomPassword } from "../../utils/randomGenerator.js";
 import { sendJoinRequest } from "../../api/notifications";
 import {
   Search,
@@ -575,9 +575,8 @@ const AddMembers = () => {
           <div className="lg:col-span-7 space-y-6">
             {/* 1. Search existing users */}
             <div
-              className={`bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 ${
-                !groupId ? "opacity-60 grayscale-[0.5] pointer-events-none" : ""
-              }`}
+              className={`bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 ${!groupId ? "opacity-60 grayscale-[0.5] pointer-events-none" : ""
+                }`}
             >
               <div className="p-6 border-b border-gray-100">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -655,11 +654,10 @@ const AddMembers = () => {
                           <button
                             onClick={() => handleAddFromSearch(u)}
                             disabled={isAdded}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                              isAdded
-                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
-                            }`}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${isAdded
+                              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                              : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
+                              }`}
                           >
                             {isAdded ? (
                               <>
@@ -692,9 +690,8 @@ const AddMembers = () => {
 
             {/* 2. Invite New User */}
             <div
-              className={`bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 ${
-                !groupId ? "opacity-60 grayscale-[0.5] pointer-events-none" : ""
-              }`}
+              className={`bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 ${!groupId ? "opacity-60 grayscale-[0.5] pointer-events-none" : ""
+                }`}
             >
               <div className="p-6 border-b border-gray-100">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -792,9 +789,8 @@ const AddMembers = () => {
           <div className="lg:col-span-5 space-y-6">
             {/* 3. Pending List */}
             <div
-              className={`bg-white rounded-2xl shadow-lg border border-indigo-100 overflow-hidden flex flex-col h-[500px] transition-all duration-300 ${
-                !groupId ? "opacity-60 grayscale-[0.5] pointer-events-none" : ""
-              }`}
+              className={`bg-white rounded-2xl shadow-lg border border-indigo-100 overflow-hidden flex flex-col h-[500px] transition-all duration-300 ${!groupId ? "opacity-60 grayscale-[0.5] pointer-events-none" : ""
+                }`}
             >
               <div className="p-5 bg-indigo-50 border-b border-indigo-100 flex justify-between items-center">
                 <div>
@@ -890,9 +886,8 @@ const AddMembers = () => {
 
             {/* 4. Existing Members Reference */}
             <div
-              className={`bg-white rounded-2xl border border-gray-200 p-5 ${
-                !groupId ? "opacity-50" : ""
-              }`}
+              className={`bg-white rounded-2xl border border-gray-200 p-5 ${!groupId ? "opacity-50" : ""
+                }`}
             >
               <h3 className="font-semibold text-gray-900 mb-3 flex justify-between items-center">
                 <span>Existing Members</span>

@@ -124,6 +124,16 @@ const GroupDetails = () => {
               {new Date(task.dueAt).toLocaleDateString()}
             </p>
           )}
+          {task.assignedTo && (
+            <p className="text-xs text-gray-500 mt-0.5">
+              Assigned to: <span className="font-medium">{task.assignedTo.firstName} {task.assignedTo.lastName}</span>
+            </p>
+          )}
+          {task.status === 'completed' && task.completedBy && (
+            <p className="text-xs text-green-600 mt-0.5">
+              Completed by: <span className="font-medium">{task.completedBy.firstName} {task.completedBy.lastName}</span>
+            </p>
+          )}
         </div>
       </div>
       <div className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${task.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
@@ -210,8 +220,47 @@ const GroupDetails = () => {
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-          {/* Left Column: Members Breakdown */}
+          {/* Left Column: Tasks & Quick Actions (Now 2/3) */}
           <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 h-full">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <CalendarDays className="w-5 h-5 text-blue-500" /> Recent Tasks
+                </h2>
+                <button
+                  onClick={() => navigate('/tasks')}
+                  className="text-xs font-medium text-blue-600 hover:underline"
+                >
+                  View My Tasks
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {tasks.length > 0 ? (
+                  /* Increased limit from 5 to 10 or removed it completely */
+                  tasks.slice(0, 10).map(task => (
+                    <TaskRow key={task._id} task={task} />
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="bg-gray-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <CheckCircle2 className="w-6 h-6 text-gray-300" />
+                    </div>
+                    <p className="text-sm text-gray-500">No active tasks for this group.</p>
+                    <button
+                      onClick={() => navigate('/tasks/create')}
+                      className="mt-2 text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                    >
+                      + Create Task
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Members Breakdown (Now 1/3) */}
+          <div className="space-y-6">
 
             {/* Care Recipients */}
             <section>
@@ -219,7 +268,7 @@ const GroupDetails = () => {
                 <User className="w-5 h-5 text-amber-500" /> Care Recipients
               </h2>
               {stats.careRecipients.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   {stats.careRecipients.map(m => (
                     <MemberCard
                       key={m._id}
@@ -242,7 +291,7 @@ const GroupDetails = () => {
                 <Heart className="w-5 h-5 text-rose-500" /> Care Givers
               </h2>
               {stats.careGivers.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   {stats.careGivers.map(m => (
                     <MemberCard
                       key={m._id}
@@ -264,7 +313,7 @@ const GroupDetails = () => {
               <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
                 <Shield className="w-5 h-5 text-indigo-500" /> Admins & Family
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3">
                 {[...stats.admins, ...stats.others].map(m => (
                   <MemberCard
                     key={m._id}
@@ -277,44 +326,6 @@ const GroupDetails = () => {
               </div>
             </section>
 
-          </div>
-
-          {/* Right Column: Tasks & Quick Actions */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 h-full">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <CalendarDays className="w-5 h-5 text-blue-500" /> Recent Tasks
-                </h2>
-                <button
-                  onClick={() => navigate('/tasks')}
-                  className="text-xs font-medium text-blue-600 hover:underline"
-                >
-                  View My Tasks
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                {tasks.length > 0 ? (
-                  tasks.slice(0, 5).map(task => (
-                    <TaskRow key={task._id} task={task} />
-                  ))
-                ) : (
-                  <div className="text-center py-8">
-                    <div className="bg-gray-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <CheckCircle2 className="w-6 h-6 text-gray-300" />
-                    </div>
-                    <p className="text-sm text-gray-500">No active tasks for this group.</p>
-                    <button
-                      onClick={() => navigate('/tasks/create')}
-                      className="mt-2 text-xs font-medium text-indigo-600 hover:text-indigo-700"
-                    >
-                      + Create Task
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
 
         </div>
