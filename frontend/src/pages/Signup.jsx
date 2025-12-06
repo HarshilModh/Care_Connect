@@ -16,12 +16,16 @@ import {
   validateConfirmPassword,
   validateName,
 } from "../utils/validation";
+import { Eye, EyeOff } from "lucide-react";
 
 // import { useTheme } from "../context/ThemeContext";
 
 export default function Signup() {
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   // const { theme } = useTheme();
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -113,7 +117,7 @@ export default function Signup() {
         url: "http://localhost:5173/verify-success",
       });
       console.log("Email verification sent");
-      toast.success("Verification email sent! Redirecting to login...");
+      //toast.success("Verification email sent! Redirecting to login...");
 
       const payload = {
         firstName: formData.firstName,
@@ -121,19 +125,19 @@ export default function Signup() {
         email: formData.email,
         password: formData.password,
         confirmPassword: formData.confirmpassword,
-        uid: user.uid,
+        firebaseUid: user.uid,
         needPasswordReset: false,
       };
 
       console.log("Sending signup data to backend:", payload);
       const response = await api.post("users/signUp", payload);
-      if (!response.success) {
-        toast.error(response.message);
-        setLoading(false);
-        return;
-      }
-      console.log("User created in backend:", response.data);
-      toast.success("Signup successful! Please verify your email.");
+      const data = response.data;
+      
+      console.log("User created in backend:", data);
+      
+      if (data?.error) {throw new Error(data.error);}
+      
+      toast.success("Verification email sent! Please verify your email, then sign in.");
 
       setFormData({
         firstName: "",
@@ -148,7 +152,8 @@ export default function Signup() {
       }, 2000);
     } catch (error) {
       console.error("Signup error:", error);
-      toast.error("Signup failed. Please try again.");
+      const message =error.response?.data?.error || error.message || "Signup failed. Please try again.";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -320,45 +325,58 @@ export default function Signup() {
                 />
               </div>
 
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                >
-                  Password
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
-                  required
-                />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Must be at least 8 characters
-                </p>
+              <div className={`floater ${formData.password ? "filled" : ""}`}>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="input pr-10"
+                    minLength={8}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                  <span className="float-label">Password</span>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">Must be at least 8 characters</p>
               </div>
 
-              <div>
-                <label
-                  htmlFor="confirmpassword"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                >
-                  Confirm Password
-                </label>
-                <input
-                  id="confirmpassword"
-                  name="confirmpassword"
-                  type="password"
-                  value={formData.confirmpassword}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
-                  required
-                />
+              <div className={`floater ${formData.confirmpassword ? "filled" : ""}`}>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirmpassword"
+                    value={formData.confirmpassword}
+                    onChange={handleChange}
+                    className="input pr-10"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                  <span className="float-label">Confirm Password</span>
+                </div>
               </div>
 
               {/* Terms */}

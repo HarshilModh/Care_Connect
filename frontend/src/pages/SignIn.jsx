@@ -9,6 +9,7 @@ import { useAuth } from "../context/AuthContext";
 // import { useTheme } from "../context/ThemeContext";
 import api from "../api/axios";
 import { validateEmail, validateRequired } from "../utils/validation";
+import { Eye, EyeOff } from "lucide-react";
 
 function SignIn() {
     const navigate = useNavigate();
@@ -17,6 +18,8 @@ function SignIn() {
     // const { theme } = useTheme();
     // console.log("first theme", theme);
     const [errors, setErrors] = useState({});
+
+    const [showPassword, setShowPassword] = useState(false);
 
     const [formData, setFormData] = useState({
         email: "",
@@ -359,27 +362,32 @@ function SignIn() {
                             </div>
 
                             {/* Password Field */}
-                            <div>
-                                <label
-                                    htmlFor="password"
-                                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 py-4"
-                                >
-                                    Password
-                                </label>
-                                <input
-                                    id="password"
+                            <div className={`floater ${formData.password ? "filled" : ""}`}>
+                                <div className="relative">
+                                    <input
+                                    type={showPassword ? "text" : "password"}
                                     name="password"
-                                    type="password"
                                     value={formData.password}
                                     onChange={handleChange}
-                                    placeholder="••••••••"
-                                    className="w-full px-4 py-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
-
-                                />
-                                {/* <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 py-4">
-                                    Must be at least 8 characters long
-                                </p> */}
+                                    className="input pr-10"
+                                    required
+                                    />
+                                    <button
+                                    type="button"
+                                    onClick={() => setShowPassword((prev) => !prev)}
+                                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                                    aria-label={showPassword ? "Hide password" : "Show password"}
+                                    >
+                                    {showPassword ? (
+                                        <EyeOff className="w-4 h-4" />
+                                    ) : (
+                                        <Eye className="w-4 h-4" />
+                                    )}
+                                    </button>
+                                    <span className="float-label">Password</span>
+                                </div>
                             </div>
+
 
                             <div className="text-right mt-2">
                                 <Link
