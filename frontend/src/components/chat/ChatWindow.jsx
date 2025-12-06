@@ -105,6 +105,12 @@ const ChatWindow = ({ group }) => {
           toast.info(`${userName} left the chat`, { autoClose: 2000 });
         });
 
+        // Re-join on reconnect
+        socket.on("connect", () => {
+          console.log("Reconnected to socket, re-joining group");
+          joinGroup(group._id);
+        });
+
       } catch (error) {
         console.error("Error initializing chat:", error);
         toast.error("Failed to load chat");
@@ -134,10 +140,10 @@ const ChatWindow = ({ group }) => {
   };
 
   useEffect(() => {
-    if (!isSearching) {
+    if (!isSearching && !loading) {
       scrollToBottom();
     }
-  }, [messages, isSearching]);
+  }, [messages, isSearching, loading]);
 
   // Handle typing indicator
   const handleTyping = () => {
@@ -161,16 +167,25 @@ const ChatWindow = ({ group }) => {
     try {
       setSending(true);
       emitTyping(group._id, false);
+      setNewMessage(""); // Clear input immediately for better UX
 
       if (editingMessage) {
         await editMessage(editingMessage._id, newMessage.trim());
         setEditingMessage(null);
         toast.success("Message updated");
       } else {
-        await sendMessageAPI(group._id, newMessage.trim());
+        const response = await sendMessageAPI(group._id, newMessage.trim());
+        if (response && response.success && response.data) {
+          setMessages((prev) => {
+            // Check if message already exists (from socket)
+            if (prev.some(m => m._id === response.data._id)) return prev;
+            return [...prev, response.data];
+          });
+          scrollToBottom();
+        }
       }
 
-      setNewMessage("");
+
 
     } catch (error) {
       console.error("Error sending message:", error);
@@ -394,7 +409,7 @@ const ChatWindow = ({ group }) => {
                         `}
                       >
                         <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
-                          {isDeleted ? "🚫 This message was deleted" : msg.message}
+                          {isDeleted ? "This message was deleted" : msg.message}
                         </p>
                         <div className={`flex items-center justify-end gap-1 mt-1 ${isOwn ? "text-white/70" : "text-gray-400"}`}>
                           <span className="text-[10px]">

@@ -418,6 +418,9 @@ const AddMembers = () => {
 
     try {
       // 1. Create Firebase user
+      console.log("Creating user in firebase");
+      console.log("inviteEmail", inviteEmail);
+      console.log("password", password);
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         inviteEmail,
@@ -426,6 +429,12 @@ const AddMembers = () => {
 
       console.log("user added in firebase", userCredential);
       const user = userCredential.user;
+      console.log("creating user in backend");
+      console.log("user.uid", user.uid);
+      // console.log("inviteFirstName", inviteFirstName);
+      // console.log("inviteLastName", inviteLastName);
+      // console.log("inviteEmail", inviteEmail);
+      // console.log("inviteRole", inviteRole);
 
       // 2. Create user in backend
       const resp = await axios.post(
@@ -445,7 +454,7 @@ const AddMembers = () => {
       );
 
       console.log("user added in db", resp);
-
+      console.log("creating membership in backend");
       // 3. Create membership (single create, not bulk)
       await axios.post(
         "http://localhost:3000/api/memberships/",
@@ -458,7 +467,6 @@ const AddMembers = () => {
         { withCredentials: true }
       );
       console.log("user added in membership");
-
       // 4. Send join-request notification
       const senderId = (() => {
         const userRaw = localStorage.getItem("user");
@@ -474,7 +482,7 @@ const AddMembers = () => {
 
       const selectedGroup = groups.find((g) => g._id === groupId);
       const groupName = selectedGroup?.groupName || "the group";
-
+      console.log("sending notification");
       await sendJoinRequest(
         groupId,
         resp.data.user._id,
