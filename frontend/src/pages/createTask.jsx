@@ -56,6 +56,15 @@ export default function CreateTask() {
       color: "bg-yellow-100 text-yellow-600 border-yellow-200",
     },
   ];
+  const getCurrentTimestamp = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
 
   let storedUser = localStorage.getItem("user");
   let userId = "";
@@ -412,7 +421,8 @@ export default function CreateTask() {
                   <input
                     type="datetime-local"
                     value={dueDate}
-                    min={new Date().toISOString().slice(0, 16)}
+                    // min date today
+                    min={getCurrentTimestamp()}
                     onChange={(e) => setDueDate(e.target.value)}
                     onKeyDown={(e) => e.preventDefault()}
                     className="w-full pl-10 py-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 outline-none"

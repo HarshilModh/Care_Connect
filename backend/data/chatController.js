@@ -472,3 +472,17 @@ export const getGroupMessageStats = async (groupId, userId) => {
     throw new Error(`Error in getGroupMessageStats: ${error.message}`);
   }
 };
+export const panicAlertMessage = async (groupId, senderId) => {
+  try {
+    const panicMessage = `🚨 Panic Alert triggered by a member! Please check on them immediately. 🚨`;
+    const message = await sendMessage(
+      groupId,
+      senderId,
+      panicMessage,
+      { type: "panic-alert" }
+    );
+    return message;
+  } catch (error) {
+    throw new Error(`Error in panicAlertMessage: ${error.message}`);
+  }
+};

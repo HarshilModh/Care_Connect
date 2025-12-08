@@ -44,17 +44,6 @@ const SideBar = () => {
         {link("/tasks", RectangleStackIcon, "Tasks")}
         {link("/documents", DocumentIcon, "Documents")}
 
-        {insideGroup && (
-          <NavLink
-            to={`/group-members/${groupId}`}
-            className={({ isActive }) =>
-              isActive ? "sidebar-link sidebar-link-active" : "sidebar-link"
-            }
-          >
-            <UsersIcon className="h-5 w-5" />
-            Group members
-          </NavLink>
-        )}
       </nav>
 
       <div className="sidebar-footer">

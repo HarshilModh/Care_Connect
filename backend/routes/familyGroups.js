@@ -22,9 +22,14 @@ import {
   getFamilyGroupsWithNoMembers,
   getFamilyGroupsByCreationDateRange,
 } from "../data/familyGroupController.js";
-import { isValidString } from "../utils/validation.utils.js";
+import { Membership } from "../models/memberShip.model.js";
+import { createNotification, panicAlertNotification } from "../data/notificationController.js";
 import mongoose from "mongoose";
-
+import { panicAlertMessage } from "../data/chatController.js";
+import { sendPanicAlertEmail } from "../integrations/nodemailer.js";
+// Change this line:
+import { isValidString } from "../utils/validation.utils.js";
+import User from "../models/user.model.js";
 const router = express.Router();
 
 router.post("/", async (req, res) => {
@@ -432,6 +437,63 @@ router.patch("/group/:id/timezone", async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+});
+router.post("/group/:id/panic", async (req, res) => {
+  try {
+    let groupId = req.params.id;
+    let { senderId } = req.body;
+    console.log("Panic Alert Request Received:", { groupId, senderId });
+    if (!groupId || !senderId) {
+      throw new Error("Group ID and Sender ID are required");
+    }
+
+    // 1. Get all other group members
+    const members = await Membership.find({
+      groupId,
+      userId: { $ne: senderId },
+      status: 'active'
+    }).populate('userId');
+
+    console.log(`Panic Alert triggered by ${senderId} for group ${groupId}`);
+
+    // 2. Send Notifications
+    groupId = groupId.toString();
+    senderId = senderId.toString();
+    await panicAlertNotification(groupId, senderId);
+
+    console.log(`Panic Alert notifications sent to ${members.length} members`);
+    // 3. Send chat messages
+    await panicAlertMessage(groupId, senderId, members);
+    // 4. Send Email alerts
+    const groupName = (await getFamilyGroupById(groupId)).groupName;
+    const sender = await User.findById(senderId);
+    const senderName = sender ? `${sender.firstName} ${sender.lastName}` : "Unknown Sender";
+
+    await Promise.all(members.map(async (member) => {
+      const email = member.userId.email;
+      if (email) {
+        await sendPanicAlertEmail({
+          to: email,
+          alertDetails: {
+            groupName,
+            senderName,
+            triggeredAt: new Date().toLocaleString()
+          }
+        });
+      }
+    }));
+
+
+    console.log(`Panic Alert chat messages sent to ${members.length} members`);
+    res.status(200).json({
+      success: true,
+      message: `Alert sent to ${members.length} members`
+    });
+
+  } catch (error) {
+    console.error("Panic Route Error:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 //all routes for testing

@@ -16,7 +16,8 @@ const notificationSchema = new mongoose.Schema(
         "system",
         "group",
         "chat_message",
-        "onboarding_required"
+        "onboarding_required",
+        "emergency"
       ],
       required: true,
       index: true,

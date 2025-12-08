@@ -134,7 +134,7 @@ const CreateGroup = () => {
             </div>
 
             {/* Visibility */}
-            <div>
+            {/* <div>
               <label className="card-sub font-semibold">Visibility</label>
             </div>
             <div className="flex items-center gap-3">
@@ -151,7 +151,7 @@ const CreateGroup = () => {
               <span className="text-sm text-gray-700">
                 Allow this group to be discoverable
               </span>
-            </div>
+            </div> */}
 
             {/* Messages */}
             <div className="sm:col-span-2">

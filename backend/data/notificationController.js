@@ -34,12 +34,20 @@ export const createNotification = async (notificationData) => {
         "system",
         "group",
         "chat_message",
-        "onboarding_required"
+        "onboarding_required",
+        "emergency"
       ].includes(type)
     ) {
       throw new Error("Valid notification type is required");
     }
-
+    console.log("[DEBUG] Valid notification type:", type);
+    //senderId
+    console.log("[DEBUG] Sender ID:", senderId);
+    //groupId
+    console.log("[DEBUG] Group ID:", groupId);
+    console.log("[DEBUG] Recipient ID:", recipientId);
+    console.log("[DEBUG] Title:", title);
+    console.log("[DEBUG] Message:", message);
     if (!isValidID(recipientId)) {
       throw new Error("Valid recipient ID is required");
     }
@@ -693,5 +701,45 @@ export const markChatNotificationsAsRead = async (groupId, userId) => {
     throw new Error(
       "Error marking chat notifications as read: " + error.message
     );
+  }
+};
+
+export const panicAlertNotification = async (groupId, senderId) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
+      throw new Error("Valid group ID is required");
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(senderId)) {
+      throw new Error("Valid sender ID is required");
+    }
+
+    const group = await FamilyGroup.findById(groupId);
+    if (!group) {
+      throw new Error("Group not found");
+    }
+
+    const members = await Membership.find({ groupId: groupId, status: "active" });
+
+    const notificationPromises = members.map(member => 
+      createNotification({
+        type: "emergency",
+        recipientId: member.userId.toString(),
+        senderId: senderId,
+        groupId: groupId,
+        title: "Panic Alert!",
+        message: `A panic alert has been triggered in the group ${group.groupName}. Please check immediately.`,
+        metadata: {
+          groupName: group.groupName,
+          senderId: senderId,
+        },
+      })
+    );  
+    await Promise.all(notificationPromises);
+
+    return { message: "Panic alert notifications sent successfully" };
+  } catch (error) {
+    console.log(error);
+    throw new Error("Error sending panic alert notifications: " + error.message);
   }
 };

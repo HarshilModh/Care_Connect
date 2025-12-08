@@ -13,7 +13,9 @@ export const isValidPassword = (password) => {
 
 export const isValidID = (id) => {
   // console.log("ID", id);
-
+  console.log("Validating ID:", id);
+  //typeof id
+  console.log("Type of ID:", typeof id);
   if (!id) {
     throw new Error(`Error: You must provide a valid ID`);
   }
