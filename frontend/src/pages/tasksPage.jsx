@@ -9,7 +9,7 @@ import {
   Circle,
   Trash2,
   Edit3,
-  Calendar as CalendarIcon, // Renamed to avoid conflict
+  Calendar as CalendarIcon, 
   Pill,
   StickyNote,
   CheckSquare,
@@ -18,17 +18,13 @@ import {
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
-import EditTaskModal from "../components/tasks/taskEdit.jsx"; // Keeping this import
+import EditTaskModal from "../components/tasks/taskEdit.jsx"; 
 import "react-toastify/dist/ReactToastify.css";
-
-// Imports for Calendar
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const localizer = momentLocalizer(moment);
-
-// --- Custom Calendar Components ---
 
 const CustomToolbar = (toolbar) => {
   const goToBack = () => {
@@ -58,7 +54,6 @@ const CustomToolbar = (toolbar) => {
 
   return (
     <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
-      {/* Left: Navigation */}
       <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-gray-100 shadow-sm">
         <button
           onClick={goToBack}
@@ -80,12 +75,9 @@ const CustomToolbar = (toolbar) => {
         </button>
       </div>
 
-      {/* Center: Label */}
       <div className="text-center">
         {label()}
       </div>
-
-      {/* Right: View Switcher */}
       <div className="flex bg-gray-100 p-1 rounded-lg">
         {['month', 'week', 'day'].map((view) => (
           <button
@@ -126,19 +118,16 @@ const CustomEvent = ({ event }) => {
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('list'); // 'list' | 'calendar'
+  const [viewMode, setViewMode] = useState('list'); 
 
-  // Local UI State
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all"); // 'all', 'pending', 'completed'
+  const [statusFilter, setStatusFilter] = useState("all"); 
 
-  // Modal State
   const [showEditModal, setShowEditModal] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState(null);
 
   const navigate = useNavigate();
 
-  // Safe User Access
   let userId = "";
   try {
     const storedUser = localStorage.getItem("user");
@@ -147,12 +136,10 @@ export default function Tasks() {
     console.error("User parse error", err);
   }
 
-  // Fetch Tasks
   const fetchTasks = async () => {
     if (!userId) return;
     try {
       setLoading(true);
-      // Fetching ALL tasks for this user initially
       const res = await fetch(`http://localhost:3000/api/tasks/search?userId=${userId}`);
 
       if (!res.ok) throw new Error("Failed to fetch tasks");
@@ -171,14 +158,11 @@ export default function Tasks() {
     fetchTasks();
   }, []);
 
-  // Filter Logic (Client Side for snappiness)
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
-      // 1. Search Filter
       const matchesSearch = task.title.toLowerCase().includes(search.toLowerCase()) ||
         task.description?.toLowerCase().includes(search.toLowerCase());
 
-      // 2. Status Filter
       const matchesStatus = statusFilter === 'all'
         ? true
         : task.status === statusFilter;
@@ -187,7 +171,6 @@ export default function Tasks() {
     });
   }, [tasks, search, statusFilter]);
 
-  // Derived Stats
   const stats = {
     total: tasks.length,
     pending: tasks.filter(t => t.status === 'pending').length,
@@ -195,9 +178,7 @@ export default function Tasks() {
     completed: tasks.filter(t => t.status === 'completed').length
   };
 
-  // Actions
-  const markComplete = async (taskId, currentStatus) => {
-    // Optimistic Update (Update UI immediately before server responds)
+    const markComplete = async (taskId, currentStatus) => {
     const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
     setTasks(prev => prev.map(t => t._id === taskId ? { ...t, status: newStatus } : t));
 
@@ -215,7 +196,7 @@ export default function Tasks() {
       toast.success(newStatus === 'completed' ? "Task completed!" : "Task reopened");
     } catch (err) {
       toast.error(err.message);
-      fetchTasks(); // Revert on error
+      fetchTasks(); 
     }
   };
 
@@ -257,7 +238,6 @@ export default function Tasks() {
     }
   };
 
-  // Helper for icons based on type
   const getTypeIcon = (type) => {
     switch (type) {
       case 'medication': return <Pill className="w-4 h-4 text-red-500" />;
@@ -267,17 +247,14 @@ export default function Tasks() {
     }
   };
 
-  // Helper for formatting date
   const formatDate = (dateString) => {
     if (!dateString) return "No Due Date";
     return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
-  // Calendar State
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState('month');
 
-  // Calendar Events Mapper
   const calendarEvents = useMemo(() => {
     return filteredTasks.map(task => ({
       id: task._id,
@@ -296,7 +273,6 @@ export default function Tasks() {
     <main className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
 
-        {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Task Dashboard</h1>
@@ -304,7 +280,6 @@ export default function Tasks() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* View Toggle */}
             <div className="flex p-1 bg-gray-200 rounded-lg">
               <button
                 onClick={() => setViewMode('list')}
@@ -331,7 +306,6 @@ export default function Tasks() {
           </div>
         </div>
 
-        {/* Stats Row - Only show in List view for cleaner calendar */}
         {viewMode === 'list' && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
@@ -353,7 +327,6 @@ export default function Tasks() {
           </div>
         )}
 
-        {/* Filters & Search - Hide in Calendar View */}
         {viewMode === 'list' && (
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
             <div className="relative w-full sm:w-96">
@@ -384,17 +357,13 @@ export default function Tasks() {
           </div>
         )}
 
-        {/* Main Content Area */}
         {viewMode === 'list' ? (
-          // Task List
           <div className="space-y-4">
             {loading ? (
-              // Skeleton Loading State
               [1, 2, 3].map(i => (
                 <div key={i} className="bg-white h-24 rounded-xl animate-pulse shadow-sm"></div>
               ))
             ) : filteredTasks.length === 0 ? (
-              // Empty State
               <div className="text-center py-16 bg-white rounded-xl border border-dashed border-gray-300">
                 <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Filter className="w-8 h-8 text-gray-300" />
@@ -403,7 +372,6 @@ export default function Tasks() {
                 <button onClick={() => { setSearch(''); setStatusFilter('all') }} className="text-blue-600 text-sm mt-2 hover:underline">Clear filters</button>
               </div>
             ) : (
-              // Task Items
               filteredTasks.map((task) => (
                 <div
                   key={task._id}
@@ -413,7 +381,6 @@ export default function Tasks() {
                     }`}
                 >
                   <div className="flex items-start gap-4">
-                    {/* Checkbox Button */}
                     <button
                       onClick={() => markComplete(task._id, task.status)}
                       className={`mt-1 flex-shrink-0 transition-colors ${task.status === 'completed' ? 'text-green-500' : 'text-gray-300 hover:text-green-500'
@@ -427,7 +394,6 @@ export default function Tasks() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        {/* Type Badge */}
                         <span className={`flex items-center gap-1 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border ${task.type === 'medication' ? 'bg-red-50 text-red-600 border-red-100' :
                           task.type === 'event' ? 'bg-purple-50 text-purple-600 border-purple-100' :
                             'bg-blue-50 text-blue-600 border-blue-100'
@@ -436,7 +402,6 @@ export default function Tasks() {
                           {task.type}
                         </span>
 
-                        {/* Date Badge */}
                         {task.dueAt && (
                           <span className={`flex items-center gap-1 text-[11px] font-medium ${new Date(task.dueAt) < new Date() && task.status !== 'completed' ? 'text-red-600' : 'text-gray-500'
                             }`}>
@@ -465,7 +430,6 @@ export default function Tasks() {
                         )}
                       </div>
                     </div>
-                    {/* only show if created by current user */}
                     {task.createdBy === userId && (
                       <div className="flex flex-col gap-2 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
@@ -493,7 +457,6 @@ export default function Tasks() {
             )}
           </div>
         ) : (
-          // Calendar View
           <div className="bg-white p-6 rounded-2xl shadow-xl border border-gray-100 h-[700px]">
             <style>{`
                 .rbc-calendar { font-family: inherit; }
@@ -513,13 +476,10 @@ export default function Tasks() {
               views={['month', 'week', 'day']}
               defaultView="month"
 
-              /* Controlled State */
               date={currentDate}
               view={currentView}
               onNavigate={onNavigate}
               onView={onView}
-
-              /* Custom Components */
               components={{
                 toolbar: CustomToolbar,
                 event: CustomEvent
@@ -534,7 +494,6 @@ export default function Tasks() {
           </div>
         )}
 
-        {/* Edit Modal Wrapper */}
         {showEditModal && (
           <EditTaskModal
             task={taskToEdit}

@@ -43,7 +43,6 @@ const AppRoutes = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/chat" element={<ChatLayout />} />
       <Route path="/groups/edit/:id" element={<EditGroup />} />
-      <Route path="/groups/details/:groupId" element={<GroupDetails />} />
       <Route
         path="/edit-profile"
         element={
@@ -104,6 +103,14 @@ const AppRoutes = () => {
         element={
           <PrivateRoute>
             <UserProfile />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/groups/details/:groupId"
+        element={
+          <PrivateRoute>
+            <GroupDetails />
           </PrivateRoute>
         }
       />
