@@ -1,5 +1,15 @@
 import express from "express";
-import { createCareRecipient, getCareRecipientById, getAllCareRecipients, getCareRecipientsByGroupId, getCareRecipientsByUserId, updateCareRecipient, deleteCareRecipient, searchCareRecipients, getCareRecipientsByPrimaryCondition, } from "../data/careRecipientsController.js";
+import {
+  createCareRecipient,
+  getCareRecipientById,
+  getAllCareRecipients,
+  getCareRecipientsByGroupId,
+  getCareRecipientsByUserId,
+  updateCareRecipient,
+  deleteCareRecipient,
+  searchCareRecipients,
+  getCareRecipientsByPrimaryCondition,
+} from "../data/careRecipientsController.js";
 
 const router = express.Router();
 
@@ -13,14 +23,8 @@ router.get("/", async (req, res) => {
 });
 router.post("/", async (req, res) => {
   try {
-    const {
-      groupId,
-      userId,
-      dob,
-      primaryCondition,
-      notes,
-      emergencyContacts,
-    } = req.body;
+    const { groupId, userId, dob, primaryCondition, notes, emergencyContacts } =
+      req.body;
 
     const newRecipient = await createCareRecipient(
       groupId,
@@ -37,10 +41,11 @@ router.post("/", async (req, res) => {
   }
 });
 
-
 router.get("/group/:groupId", async (req, res) => {
   try {
     const { groupId } = req.params;
+
+    console.log("Fetching care recipients for groupId:", groupId);
 
     const recipients = await getCareRecipientsByGroupId(groupId);
 
@@ -49,7 +54,6 @@ router.get("/group/:groupId", async (req, res) => {
     return res.status(400).json({ error: error.message });
   }
 });
-
 
 router.get("/user/:userId", async (req, res) => {
   try {
@@ -64,7 +68,6 @@ router.get("/user/:userId", async (req, res) => {
   }
 });
 
-
 router.get("/search", async (req, res) => {
   try {
     const { term } = req.query;
@@ -77,7 +80,6 @@ router.get("/search", async (req, res) => {
   }
 });
 
-
 router.get("/condition/:condition", async (req, res) => {
   try {
     const { condition } = req.params;
@@ -89,7 +91,6 @@ router.get("/condition/:condition", async (req, res) => {
     return res.status(400).json({ error: error.message });
   }
 });
-
 
 router.get("/:id", async (req, res) => {
   try {
@@ -129,4 +130,3 @@ router.delete("/:id", async (req, res) => {
 });
 
 export default router;
-

@@ -35,13 +35,6 @@ const documentSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
-
-    bucket: {
-      type: String,
-      required: true,
-      trim: true,
-      maxlength: 200,
-    },
     key: {
       type: String,
       required: true,

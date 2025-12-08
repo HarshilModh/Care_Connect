@@ -3,6 +3,7 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createDocument } from "../data/documentController.js";
@@ -56,7 +57,6 @@ export const generateSignedUrlForKey = async (key) => {
     throw new Error("Invalid S3 key");
   }
 
-  // Ensure object exists
   await s3Client.send(
     new HeadObjectCommand({
       Bucket: BUCKET_NAME,
@@ -74,4 +74,19 @@ export const generateSignedUrlForKey = async (key) => {
   });
 
   return signedUrl;
+};
+
+export const deleteFileFromS3 = async (key) => {
+  const command = new DeleteObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+  });
+
+  try {
+    await s3Client.send(command);
+    console.log(`Successfully deleted ${key} from S3`);
+  } catch (error) {
+    console.error("S3 delete error:", error);
+    throw new Error(`Failed to delete from S3: ${error.message}`);
+  }
 };

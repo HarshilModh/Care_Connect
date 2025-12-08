@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import {
@@ -9,15 +9,16 @@ import {
   Heart,
   User,
   CheckCircle2,
-  Circle,
   Clock,
   CalendarDays,
   MoreVertical,
-  LayoutDashboard
+  LayoutDashboard,
+  Paperclip,
+  Upload,
 } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
-import CareGiverModal from './CareGiverModal';
-import CareRecipentModal from './CareRecipentModal';
+import CareGiverModal from "./CareGiverModal";
+import CareRecipentModal from "./CareRecipentModal";
 
 const GroupDetails = () => {
   const { groupId } = useParams();
@@ -31,14 +32,23 @@ const GroupDetails = () => {
   const [error, setError] = useState(null);
   const [selectedCaregiverId, setSelectedCaregiverId] = useState(null);
   const [selectedCareRecipientId, setSelectedCareRecipientId] = useState(null);
-
-  // Derived State
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [stats, setStats] = useState({
     admins: [],
     careGivers: [],
     careRecipients: [],
-    others: []
+    others: [],
   });
+  const getUserId = () => {
+    try {
+      const storedUser = localStorage.getItem("user");
+      return storedUser ? JSON.parse(storedUser)._id : null;
+    } catch (err) {
+      console.error("Invalid user data in localStorage", err);
+      return null;
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -47,32 +57,45 @@ const GroupDetails = () => {
       setLoading(true);
       try {
         // 1. Fetch Group Details
-        const groupRes = await axios.get(`http://localhost:3000/api/family-groups/group/${groupId}`, { withCredentials: true });
+        const groupRes = await axios.get(
+          `http://localhost:3000/api/family-groups/group/${groupId}`,
+          { withCredentials: true }
+        );
         setGroup(groupRes.data);
 
         // 2. Fetch Members
-        const membersRes = await axios.get(`http://localhost:3000/api/memberships/group/${groupId}`, { withCredentials: true });
-        const membersData = Array.isArray(membersRes.data) ? membersRes.data : [];
+        const membersRes = await axios.get(
+          `http://localhost:3000/api/memberships/group/${groupId}`,
+          { withCredentials: true }
+        );
+        const membersData = Array.isArray(membersRes.data)
+          ? membersRes.data
+          : [];
         setMembers(membersData);
 
         // Process roles
         setStats({
-          admins: membersData.filter(m => m.role === 'admin' || m.role === 'owner'),
-          careGivers: membersData.filter(m => m.role === 'careGiver'),
-          careRecipients: membersData.filter(m => m.role === 'careRecipient'),
-          others: membersData.filter(m => !['admin', 'owner', 'careGiver', 'careRecipient'].includes(m.role))
+          admins: membersData.filter(
+            (m) => m.role === "admin" || m.role === "owner"
+          ),
+          careGivers: membersData.filter((m) => m.role === "careGiver"),
+          careRecipients: membersData.filter((m) => m.role === "careRecipient"),
+          others: membersData.filter(
+            (m) =>
+              !["admin", "owner", "careGiver", "careRecipient"].includes(m.role)
+          ),
         });
 
         // 3. Fetch Tasks
-        // Note: Assuming endpoint exists based on your snippet
         try {
-          const tasksRes = await axios.get(`http://localhost:3000/api/tasks/group/${groupId}`, { withCredentials: true });
+          const tasksRes = await axios.get(
+            `http://localhost:3000/api/tasks/group/${groupId}`,
+            { withCredentials: true }
+          );
           setTasks(Array.isArray(tasksRes.data) ? tasksRes.data : []);
         } catch (taskErr) {
           console.warn("Could not fetch tasks", taskErr);
-          // Don't fail the whole page if tasks fail
         }
-
       } catch (err) {
         console.error("Error loading group details:", err);
         setError(err.message || "Failed to load group details");
@@ -85,25 +108,100 @@ const GroupDetails = () => {
     fetchData();
   }, [groupId]);
 
+  const ALLOWED_TYPES = ["image/", "application/pdf", "text/plain"];
+
+  const handleDocumentUpload = async (event) => {
+    const filesArray = Array.from(event.target.files || []); // <-- convert
+    if (!filesArray.length) return;
+
+    const invalid = filesArray.filter((file) => {
+      return !ALLOWED_TYPES.some((type) =>
+        type.endsWith("/") ? file.type.startsWith(type) : file.type === type
+      );
+    });
+
+    if (invalid.length) {
+      toast.error("Only PDF, image, and text files are allowed.");
+      event.target.value = "";
+      return;
+    }
+
+    const userId = getUserId();
+    if (!userId) {
+      toast.error("User not found. Please log in again.");
+      return;
+    }
+
+    setUploading(true);
+    setUploadProgress(0);
+
+    const formData = new FormData();
+    formData.append("userId", userId);
+    formData.append("groupId", groupId);
+
+    filesArray.forEach((file) => {
+      formData.append("dataFiles", file);
+    });
+
+    try {
+      const response = await axios.post(
+        "http://localhost:3000/api/documents/",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setUploadProgress(percentCompleted);
+          },
+        }
+      );
+
+      if (response.data.success) {
+        toast.success(
+          `Successfully uploaded ${
+            filesArray.length
+          } document(s)! Document IDs: ${response.data.attachments.join(", ")}`
+        );
+        event.target.value = "";
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error(error.response?.data?.error || "Failed to upload documents");
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
   // Helpers
   const initials = (user) => {
     if (!user?.firstName) return "?";
-    return `${user.firstName[0]}${user.lastName?.[0] || ''}`.toUpperCase();
+    return `${user.firstName[0]}${user.lastName?.[0] || ""}`.toUpperCase();
   };
 
   const MemberCard = ({ member, icon: Icon, colorClass, bgClass, onClick }) => (
     <div
       onClick={onClick}
-      className={`flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all ${onClick ? 'cursor-pointer hover:border-indigo-200' : ''}`}
+      className={`flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all ${
+        onClick ? "cursor-pointer hover:border-indigo-200" : ""
+      }`}
     >
-      <div className={`w-10 h-10 rounded-full ${bgClass} flex items-center justify-center ${colorClass} font-bold text-sm shrink-0`}>
+      <div
+        className={`w-10 h-10 rounded-full ${bgClass} flex items-center justify-center ${colorClass} font-bold text-sm shrink-0`}
+      >
         {initials(member.userId)}
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-gray-900 truncate">
           {member.userId?.firstName} {member.userId?.lastName}
         </p>
-        <p className="text-xs text-gray-500 truncate capitalize">{member.role}</p>
+        <p className="text-xs text-gray-500 truncate capitalize">
+          {member.role}
+        </p>
       </div>
       <div className={`p-1.5 rounded-lg ${bgClass} ${colorClass}`}>
         <Icon className="w-4 h-4" />
@@ -115,7 +213,13 @@ const GroupDetails = () => {
     <div className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl transition-colors">
       <div className="flex items-center gap-3 overflow-hidden">
         <div className="min-w-0">
-          <p className={`text-sm font-medium truncate ${task.status === 'completed' ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+          <p
+            className={`text-sm font-medium truncate ${
+              task.status === "completed"
+                ? "text-gray-400 line-through"
+                : "text-gray-900"
+            }`}
+          >
             {task.title}
           </p>
           {task.dueAt && (
@@ -126,19 +230,30 @@ const GroupDetails = () => {
           )}
           {task.assignedTo && (
             <p className="text-xs text-gray-500 mt-0.5">
-              Assigned to: <span className="font-medium">{task.assignedTo.firstName} {task.assignedTo.lastName}</span>
+              Assigned to:{" "}
+              <span className="font-medium">
+                {task.assignedTo.firstName} {task.assignedTo.lastName}
+              </span>
             </p>
           )}
-          {task.status === 'completed' && task.completedBy && (
+          {task.status === "completed" && task.completedBy && (
             <p className="text-xs text-green-600 mt-0.5">
-              Completed by: <span className="font-medium">{task.completedBy.firstName} {task.completedBy.lastName}</span>
+              Completed by:{" "}
+              <span className="font-medium">
+                {task.completedBy.firstName} {task.completedBy.lastName}
+              </span>
             </p>
           )}
         </div>
       </div>
-      <div className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${task.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-        }`}>
-        {task.status || 'Pending'}
+      <div
+        className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
+          task.status === "completed"
+            ? "bg-green-100 text-green-700"
+            : "bg-yellow-100 text-yellow-700"
+        }`}
+      >
+        {task.status || "Pending"}
       </div>
     </div>
   );
@@ -154,7 +269,9 @@ const GroupDetails = () => {
           <div className="h-8 bg-gray-200 rounded w-1/3 animate-pulse"></div>
           <div className="h-32 bg-gray-200 rounded-xl animate-pulse"></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Skeleton /><Skeleton /><Skeleton />
+            <Skeleton />
+            <Skeleton />
+            <Skeleton />
           </div>
         </div>
       </main>
@@ -166,8 +283,14 @@ const GroupDetails = () => {
       <main className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-xl font-bold text-gray-900">Group not found</h2>
-          <p className="text-gray-500 mt-2">{error || "This group may have been deleted or you don't have access."}</p>
-          <button onClick={() => navigate('/family-groups')} className="mt-4 btn-primary">
+          <p className="text-gray-500 mt-2">
+            {error ||
+              "This group may have been deleted or you don't have access."}
+          </p>
+          <button
+            onClick={() => navigate("/family-groups")}
+            className="mt-4 btn-primary"
+          >
             Go Back
           </button>
         </div>
@@ -178,11 +301,10 @@ const GroupDetails = () => {
   return (
     <main className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto space-y-8">
-
         {/* Header */}
         <div>
           <button
-            onClick={() => navigate('/family-groups')}
+            onClick={() => navigate("/family-groups")}
             className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors mb-4"
           >
             <ArrowLeft className="w-4 h-4" /> Back to Groups
@@ -194,18 +316,63 @@ const GroupDetails = () => {
             </div>
 
             <div className="relative z-10">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{group.name}</h1>
-              <p className="text-gray-500 max-w-2xl">{group.description || "No description provided."}</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                {group.name}
+              </h1>
+              <p className="text-gray-500 max-w-2xl">
+                {group.description || "No description provided."}
+              </p>
 
               <div className="flex flex-wrap items-center gap-4 mt-6">
                 <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-lg">
                   <Users className="w-4 h-4" />
-                  <span className="font-semibold">{members.length}</span> Members
+                  <span className="font-semibold">{members.length}</span>{" "}
+                  Members
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-lg">
                   <LayoutDashboard className="w-4 h-4" />
                   <span className="font-semibold">{tasks.length}</span> Tasks
                 </div>
+
+                <div className="relative">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <input
+                        id="document-upload"
+                        type="file"
+                        multiple
+                        accept="image/*,.pdf,.txt"
+                        onChange={handleDocumentUpload}
+                        disabled={uploading}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      <label
+                        htmlFor="document-upload"
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                          uploading
+                            ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+                            : "bg-indigo-600 text-white hover:bg-indigo-700"
+                        }`}
+                      >
+                        Add Document
+                      </label>
+                    </div>
+
+                    <p className="text-xs text-gray-500">
+                      Allowed: PDF, images (JPG, PNG, etc.), TXT.
+                    </p>
+                  </div>
+                </div>
+
+                {uploading && (
+                  <div className="text-sm text-gray-600 flex items-center gap-2">
+                    <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                      <div className="w-4 h-4 bg-indigo-600 rounded-full animate-ping" />
+                    </div>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                )}
+
                 <button
                   onClick={() => navigate(`/groups/edit/${groupId}`)}
                   className="ml-auto flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors"
@@ -217,18 +384,16 @@ const GroupDetails = () => {
           </div>
         </div>
 
-        {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-          {/* Left Column: Tasks & Quick Actions (Now 2/3) */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 h-full">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <CalendarDays className="w-5 h-5 text-blue-500" /> Recent Tasks
+                  <CalendarDays className="w-5 h-5 text-blue-500" /> Recent
+                  Tasks
                 </h2>
                 <button
-                  onClick={() => navigate('/tasks')}
+                  onClick={() => navigate("/tasks")}
                   className="text-xs font-medium text-blue-600 hover:underline"
                 >
                   View My Tasks
@@ -237,18 +402,19 @@ const GroupDetails = () => {
 
               <div className="space-y-3">
                 {tasks.length > 0 ? (
-                  /* Increased limit from 5 to 10 or removed it completely */
-                  tasks.slice(0, 10).map(task => (
-                    <TaskRow key={task._id} task={task} />
-                  ))
+                  tasks
+                    .slice(0, 10)
+                    .map((task) => <TaskRow key={task._id} task={task} />)
                 ) : (
                   <div className="text-center py-8">
                     <div className="bg-gray-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
                       <CheckCircle2 className="w-6 h-6 text-gray-300" />
                     </div>
-                    <p className="text-sm text-gray-500">No active tasks for this group.</p>
+                    <p className="text-sm text-gray-500">
+                      No active tasks for this group.
+                    </p>
                     <button
-                      onClick={() => navigate('/tasks/create')}
+                      onClick={() => navigate("/tasks/create")}
                       className="mt-2 text-xs font-medium text-indigo-600 hover:text-indigo-700"
                     >
                       + Create Task
@@ -259,9 +425,7 @@ const GroupDetails = () => {
             </div>
           </div>
 
-          {/* Right Column: Members Breakdown (Now 1/3) */}
           <div className="space-y-6">
-
             {/* Care Recipients */}
             <section>
               <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
@@ -269,7 +433,7 @@ const GroupDetails = () => {
               </h2>
               {stats.careRecipients.length > 0 ? (
                 <div className="grid grid-cols-1 gap-3">
-                  {stats.careRecipients.map(m => (
+                  {stats.careRecipients.map((m) => (
                     <MemberCard
                       key={m._id}
                       member={m}
@@ -281,7 +445,9 @@ const GroupDetails = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 italic p-4 bg-white rounded-xl border border-dashed border-gray-200">No care recipients assigned.</p>
+                <p className="text-sm text-gray-500 italic p-4 bg-white rounded-xl border border-dashed border-gray-200">
+                  No care recipients assigned.
+                </p>
               )}
             </section>
 
@@ -292,7 +458,7 @@ const GroupDetails = () => {
               </h2>
               {stats.careGivers.length > 0 ? (
                 <div className="grid grid-cols-1 gap-3">
-                  {stats.careGivers.map(m => (
+                  {stats.careGivers.map((m) => (
                     <MemberCard
                       key={m._id}
                       member={m}
@@ -304,7 +470,9 @@ const GroupDetails = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 italic p-4 bg-white rounded-xl border border-dashed border-gray-200">No care givers assigned.</p>
+                <p className="text-sm text-gray-500 italic p-4 bg-white rounded-xl border border-dashed border-gray-200">
+                  No care givers assigned.
+                </p>
               )}
             </section>
 
@@ -314,7 +482,7 @@ const GroupDetails = () => {
                 <Shield className="w-5 h-5 text-indigo-500" /> Admins & Family
               </h2>
               <div className="grid grid-cols-1 gap-3">
-                {[...stats.admins, ...stats.others].map(m => (
+                {[...stats.admins, ...stats.others].map((m) => (
                   <MemberCard
                     key={m._id}
                     member={m}
@@ -325,10 +493,9 @@ const GroupDetails = () => {
                 ))}
               </div>
             </section>
-
           </div>
-
         </div>
+
         <ToastContainer position="bottom-right" theme="colored" />
 
         {/* Modals */}
@@ -346,6 +513,6 @@ const GroupDetails = () => {
       </div>
     </main>
   );
-}
+};
 
 export default GroupDetails;

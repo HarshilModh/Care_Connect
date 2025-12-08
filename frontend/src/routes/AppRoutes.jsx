@@ -16,7 +16,7 @@ import GroupMembers from "../components/familyGroups/GroupMembers";
 import ActionHandler from "../pages/ActionHandler";
 import Notifications from "../components/notifications/Notifications";
 import PrivateRoute from "./PrivateRoutes.jsx";
-import CaregiverOnboarding from "../pages/CaregiverOnboarding.jsx"
+import CaregiverOnboarding from "../pages/CaregiverOnboarding.jsx";
 import Tasks from "../pages/tasksPage.jsx";
 import CreateTask from "../pages/createTask.jsx";
 import ChatLayout from "../components/chat/ChatLayout.jsx";
@@ -25,7 +25,7 @@ import UserProfile from "../components/userProfile/UserProfile.jsx";
 import EditProfile from "../components/userProfile/EditProfile.jsx";
 import EditGroup from "../components/familyGroups/EditGroup";
 import GroupDetails from "../components/familyGroups/GroupDetails.jsx";
-
+import UserDocumentsPage from "../pages/Documents.jsx";
 
 const AppRoutes = () => {
   return (
@@ -63,24 +63,54 @@ const AppRoutes = () => {
         }
       />
 
-      <Route path="/createGroup" element={<PrivateRoute>
-        <CreateGroup />
-      </PrivateRoute>} />
-      <Route path="/addMember" element={<PrivateRoute>
-        <AddMembers />
-      </PrivateRoute>} />
-      <Route path="/family-groups" element={<PrivateRoute>
-        <FamilyGroups />
-      </PrivateRoute>} />
-      <Route path="/group-members/:groupId" element={<PrivateRoute>
-        <GroupMembers />
-      </PrivateRoute>} />
-      <Route path="/onboarding/caregiver" element={<PrivateRoute>
-        <CaregiverOnboarding />
-      </PrivateRoute>} />
-      <Route path="/onboarding/carerecipient/:groupId" element={<PrivateRoute>
-        <CareRecipientOnboarding />
-      </PrivateRoute>} />
+      <Route
+        path="/createGroup"
+        element={
+          <PrivateRoute>
+            <CreateGroup />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/addMember"
+        element={
+          <PrivateRoute>
+            <AddMembers />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/family-groups"
+        element={
+          <PrivateRoute>
+            <FamilyGroups />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/group-members/:groupId"
+        element={
+          <PrivateRoute>
+            <GroupMembers />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/onboarding/caregiver"
+        element={
+          <PrivateRoute>
+            <CaregiverOnboarding />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/onboarding/carerecipient/:groupId"
+        element={
+          <PrivateRoute>
+            <CareRecipientOnboarding />
+          </PrivateRoute>
+        }
+      />
 
       <Route
         path="/tasks"
@@ -108,8 +138,17 @@ const AppRoutes = () => {
         }
       />
 
+      <Route
+        path="/documents"
+        element={
+          <PrivateRoute>
+            <UserDocumentsPage />
+          </PrivateRoute>
+        }
+      />
+
       <Route path="/notifications" element={<Notifications />} />
-    </Routes >
+    </Routes>
   );
 };
 

@@ -26,7 +26,7 @@ export default function CreateTask() {
   const [assignedTo, setAssignedTo] = useState("");
   const [repeatRule, setRepeatRule] = useState("");
   const [members, setMembers] = useState([]);
-  const [files, setFiles] = useState([]); // NEW: attachments
+  const [files, setFiles] = useState([]);
 
   const navigate = useNavigate();
 
