@@ -6,7 +6,8 @@ import { Users, Save, ArrowLeft, Globe, Lock } from 'lucide-react';
 import { validateGroupName, validateDescription } from '../../utils/validation';
 
 const EditGroup = () => {
-  const { id } = useParams();
+  let { id } = useParams();
+  id = id.trim();
   const navigate = useNavigate();
 
   const [groupName, setGroupName] = useState("");
@@ -135,7 +136,7 @@ const EditGroup = () => {
               />
             </div>
 
-            <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+            {/* <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
               <label className="flex items-center justify-between cursor-pointer">
                 <div className="flex items-center space-x-3">
                   <div className={`p-2 rounded-lg ${isPublic ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-500'}`}>
@@ -159,7 +160,7 @@ const EditGroup = () => {
                   <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${isPublic ? 'translate-x-6' : 'translate-x-0'}`}></div>
                 </div>
               </label>
-            </div>
+            </div> */}
 
             <div className="pt-4">
               <button

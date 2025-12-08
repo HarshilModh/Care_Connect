@@ -8,6 +8,7 @@ import {
   updateTask,
   getTasksGroupedByGroup,
   getFilteredTasks,
+  unmarkTaskCompleted,
 } from "../data/taskController.js";
 import { isValidString } from "../utils/validation.utils.js";
 import { FamilyGroup } from "../models/familyGroups.model.js";
@@ -518,6 +519,41 @@ router.post("/:taskId/complete", async (req, res) => {
     const completedTask = await markTaskCompleted(taskId, completedBy);
     res.status(200).json(completedTask);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+//unmarkTaskCompleted
+router.post("/:taskId/uncomplete", async (req, res) => {
+  try {
+    console.log("Unmark Task Completed called");
+    let taskId = req.params.taskId;
+    let { uncompletedBy } = req.body;
+    if (!taskId) {
+      return res.status(400).json({ error: "Task ID is required" });
+    }
+    if (!uncompletedBy) {
+      return res.status(400).json({ error: "Uncompleted By ID is required" });
+    }
+    if (!mongoose.Types.ObjectId.isValid(taskId)) {
+      return res.status(400).json({ error: "Invalid Task ID" });
+    }
+    if (!mongoose.Types.ObjectId.isValid(uncompletedBy)) {
+      return res.status(400).json({ error: "Invalid Uncompleted By ID" });
+    }
+    //check if task exists
+    const taskExists = await getTaskById(taskId);
+    if (!taskExists) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+    //check if uncompletedBy user exists
+    const userExists = await User.findById(uncompletedBy);
+    if (!userExists) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    const uncompletedTask = await unmarkTaskCompleted(taskId, uncompletedBy);
+    res.status(200).json(uncompletedTask);
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ error: error.message });
   }
 });

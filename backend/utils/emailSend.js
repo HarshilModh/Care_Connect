@@ -14,7 +14,7 @@ const sendEmail = async ({ to, subject, html }) => {
     if (to.trim() === '' || subject.trim() === '' || html.trim() === '') {
       throw new Error('Fields to, subject, and html cannot be empty');
     }
-    if(isValidEmail(to) === false){
+    if (isValidEmail(to) === false) {
       throw new Error('Invalid email address');
     }
 
@@ -46,7 +46,7 @@ export const sendPasswordResetEmail = async (to, otp) => {
     if (to.trim() === '' || otp.trim() === '') {
       throw new Error('Fields to and otp cannot be empty');
     }
-    if(isValidEmail(to) === false){
+    if (isValidEmail(to) === false) {
       throw new Error('Invalid email address');
     }
 

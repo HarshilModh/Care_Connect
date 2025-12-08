@@ -7,17 +7,17 @@ import { CheckCircleIcon, ClockIcon } from "@heroicons/react/24/solid"
 
 
 const ROLE_LABEL = {
-  owner: "Owner",
+  admin: "admin",
   caregiver: "Caregiver",
   family: "Family",
-  readonly: "Read only"
+  careRecipient: "Care Recipient",
 }
 
 const ROLE_COLOR = {
-  owner: "from-indigo-600 to-purple-600",
+  admin: "from-indigo-600 to-purple-600",
   caregiver: "from-emerald-600 to-lime-600",
   family: "from-sky-500 to-indigo-500",
-  readonly: "from-gray-400 to-gray-600"
+  careRecipient: "from-gray-400 to-gray-600"
 }
 
 function formatDateIso(iso) {
@@ -38,7 +38,8 @@ function initials(name) {
 }
 
 const GroupMembers = () => {
-  const { groupId } = useParams()
+  let { groupId } = useParams()
+  groupId = groupId.trim()
   const navigate = useNavigate()
 
   const [members, setMembers] = useState([])
@@ -118,7 +119,7 @@ const GroupMembers = () => {
   // remove member
   const handleRemove = async (membership) => {
     if (!membership || !membership._id) return
-    if (membership.role === "owner" || membership.role === "admin") {
+    if (membership.role === "admin") {
       toast.error("Cannot remove owners or admins")
       return
     }
@@ -190,17 +191,16 @@ const GroupMembers = () => {
 
           <select className="input" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} >
             <option value="">All roles</option>
-            <option value="owner">Owner</option>
+            <option value="admin">Admin</option>
             <option value="caregiver">Caregiver</option>
-            <option value="family">Family</option>
-            <option value="readonly">Read only</option>
+            <option value="familyMember">Family</option>
+            <option value="careRecipient">Care Recipient</option>
           </select>
 
           <select className="input" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} >
             <option value="">All status</option>
             <option value="active">Active</option>
             <option value="pending">Pending</option>
-            <option value="invited">Invited</option>
           </select>
         </div>
       </div>

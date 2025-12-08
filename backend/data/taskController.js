@@ -251,6 +251,48 @@ export const markTaskCompleted = async (taskId, completedBy) => {
   }
 };
 
+export const unmarkTaskCompleted = async (taskId, uncompletedBy) => {
+  try {
+    console.log("unmarkTaskCompleted called with:", { taskId, uncompletedBy });
+    if (!taskId) {
+      throw new Error("Invalid or missing taskId");
+    }
+    if (!uncompletedBy) {
+      throw new Error("Invalid or missing uncompletedBy");
+    }
+    if (!mongoose.Types.ObjectId.isValid(taskId)) {
+      throw new Error("Invalid taskId");
+    }
+    if (!mongoose.Types.ObjectId.isValid(uncompletedBy)) {
+      throw new Error("Invalid uncompletedBy");
+    }
+    const task = await taskModel.findById(taskId);
+    if (!task) {
+      throw new Error("Task not found");
+    }
+    const memberRole = await assertActiveMember(uncompletedBy, task.groupId);
+    if (!["admin", "owner"].includes(memberRole)) {
+      throw new Error(
+        "Permission denied: Only group admin can unmark this task."
+      );
+    }
+    const updatedTask = await taskModel.findByIdAndUpdate(
+      taskId,
+      {
+        status: "pending",
+        completedAt: null,
+        completedBy: null,
+      },
+      { new: true }
+    );
+    console.log("Task unmarked as completed:", updatedTask);
+    return updatedTask;
+  } catch (error) {
+    console.error("Error in unmarkTaskCompleted:", error);
+    throw new Error(`Error unmarking task as completed: ${error.message}`);
+  }
+};
+
 export const getFilteredTasks = async ({
   userId,
   query,
@@ -285,7 +327,10 @@ export const getFilteredTasks = async ({
     if (endDate) filter.dueAt.$lte = new Date(endDate);
   }
 
-  const queryBuilder = taskModel.find(filter);
+  const queryBuilder = taskModel.find(filter)
+    .populate('assignedTo', 'firstName lastName email')
+    .populate('completedBy', 'firstName lastName email')
+    .populate('recipientId', 'firstName lastName');
 
   if (sortDue) queryBuilder.sort({ dueAt: 1 });
 
@@ -338,33 +383,39 @@ export const listGroupTasks = async (groupId) => {
     if (!mongoose.Types.ObjectId.isValid(groupId)) {
       throw new Error("Invalid groupId");
     }
-    const tasks = await taskModel.find({ groupId });
+    const tasks = await taskModel.find({ groupId })
+      .populate('assignedTo', 'firstName lastName email')
+      .populate('completedBy', 'firstName lastName email')
+      .populate('recipientId', 'firstName lastName')
+      .sort({ createdAt: -1 });
     return tasks;
   } catch (error) {
     throw new Error(`Error listing group tasks: ${error.message}`);
   }
 };
 
+
 export const listMyTasks = async (
   groupId,
   userId,
   { status, from, to } = {}
-) => {};
+) => { };
 
 //Methods to add later
 
 //addAttachmentToTask and removeAttachmentFromTask can be added later
-export const addAttachmentToTask = async (taskId, documentId) => {};
-export const removeAttachmentFromTask = async (taskId, documentId) => {};
+export const addAttachmentToTask = async (taskId, documentId) => { };
+export const removeAttachmentFromTask = async (taskId, documentId) => { };
 
 //listUpcomingDueTasks
-export const listUpcomingDueTasks = async (groupId, withinMinutes = 60) => {};
+export const listUpcomingDueTasks = async (groupId, withinMinutes = 60) => { };
 
 export const getTasksGroupedByGroup = async (userId) => {
   try {
     const tasks = await taskModel
       .find({ assignedTo: userId, status: "pending" })
       .populate("groupId", "groupName")
+      .populate("recipientId", "firstName lastName")
       .exec();
 
     const groupedTasks = {};

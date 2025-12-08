@@ -9,7 +9,7 @@ import {
   Circle,
   Trash2,
   Edit3,
-  Calendar as CalendarIcon, 
+  Calendar as CalendarIcon,
   Pill,
   StickyNote,
   CheckSquare,
@@ -18,7 +18,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
-import EditTaskModal from "../components/tasks/taskEdit.jsx"; 
+import EditTaskModal from "../components/tasks/taskEdit.jsx";
 import "react-toastify/dist/ReactToastify.css";
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
@@ -118,10 +118,10 @@ const CustomEvent = ({ event }) => {
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('list'); 
+  const [viewMode, setViewMode] = useState('list');
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all"); 
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState(null);
@@ -178,25 +178,39 @@ export default function Tasks() {
     completed: tasks.filter(t => t.status === 'completed').length
   };
 
-    const markComplete = async (taskId, currentStatus) => {
+  const markComplete = async (taskId, currentStatus) => {
     const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
     setTasks(prev => prev.map(t => t._id === taskId ? { ...t, status: newStatus } : t));
 
     try {
       const endpoint = newStatus === 'completed' ? 'complete' : 'uncomplete';
-      const res = await fetch(
-        `http://localhost:3000/api/tasks/${taskId}/complete`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ completedBy: userId }),
-        }
-      );
-      if (!res.ok) throw new Error("Failed to update task");
-      toast.success(newStatus === 'completed' ? "Task completed!" : "Task reopened");
+      if (endpoint === 'uncomplete') {
+        const res = await fetch(
+          `http://localhost:3000/api/tasks/${taskId}/uncomplete`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ uncompletedBy: userId }),
+          }
+        );
+        console.log("Uncomplete response:", res);
+        if (!res.ok) throw new Error("Failed to uncomplete task");
+      } else {
+        const res = await fetch(
+          `http://localhost:3000/api/tasks/${taskId}/complete`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ completedBy: userId }),
+          }
+        );
+        if (!res.ok) throw new Error("Failed to update task");
+        toast.success(newStatus === 'completed' ? "Task completed!" : "Task reopened");
+      }
+
     } catch (err) {
       toast.error(err.message);
-      fetchTasks(); 
+      fetchTasks();
     }
   };
 
@@ -432,16 +446,18 @@ export default function Tasks() {
                     </div>
                     {task.createdBy === userId && (
                       <div className="flex flex-col gap-2 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => {
-                            setTaskToEdit(task);
-                            setShowEditModal(true);
-                          }}
-                          className="text-gray-400 hover:text-blue-600 transition"
-                          title="Edit Task"
-                        >
-                          <Edit3 className="w-5 h-5" />
-                        </button>
+                        {task.status !== 'completed' && (
+                          <button
+                            onClick={() => {
+                              setTaskToEdit(task);
+                              setShowEditModal(true);
+                            }}
+                            className="text-gray-400 hover:text-blue-600 transition"
+                            title="Edit Task"
+                          >
+                            <Edit3 className="w-5 h-5" />
+                          </button>
+                        )}
                         <button
                           onClick={() => deleteTask(task._id)}
                           className="text-gray-400 hover:text-red-600 transition"
@@ -486,6 +502,7 @@ export default function Tasks() {
               }}
 
               onSelectEvent={(event) => {
+                if (event.resource.status === 'completed') return;
                 setTaskToEdit(event.resource);
                 setShowEditModal(true);
               }}

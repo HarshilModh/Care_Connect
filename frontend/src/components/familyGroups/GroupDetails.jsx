@@ -19,9 +19,13 @@ import {
 import "react-toastify/dist/ReactToastify.css";
 import CareGiverModal from "./CareGiverModal";
 import CareRecipentModal from "./CareRecipentModal";
-
+import PanicButton from "../PanicButton";
 const GroupDetails = () => {
-  const { groupId } = useParams();
+  const user = JSON.parse(localStorage.getItem("user")) || null;
+  const userId = user?._id || null;
+  // console.log("Current User ID:", userId);
+  let { groupId } = useParams();
+  groupId = groupId.trim();
   const navigate = useNavigate();
 
   // State
@@ -34,6 +38,7 @@ const GroupDetails = () => {
   const [selectedCareRecipientId, setSelectedCareRecipientId] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [canEdit, setCanEdit] = useState(false);
   const [stats, setStats] = useState({
     admins: [],
     careGivers: [],
@@ -62,7 +67,8 @@ const GroupDetails = () => {
           { withCredentials: true }
         );
         setGroup(groupRes.data);
-
+        // Check if current user can edit if createdBy matches userId
+        setCanEdit(groupRes.data.createdBy === userId);
         // 2. Fetch Members
         const membersRes = await axios.get(
           `http://localhost:3000/api/memberships/group/${groupId}`,
@@ -93,6 +99,7 @@ const GroupDetails = () => {
             { withCredentials: true }
           );
           setTasks(Array.isArray(tasksRes.data) ? tasksRes.data : []);
+          console.log("Fetched tasks:", tasksRes.data);
         } catch (taskErr) {
           console.warn("Could not fetch tasks", taskErr);
         }
@@ -162,8 +169,7 @@ const GroupDetails = () => {
 
       if (response.data.success) {
         toast.success(
-          `Successfully uploaded ${
-            filesArray.length
+          `Successfully uploaded ${filesArray.length
           } document(s)! Document IDs: ${response.data.attachments.join(", ")}`
         );
         event.target.value = "";
@@ -186,9 +192,8 @@ const GroupDetails = () => {
   const MemberCard = ({ member, icon: Icon, colorClass, bgClass, onClick }) => (
     <div
       onClick={onClick}
-      className={`flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all ${
-        onClick ? "cursor-pointer hover:border-indigo-200" : ""
-      }`}
+      className={`flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all ${onClick ? "cursor-pointer hover:border-indigo-200" : ""
+        }`}
     >
       <div
         className={`w-10 h-10 rounded-full ${bgClass} flex items-center justify-center ${colorClass} font-bold text-sm shrink-0`}
@@ -214,11 +219,10 @@ const GroupDetails = () => {
       <div className="flex items-center gap-3 overflow-hidden">
         <div className="min-w-0">
           <p
-            className={`text-sm font-medium truncate ${
-              task.status === "completed"
-                ? "text-gray-400 line-through"
-                : "text-gray-900"
-            }`}
+            className={`text-sm font-medium truncate ${task.status === "completed"
+              ? "text-gray-400 line-through"
+              : "text-gray-900"
+              }`}
           >
             {task.title}
           </p>
@@ -236,6 +240,14 @@ const GroupDetails = () => {
               </span>
             </p>
           )}
+          {task.recipientId && (
+            <p className="text-xs text-gray-500 mt-0.5">
+              For:{" "}
+              <span className="font-medium">
+                {task.recipientId.firstName} {task.recipientId.lastName}
+              </span>
+            </p>
+          )}
           {task.status === "completed" && task.completedBy && (
             <p className="text-xs text-green-600 mt-0.5">
               Completed by:{" "}
@@ -247,11 +259,10 @@ const GroupDetails = () => {
         </div>
       </div>
       <div
-        className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
-          task.status === "completed"
-            ? "bg-green-100 text-green-700"
-            : "bg-yellow-100 text-yellow-700"
-        }`}
+        className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${task.status === "completed"
+          ? "bg-green-100 text-green-700"
+          : "bg-yellow-100 text-yellow-700"
+          }`}
       >
         {task.status || "Pending"}
       </div>
@@ -348,11 +359,10 @@ const GroupDetails = () => {
                       />
                       <label
                         htmlFor="document-upload"
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
-                          uploading
-                            ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-                            : "bg-indigo-600 text-white hover:bg-indigo-700"
-                        }`}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${uploading
+                          ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+                          : "bg-indigo-600 text-white hover:bg-indigo-700"
+                          }`}
                       >
                         Add Document
                       </label>
@@ -372,13 +382,17 @@ const GroupDetails = () => {
                     <span>{uploadProgress}%</span>
                   </div>
                 )}
-
-                <button
-                  onClick={() => navigate(`/groups/edit/${groupId}`)}
-                  className="ml-auto flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors"
-                >
-                  <MoreVertical className="w-4 h-4" /> Settings
-                </button>
+                {canEdit && (
+                  <button
+                    onClick={() => navigate(`/groups/edit/${groupId}`)}
+                    className="ml-auto flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors"
+                  >
+                    <MoreVertical className="w-4 h-4" /> Settings
+                  </button>
+                )}
+                <div className="ml-2">
+                  <PanicButton groupId={groupId} userId={userId} />
+                </div>
               </div>
             </div>
           </div>

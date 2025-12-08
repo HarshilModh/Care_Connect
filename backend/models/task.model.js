@@ -10,7 +10,7 @@ const taskSchema = new mongoose.Schema(
     },
     recipientId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "CareRecipient",
+      ref: "User",
       required: true,
       index: true,
     },
