@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getAuth } from "firebase/auth";
 import api from "../../api/axios";
+//Navigation
+import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { validateName, validateEmail } from "../../utils/validation";
 import { useNavigate } from "react-router-dom";
@@ -12,7 +14,8 @@ const EditProfile = () => {
   const navigate = useNavigate();
   //const { logout } = useAuth();
   const firebaseUser = auth.currentUser;
-  const { setUserData } = useAuth();
+  console.log("Firebase User in EditProfile:", firebaseUser);
+  const { login, token } = useAuth();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -27,15 +30,15 @@ const EditProfile = () => {
       const parts = display.trim().split(" ");
       setFirstName(
         parts[0] ||
-          (localStorage.getItem("user")
-            ? JSON.parse(localStorage.getItem("user")).firstName
-            : "")
+        (localStorage.getItem("user")
+          ? JSON.parse(localStorage.getItem("user")).firstName
+          : "")
       );
       setLastName(
         parts.slice(1).join(" ") ||
-          (localStorage.getItem("user")
-            ? JSON.parse(localStorage.getItem("user")).lastName
-            : "")
+        (localStorage.getItem("user")
+          ? JSON.parse(localStorage.getItem("user")).lastName
+          : "")
       );
       setEmail(firebaseUser.email || "");
       setUid(firebaseUser.uid || "");
@@ -66,24 +69,21 @@ const EditProfile = () => {
   const updateProfile = async () => {
     try {
       setSaving(true);
-  
+
       const res = await api.patch("/users/me", {
         firebaseUid: uid,
         id: JSON.parse(localStorage.getItem("user"))._id,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
       });
-  
+
       const updatedUser = res.data;
-      const accessToken = localStorage.getItem("accessToken");
-  
-      if (updatedUser && accessToken) {
-        login(updatedUser, accessToken);
-      } else if (updatedUser) {
-        localStorage.setItem("user", JSON.stringify(updatedUser));
-      }
-  
+
+      // Update global auth state and localStorage via login context
+      login(updatedUser, token);
+
       toast.success("Profile updated");
+      navigate("/user-profile");
     } catch (err) {
       console.error("Update profile error:", err);
       const message =
@@ -95,7 +95,7 @@ const EditProfile = () => {
       setSaving(false);
     }
   };
-  
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -175,7 +175,7 @@ const EditProfile = () => {
               // onChange={(e) => setEmail(e.target.value)}
               className="input bg-gray-100 cursor-not-allowed"
               maxLength={120}
-              //required
+            //required
             />
             <span className="float-label">Email Address</span>
           </div>

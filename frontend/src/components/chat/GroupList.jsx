@@ -31,11 +31,27 @@ const GroupList = ({ onSelectGroup, selectedGroupId }) => {
         }
 
         const response = await api.get(`/family-groups/user/${currentUser._id}`);
+        
 
         // Handle different response structures
         const groupsData = response.data?.data || response.data?.groups || response.data || [];
 
         setGroups(groupsData);
+
+        for (const group of groupsData) {
+          console.log(`Fetched group: ${group.groupName || group.name} (ID: ${group._id})`);
+          let membership = await api.get(`/family-groups/group/${group._id}/members`);
+          console.log(`Membership for group ${group._id}:`, membership.data.members);
+          //current user membership details can be found in membership.data
+          // console.log(`Checking membership for user ${currentUser._id} in group ${group._id}`);
+          membership = membership.data.members.find(m => m.userId._id === currentUser._id);
+          console.log(`Current user membership for group ${group._id}:`, membership);
+          //remove from group data if onboardingStatus ===required "required"
+          if (membership?.onboardingStatus === "required") {
+            console.log(`Removing group ${group._id} from list due to onboardingStatus 'required'`);
+            setGroups(prevGroups => prevGroups.filter(g => g._id !== group._id));
+          }
+        }
 
         // Fetch unread counts for each group
         const counts = {};

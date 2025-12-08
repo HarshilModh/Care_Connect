@@ -9,9 +9,47 @@ import {
     PlusCircleIcon,
     ArrowRightIcon
 } from '@heroicons/react/24/outline';
+import { useState, useEffect } from 'react';
+import api from '../api/axios';
 
 const Home = () => {
     const { user } = useAuth();
+    const [tasks, settasks] = useState([]);
+    const [groups, setgroups] = useState([]);
+    const [messages, setmessages] = useState([]);
+    const [activities, setactivities] = useState([]);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const tasksRes = await api.get('/tasks/user/' + user._id);
+                const fetchedTasks = tasksRes.data.data || [];
+                settasks(fetchedTasks);
+
+                const groupsRes = await api.get('/family-groups/user/' + user._id);
+                setgroups(groupsRes.data.data || []);
+
+                const messagesRes = await api.get('/chats/user/' + user._id);
+                setmessages(messagesRes.data.data || []);
+
+                // Derive recent activity from tasks (e.g., recently created or completed)
+                // For this example, we'll take the 3 most recently due/created tasks
+                // Assuming tasks have 'createdAt' or just using the array as is
+                const recentTasks = fetchedTasks.slice(0, 3).map(task => ({
+                    text: `${task.status === 'completed' ? 'Completed' : 'New'} task: ${task.title}`,
+                    time: task.dueAt ? new Date(task.dueAt).toLocaleDateString() : 'Recently',
+                    color: task.status === 'completed' ? 'bg-green-500' : 'bg-blue-500'
+                }));
+                setactivities(recentTasks);
+
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
+        };
+        if (user?._id) {
+            fetchData();
+        }
+    }, [user]);
 
     const container = {
         hidden: { opacity: 0 },
@@ -27,6 +65,11 @@ const Home = () => {
         hidden: { opacity: 0, y: 20 },
         show: { opacity: 1, y: 0 }
     };
+
+    // Calculate stats
+    const pendingTasksCount = tasks.filter(t => t.status === 'pending').length;
+    const activeGroupsCount = groups.length;
+    const activeChatsCount = messages.length;
 
     return (
         <div className="max-w-6xl mx-auto p-6">
@@ -52,7 +95,7 @@ const Home = () => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-slate-500 font-medium">Pending Tasks</p>
-                                <h3 className="text-3xl font-bold text-slate-800 mt-1">3</h3>
+                                <h3 className="text-3xl font-bold text-slate-800 mt-1">{pendingTasksCount}</h3>
                             </div>
                             <div className="p-3 bg-indigo-50 rounded-full text-indigo-600">
                                 <ClipboardDocumentCheckIcon className="w-8 h-8" />
@@ -67,7 +110,7 @@ const Home = () => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-slate-500 font-medium">Active Groups</p>
-                                <h3 className="text-3xl font-bold text-slate-800 mt-1">2</h3>
+                                <h3 className="text-3xl font-bold text-slate-800 mt-1">{activeGroupsCount}</h3>
                             </div>
                             <div className="p-3 bg-violet-50 rounded-full text-violet-600">
                                 <UserGroupIcon className="w-8 h-8" />
@@ -81,8 +124,8 @@ const Home = () => {
                     <div className="card card-pad shadow-lg hover:shadow-xl transition-shadow border-l-4 border-fuchsia-500">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-slate-500 font-medium">Unread Messages</p>
-                                <h3 className="text-3xl font-bold text-slate-800 mt-1">5</h3>
+                                <p className="text-slate-500 font-medium">Active Chats</p>
+                                <h3 className="text-3xl font-bold text-slate-800 mt-1">{activeChatsCount}</h3>
                             </div>
                             <div className="p-3 bg-fuchsia-50 rounded-full text-fuchsia-600">
                                 <ChatBubbleLeftRightIcon className="w-8 h-8" />
@@ -122,23 +165,23 @@ const Home = () => {
                         </div>
                     </motion.div>
 
-                    {/* Recent Activity (Mock) */}
+                    {/* Recent Activity */}
                     <motion.div variants={item} className="card card-pad shadow-lg">
                         <h2 className="text-lg font-bold text-slate-800 mb-4">Recent Activity</h2>
                         <div className="space-y-4">
-                            {[
-                                { text: 'Mom took medication', time: '10 mins ago', color: 'bg-green-500' },
-                                { text: 'Dad added a grocery item', time: '1 hour ago', color: 'bg-blue-500' },
-                                { text: 'Appointment scheduled', time: '2 hours ago', color: 'bg-purple-500' },
-                            ].map((activity, i) => (
-                                <div key={i} className="flex items-start gap-3 pb-3 border-b border-slate-100 last:border-0 last:pb-0">
-                                    <div className={`w-2 h-2 mt-2 rounded-full ${activity.color}`} />
-                                    <div>
-                                        <p className="text-sm font-medium text-slate-700">{activity.text}</p>
-                                        <p className="text-xs text-slate-400">{activity.time}</p>
+                            {activities.length > 0 ? (
+                                activities.map((activity, i) => (
+                                    <div key={i} className="flex items-start gap-3 pb-3 border-b border-slate-100 last:border-0 last:pb-0">
+                                        <div className={`w-2 h-2 mt-2 rounded-full ${activity.color}`} />
+                                        <div>
+                                            <p className="text-sm font-medium text-slate-700">{activity.text}</p>
+                                            <p className="text-xs text-slate-400">{activity.time}</p>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))
+                            ) : (
+                                <p className="text-sm text-slate-500">No recent activity.</p>
+                            )}
                         </div>
                     </motion.div>
                 </div>

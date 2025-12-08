@@ -293,13 +293,14 @@ const UserProfile = () => {
                                     Edit Profile
                                 </button>
                             </Link>
-
+                    {!isGoogleUser && (
                             <Link to="/forgot-password">
                                 <button className="w-full inline-flex items-center justify-center px-4 py-3 rounded-xl bg-white border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition">
                                     <Lock className="w-4 h-4 mr-2 text-gray-400" />
                                     Reset Password
                                 </button>
                             </Link>
+                        )}
                         </>
                         {/* )} */}
 
@@ -371,6 +372,7 @@ const UserProfile = () => {
                     </div>
 
                     {/* Password Reset */}
+
                     <div className="flex items-center justify-between p-4 rounded-2xl bg-white shadow-sm border border-gray-100 hover:shadow-md transition">
                         <div className="flex items-center gap-3">
                             <div className="p-2.5 rounded-xl bg-orange-50">
@@ -392,6 +394,7 @@ const UserProfile = () => {
                             {needPasswordReset ? 'Required' : 'Not Required'}
                         </span>
                     </div>
+
 
                     {/* Member Since */}
                     <div className="flex items-center justify-between p-4 rounded-2xl bg-white shadow-sm border border-gray-100 hover:shadow-md transition">
