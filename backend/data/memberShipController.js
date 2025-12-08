@@ -1,6 +1,8 @@
 import { Membership } from "../models/memberShip.model.js";
 import { FamilyGroup } from "../models/familyGroups.model.js";
 import User from "../models/user.model.js";
+import {CareGiver} from "../models/careGivers.model.js";
+import {CareRecipient} from "../models/careRecipients.model.js";
 import { Notification } from "../models/notification.model.js";
 import { isValidID } from "../utils/validation.utils.js";
 import { createNotification } from "./notificationController.js";
@@ -21,9 +23,10 @@ export const createMembership = async (
   permissions
 ) => {
   try {
+    console.log("in createMembership data function");
     console.log("groupId - createMembership", groupId);
     console.log("userId", userId);
-    console.log("roles", role);
+    console.log("role", role);
 
 
     if (!groupId || !userId) {
@@ -56,7 +59,20 @@ export const createMembership = async (
     let onboardingStatus = rolesRequiringOnboarding.includes(role)
       ? "required"
       : "not_required";
-
+    //check if the user is already has their caregiver profile set up
+    // console.log("checking caregiver profile for userId:", userId);
+    // const caregiverProfile = await CareGiver.findOne({ userId }).lean();
+    // console.log("caregiverProfile", caregiverProfile);
+    // if (caregiverProfile && role === "careGiver") {
+    //   onboardingStatus = "completed";
+    // }
+    // //check if the user is already has their care recipient profile set up
+    // console.log("checking care recipient profile for userId:", userId);
+    // const careRecipientProfile = await CareRecipient.findOne({ userId }).lean();
+    // console.log("careRecipientProfile", careRecipientProfile);
+    // if (careRecipientProfile && role === "careRecipient") {
+    //   onboardingStatus = "completed";
+    // }
     const [group, user, existing] = await Promise.all([
       FamilyGroup.findById(groupId).lean(),
       User.findById(userId).lean(),
@@ -85,6 +101,21 @@ export const createMembership = async (
       permissions: permissions || {},
       onboardingStatus
     });
+    //Create notification if onboarding is required to complete the process
+    if (onboardingStatus === "required") {
+      try {
+        await createNotification({
+          type: "onboarding_required",
+          recipientId: userId,
+          groupId: groupId,
+          title: "Complete Your Onboarding",
+          message: "Please complete your onboarding to fully join the family group.",
+          metadata: {},
+        });
+      } catch (notifErr) {
+        console.error("Failed to create onboarding required notification:", notifErr);
+      }
+    }
 
 
     return created.toObject();
@@ -162,6 +193,16 @@ export const createMultipleMemberships = async (membershipsData) => {
         role,
         onboardingStatus: "completed"
       }).lean();
+      //check if the user is already has their caregiver profile set up
+      const caregiverProfile = await CareGiver.findOne({ userId }).lean();
+      if (caregiverProfile && role === "careGiver") {
+        data.onboardingStatus = "completed";
+      }
+      //check if the user is already has their care recipient profile set up
+      const careRecipientProfile = await CareRecipient.findOne({ userId }).lean();
+      if (careRecipientProfile && role === "careRecipient") {
+        data.onboardingStatus = "completed";
+      }
 
       if (existingOnboardingMembership && rolesRequiringOnboarding.includes(role)) {
         data.onboardingStatus = "completed";
@@ -177,6 +218,27 @@ export const createMultipleMemberships = async (membershipsData) => {
     }
     console.log("membershipsData", membershipsData);
     const createdMemberships = await Membership.insertMany(membershipsData);
+    //Create notifications for each membership if onboarding is required to complete the process
+    for (const membership of createdMemberships) {
+      if (membership.onboardingStatus === "required") {
+        try {
+          await createNotification({
+            type: "onboarding_required",
+            recipientId: membership.userId.toString(),
+            groupId: membership.groupId.toString(),
+            title: "Complete Your Onboarding",
+            message:
+              "Please complete your onboarding to fully join the family group.",
+            metadata: {},
+          });
+        } catch (notifErr) {
+          console.error(
+            "Failed to create onboarding required notification:",
+            notifErr
+          );
+        }
+      }
+    }
     return createdMemberships.map((membership) => membership.toObject());
   } catch (error) {
     throw new Error("Error creating multiple memberships: " + error.message);

@@ -26,6 +26,8 @@ const ROLES_REQUIRING_ONBOARDING = ["careGiver", "careRecipient"];
 //Create Membership
 router.post("/", async (req, res) => {
     try {
+        console.log("req.body", req.body);
+        console.log("inside create membership route");
         let groupId = req.body.groupId;
         let userId = req.body.userId;
         let role = req.body.role
