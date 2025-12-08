@@ -101,8 +101,12 @@ export default function CreateTask() {
         const resRecipients = await fetch(
           `http://localhost:3000/api/care-recipients/group/${selectedGroup}`
         );
+        
         const dataRecipients = await resRecipients.json();
-
+        //if error in dataRecipients, throw error
+        if (dataRecipients.error) {
+          throw new Error(dataRecipients.error);
+        }
         const formattedRecipients = dataRecipients
           .filter((item) => item.userId)
           .map((item) => ({
@@ -140,7 +144,7 @@ export default function CreateTask() {
         setMembers(formattedMembers);
       } catch (err) {
         console.error(err);
-        toast.error("Failed to fetch group details.");
+        toast.error(err.message || "Failed to fetch recipients or members.");
       }
     }
     fetchData();
@@ -292,7 +296,7 @@ export default function CreateTask() {
               </div>
 
               {/* NEW: Attachments */}
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Attachments (optional)
                 </label>
@@ -308,7 +312,7 @@ export default function CreateTask() {
                     {files.length} file(s) selected.
                   </p>
                 )}
-              </div>
+              </div> */}
             </div>
           </div>
 

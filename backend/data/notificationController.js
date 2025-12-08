@@ -34,6 +34,7 @@ export const createNotification = async (notificationData) => {
         "system",
         "group",
         "chat_message",
+        "onboarding_required"
       ].includes(type)
     ) {
       throw new Error("Valid notification type is required");
