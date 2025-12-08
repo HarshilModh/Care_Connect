@@ -5,6 +5,7 @@ const notificationSchema = new mongoose.Schema(
     type: {
       type: String,
       enum: [
+        
         "join_request",
         "task_reminder",
         "task_assigned",
@@ -15,6 +16,7 @@ const notificationSchema = new mongoose.Schema(
         "system",
         "group",
         "chat_message",
+        "onboarding_required"
       ],
       required: true,
       index: true,
