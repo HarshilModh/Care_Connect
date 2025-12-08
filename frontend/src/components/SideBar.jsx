@@ -7,7 +7,8 @@ import {
   PlusCircleIcon,
   ArrowLeftOnRectangleIcon,
   ChatBubbleLeftRightIcon,
-  ClipboardDocumentCheckIcon,
+  RectangleStackIcon,
+  DocumentIcon,
 } from "@heroicons/react/24/outline";
 
 const SideBar = () => {
@@ -40,7 +41,8 @@ const SideBar = () => {
         {link("/addMember", UserPlusIcon, "Add members")}
         {link("/chat", ChatBubbleLeftRightIcon, "Chat")}
 
-        {link("/tasks", ClipboardDocumentCheckIcon, "Tasks")}
+        {link("/tasks", RectangleStackIcon, "Tasks")}
+        {link("/documents", DocumentIcon, "Documents")}
 
         {insideGroup && (
           <NavLink

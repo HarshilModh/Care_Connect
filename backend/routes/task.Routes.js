@@ -16,6 +16,8 @@ import { Task as taskModel } from "../models/task.model.js";
 
 import express from "express";
 import { Membership } from "../models/memberShip.model.js";
+import { uploadFileToS3 } from "../integrations/s3.js";
+import multer from "multer";
 import mongoose from "mongoose";
 const router = express.Router();
 
@@ -33,8 +35,14 @@ const router = express.Router();
 //     index: true
 // },
 
+const upload = multer({
+  storage: multer.memoryStorage(),
+});
+
+const uploadDataFiles = upload.array("dataFiles");
+
 //Create Task
-router.post("/", async (req, res) => {
+router.post("/", uploadDataFiles, async (req, res) => {
   try {
     let {
       groupId,
@@ -115,7 +123,16 @@ router.post("/", async (req, res) => {
     }
     description = isValidString(description, "description");
     title = isValidString(title, "title");
-    //check if group exists
+
+    console.log("Files in request:", req.files);
+    if (req.files && req.files.length > 0) {
+      const filesToUpload = req.files;
+      for (const file of filesToUpload) {
+        const { documentId } = await uploadFileToS3(file, groupId, createdBy);
+        attachments.push(documentId);
+      }
+    }
+
     const groupExists = await FamilyGroup.findById(groupId);
     if (!groupExists) {
       return res.status(404).json({ error: "Group not found" });
@@ -189,6 +206,8 @@ router.post("/", async (req, res) => {
       status
     );
     res.status(200).json(newTask);
+
+    // TODO: Update the taskId in the document created for the attachments if any.
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: error.message });

@@ -227,11 +227,14 @@ export const markTaskCompleted = async (taskId, completedBy) => {
     // FIX: Enforce strict permissions
     // 1. Admin/Owner can always complete
     // 2. The specific Assigned User can complete
-    const isAssignedUser = task.assignedTo && task.assignedTo.toString() === completedBy;
+    const isAssignedUser =
+      task.assignedTo && task.assignedTo.toString() === completedBy;
     const isAdmin = ["admin", "owner"].includes(memberRole);
 
     if (!isAdmin && !isAssignedUser) {
-      throw new Error("Permission denied: Only the assigned user or group admin can complete this task.");
+      throw new Error(
+        "Permission denied: Only the assigned user or group admin can complete this task."
+      );
     }
     const updatedTask = await taskModel.findByIdAndUpdate(
       taskId,
@@ -262,10 +265,7 @@ export const getFilteredTasks = async ({
   if (!userId) throw new Error("User ID is required");
 
   const filter = {
-    $or: [
-      { createdBy: userId },
-      { assignedTo: userId }
-    ]
+    $or: [{ createdBy: userId }, { assignedTo: userId }],
   };
 
   if (query) {
@@ -338,10 +338,7 @@ export const listGroupTasks = async (groupId) => {
     if (!mongoose.Types.ObjectId.isValid(groupId)) {
       throw new Error("Invalid groupId");
     }
-    const tasks = await taskModel.find({ groupId })
-      .populate('assignedTo', 'firstName lastName email')
-      .populate('completedBy', 'firstName lastName email')
-      .sort({ createdAt: -1 });
+    const tasks = await taskModel.find({ groupId });
     return tasks;
   } catch (error) {
     throw new Error(`Error listing group tasks: ${error.message}`);
@@ -352,16 +349,16 @@ export const listMyTasks = async (
   groupId,
   userId,
   { status, from, to } = {}
-) => { };
+) => {};
 
 //Methods to add later
 
 //addAttachmentToTask and removeAttachmentFromTask can be added later
-export const addAttachmentToTask = async (taskId, documentId) => { };
-export const removeAttachmentFromTask = async (taskId, documentId) => { };
+export const addAttachmentToTask = async (taskId, documentId) => {};
+export const removeAttachmentFromTask = async (taskId, documentId) => {};
 
 //listUpcomingDueTasks
-export const listUpcomingDueTasks = async (groupId, withinMinutes = 60) => { };
+export const listUpcomingDueTasks = async (groupId, withinMinutes = 60) => {};
 
 export const getTasksGroupedByGroup = async (userId) => {
   try {
