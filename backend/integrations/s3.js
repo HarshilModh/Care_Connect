@@ -53,6 +53,7 @@ export const uploadFileToS3 = async (file, groupId, createdBy) => {
 };
 
 export const generateSignedUrlForKey = async (key) => {
+  console.log("Generating signed URL for key:", key);
   if (!key || typeof key !== "string" || key.includes("..")) {
     throw new Error("Invalid S3 key");
   }

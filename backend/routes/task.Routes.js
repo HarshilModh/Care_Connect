@@ -36,8 +36,13 @@ const router = express.Router();
 //     index: true
 // },
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB in bytes [web:46]
+
 const upload = multer({
   storage: multer.memoryStorage(),
+  limits: {
+    fileSize: MAX_FILE_SIZE, // per file
+  },
 });
 
 const uploadDataFiles = upload.array("dataFiles");
@@ -127,13 +132,16 @@ router.post("/", uploadDataFiles, async (req, res) => {
 
     console.log("Files in request:", req.files);
     if (req.files && req.files.length > 0) {
-      const filesToUpload = req.files;
-      for (const file of filesToUpload) {
+      for (const file of req.files) {
+        if (file.size > MAX_FILE_SIZE) {
+          return res
+            .status(400)
+            .json({ error: "Each file must be 10 MB or smaller." });
+        }
         const { documentId } = await uploadFileToS3(file, groupId, createdBy);
         attachments.push(documentId);
       }
     }
-
     const groupExists = await FamilyGroup.findById(groupId);
     if (!groupExists) {
       return res.status(404).json({ error: "Group not found" });
@@ -207,10 +215,13 @@ router.post("/", uploadDataFiles, async (req, res) => {
       status
     );
     res.status(200).json(newTask);
-
-    // TODO: Update the taskId in the document created for the attachments if any.
   } catch (error) {
     console.error(error);
+    if (error.code === "LIMIT_FILE_SIZE") {
+      return res
+        .status(400)
+        .json({ error: "Each file must be 10 MB or smaller." });
+    }
     res.status(500).json({ error: error.message });
   }
 });

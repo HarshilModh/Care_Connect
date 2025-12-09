@@ -13,17 +13,18 @@ import {
   CalendarDays,
   MoreVertical,
   LayoutDashboard,
-  Paperclip,
-  Upload,
 } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
 import CareGiverModal from "./CareGiverModal";
 import CareRecipentModal from "./CareRecipentModal";
 import PanicButton from "../PanicButton";
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB [web:7]
+const ALLOWED_TYPES = ["image/", "application/pdf", "text/plain"];
+
 const GroupDetails = () => {
   const user = JSON.parse(localStorage.getItem("user")) || null;
   const userId = user?._id || null;
-  // console.log("Current User ID:", userId);
   let { groupId } = useParams();
   groupId = groupId.trim();
   const navigate = useNavigate();
@@ -45,6 +46,7 @@ const GroupDetails = () => {
     careRecipients: [],
     others: [],
   });
+
   const getUserId = () => {
     try {
       const storedUser = localStorage.getItem("user");
@@ -67,8 +69,8 @@ const GroupDetails = () => {
           { withCredentials: true }
         );
         setGroup(groupRes.data);
-        // Check if current user can edit if createdBy matches userId
         setCanEdit(groupRes.data.createdBy === userId);
+
         // 2. Fetch Members
         const membersRes = await axios.get(
           `http://localhost:3000/api/memberships/group/${groupId}`,
@@ -79,7 +81,6 @@ const GroupDetails = () => {
           : [];
         setMembers(membersData);
 
-        // Process roles
         setStats({
           admins: membersData.filter(
             (m) => m.role === "admin" || m.role === "owner"
@@ -113,14 +114,21 @@ const GroupDetails = () => {
     };
 
     fetchData();
-  }, [groupId]);
-
-  const ALLOWED_TYPES = ["image/", "application/pdf", "text/plain"];
+  }, [groupId, userId]);
 
   const handleDocumentUpload = async (event) => {
-    const filesArray = Array.from(event.target.files || []); // <-- convert
+    const filesArray = Array.from(event.target.files || []);
     if (!filesArray.length) return;
 
+    // 1. Size validation (10 MB per file)
+    const tooLarge = filesArray.filter((file) => file.size > MAX_FILE_SIZE);
+    if (tooLarge.length) {
+      toast.error("Each file must be 10 MB or smaller.");
+      event.target.value = "";
+      return;
+    }
+
+    // 2. Type validation
     const invalid = filesArray.filter((file) => {
       return !ALLOWED_TYPES.some((type) =>
         type.endsWith("/") ? file.type.startsWith(type) : file.type === type
@@ -133,8 +141,8 @@ const GroupDetails = () => {
       return;
     }
 
-    const userId = getUserId();
-    if (!userId) {
+    const currentUserId = getUserId();
+    if (!currentUserId) {
       toast.error("User not found. Please log in again.");
       return;
     }
@@ -143,7 +151,7 @@ const GroupDetails = () => {
     setUploadProgress(0);
 
     const formData = new FormData();
-    formData.append("userId", userId);
+    formData.append("userId", currentUserId);
     formData.append("groupId", groupId);
 
     filesArray.forEach((file) => {
@@ -159,6 +167,7 @@ const GroupDetails = () => {
             "Content-Type": "multipart/form-data",
           },
           onUploadProgress: (progressEvent) => {
+            if (!progressEvent.total) return;
             const percentCompleted = Math.round(
               (progressEvent.loaded * 100) / progressEvent.total
             );
@@ -169,7 +178,8 @@ const GroupDetails = () => {
 
       if (response.data.success) {
         toast.success(
-          `Successfully uploaded ${filesArray.length
+          `Successfully uploaded ${
+            filesArray.length
           } document(s)! Document IDs: ${response.data.attachments.join(", ")}`
         );
         event.target.value = "";
@@ -192,8 +202,9 @@ const GroupDetails = () => {
   const MemberCard = ({ member, icon: Icon, colorClass, bgClass, onClick }) => (
     <div
       onClick={onClick}
-      className={`flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all ${onClick ? "cursor-pointer hover:border-indigo-200" : ""
-        }`}
+      className={`flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all ${
+        onClick ? "cursor-pointer hover:border-indigo-200" : ""
+      }`}
     >
       <div
         className={`w-10 h-10 rounded-full ${bgClass} flex items-center justify-center ${colorClass} font-bold text-sm shrink-0`}
@@ -219,10 +230,11 @@ const GroupDetails = () => {
       <div className="flex items-center gap-3 overflow-hidden">
         <div className="min-w-0">
           <p
-            className={`text-sm font-medium truncate ${task.status === "completed"
-              ? "text-gray-400 line-through"
-              : "text-gray-900"
-              }`}
+            className={`text-sm font-medium truncate ${
+              task.status === "completed"
+                ? "text-gray-400 line-through"
+                : "text-gray-900"
+            }`}
           >
             {task.title}
           </p>
@@ -259,10 +271,11 @@ const GroupDetails = () => {
         </div>
       </div>
       <div
-        className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${task.status === "completed"
-          ? "bg-green-100 text-green-700"
-          : "bg-yellow-100 text-yellow-700"
-          }`}
+        className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
+          task.status === "completed"
+            ? "bg-green-100 text-green-700"
+            : "bg-yellow-100 text-yellow-700"
+        }`}
       >
         {task.status || "Pending"}
       </div>
@@ -359,17 +372,19 @@ const GroupDetails = () => {
                       />
                       <label
                         htmlFor="document-upload"
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${uploading
-                          ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-                          : "bg-indigo-600 text-white hover:bg-indigo-700"
-                          }`}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                          uploading
+                            ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+                            : "bg-indigo-600 text-white hover:bg-indigo-700"
+                        }`}
                       >
                         Add Document
                       </label>
                     </div>
 
                     <p className="text-xs text-gray-500">
-                      Allowed: PDF, images (JPG, PNG, etc.), TXT.
+                      Allowed: PDF, images (JPG, PNG, etc.), TXT. Max 10 MB per
+                      file.
                     </p>
                   </div>
                 </div>

@@ -9,8 +9,13 @@ import { uploadFileToS3 } from "../integrations/s3.js";
 
 const router = express.Router();
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
 const upload = multer({
   storage: multer.memoryStorage(),
+  limits: {
+    fileSize: MAX_FILE_SIZE,
+  },
 });
 
 const uploadDataFiles = upload.array("dataFiles");
@@ -52,14 +57,22 @@ router.post("/", uploadDataFiles, async (req, res) => {
     }
 
     const filesToUpload = req.files;
-
     const attachments = [];
 
     console.log(
-      `Uploading ${req.files.length} files for user: ${userId}, group: ${groupId}`
+      `Uploading ${filesToUpload.length} files for user: ${userId}, group: ${groupId}`
     );
 
     for (const file of filesToUpload) {
+      if (file.size > MAX_FILE_SIZE) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            error: "Each file must be 10 MB or smaller.",
+          });
+      }
+
       try {
         const { documentId } = await uploadFileToS3(file, groupId, userId);
         attachments.push(documentId);
@@ -72,14 +85,21 @@ router.post("/", uploadDataFiles, async (req, res) => {
       }
     }
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Files uploaded successfully.",
       attachments,
     });
   } catch (err) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({
+        success: false,
+        error: "Each file must be 10 MB or smaller.",
+      });
+    }
+
     console.error("Unexpected error in file upload route:", err);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: "An unexpected error occurred while uploading files.",
     });
