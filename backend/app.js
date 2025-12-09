@@ -27,7 +27,9 @@ apiRouter(app);
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    // Allow any origin for development/local network testing
+    origin: true, // or process.env.FRONTEND_URL || "http://localhost:5173" if you want to be strict
+
     credentials: true
   },
   pingTimeout: 60000,
