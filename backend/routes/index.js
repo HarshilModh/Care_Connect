@@ -7,6 +7,8 @@ import notificationRoutes from "./notifications.js";
 import chatRoutes from "./chat.Routes.js";
 import taskRoutes from "./task.Routes.js";
 import documentRoutes from "./documentRoutes.js";
+import medicationRoutes from "./medication.Routes.js";
+import vitalRoutes from "./vital.Routes.js"; 
 
 const constructMethod = (app) => {
   app.use("/api/users", userRouter);
@@ -17,6 +19,8 @@ const constructMethod = (app) => {
   app.use("/api/notifications", notificationRoutes);
   app.use("/api/chats", chatRoutes);
   app.use("/api/tasks", taskRoutes);
+  app.use("/api/medications", medicationRoutes);
+  app.use("/api/vitals", vitalRoutes); 
   app.use("/api/documents", documentRoutes);
 };
 
