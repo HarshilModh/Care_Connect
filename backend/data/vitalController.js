@@ -1,7 +1,7 @@
 import { Vital } from "../models/vital.model.js";
-import { isValidID, isValidString } from "../utils/validation.utils.js";
+import { isValidString } from "../utils/validation.utils.js";
 import { assertActiveMember } from "../utils/taskHelper.js";
-
+import mongoose from "mongoose";
 const VALID_VITAL_TYPES = ["bp", "heart_rate", "weight", "glucose", "temperature"];
 
 export const logVital = async (
@@ -29,9 +29,12 @@ export const logVital = async (
     if (!unit) {
       throw new Error("unit is required to log a vital");
     }
-
-    groupId = isValidID(groupId);
-    userId = isValidID(userId);
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
+      throw new Error("Invalid groupId");
+    }
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new Error("Invalid userId");
+    }
 
     if (!VALID_VITAL_TYPES.includes(type)) {
       throw new Error(
@@ -87,9 +90,14 @@ export const getVitalsHistory = async (
     if (!userId) {
       throw new Error("userId is required to get vitals history");
     }
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
+      throw new Error("Invalid groupId");
+    }
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new Error("Invalid userId");
+    }
 
-    groupId = isValidID(groupId);
-    userId = isValidID(userId);
+    await assertActiveMember(userId, groupId);
 
     const { type, from, to, rangeDays } = options;
 
@@ -135,7 +143,7 @@ export const getVitalsHistory = async (
       const days = Number(rangeDays);
       const fromDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
       recordedAtFilter.$gte = fromDate;
-      recordedAtFilter.$lte = now;
+      // recordedAtFilter.$lte = now; // Removing strict upper bound to avoid clock skew issues
       haveDateFilter = true;
     }
 
@@ -153,8 +161,20 @@ export const getVitalsHistory = async (
 
 export const getLatestVitalsByType = async (groupId, userId) => {
   try {
-    groupId = isValidID(groupId);
-    userId = isValidID(userId);
+    if (!groupId) {
+      throw new Error("groupId is required to get latest vitals");
+    }
+    if (!userId) {
+      throw new Error("userId is required to get latest vitals");
+    }
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
+      throw new Error("Invalid groupId");
+    }
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new Error("Invalid userId");
+    }
+
+    await assertActiveMember(userId, groupId);
 
     const latestByType = {};
 
@@ -175,5 +195,45 @@ export const getLatestVitalsByType = async (groupId, userId) => {
     return latestByType;
   } catch (error) {
     throw new Error(`Error fetching latest vitals: ${error.message}`);
+  }
+};
+
+//delete vital by id
+export const deleteVitalById = async (vitalId, userId, groupId) => {
+  try {
+    if (!vitalId) {
+      throw new Error("vitalId is required to delete a vital");
+    }
+    if (!userId) {
+      throw new Error("userId is required to delete a vital");
+    }
+    if (!groupId) {
+      throw new Error("groupId is required to delete a vital");
+    }
+    if (!mongoose.Types.ObjectId.isValid(vitalId)) {
+      throw new Error("Invalid vitalId");
+    }
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new Error("Invalid userId");
+    }
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
+      throw new Error("Invalid groupId");
+    }
+
+    await assertActiveMember(userId, groupId);
+
+    const result = await Vital.deleteOne({
+      _id: vitalId,
+      userId,
+      groupId,
+    });
+
+    if (result.deletedCount === 0) {
+      throw new Error("No vital found to delete or you do not have permission");
+    }
+    //update the 
+    return { message: "Vital deleted successfully" };
+  } catch (error) {
+    throw new Error(`Error deleting vital: ${error.message}`);
   }
 };

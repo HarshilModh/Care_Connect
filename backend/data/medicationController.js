@@ -1,8 +1,7 @@
 import mongoose from "mongoose";
 import { Medication } from "../models/medication.model.js";
-import { isValidID, isValidString } from "../utils/validation.utils.js";
+import { isValidString } from "../utils/validation.utils.js";
 import { assertActiveMember, assertRecipientInGroup } from "../utils/taskHelper.js";
-
 const VALID_FREQUENCIES = ["daily", "weekly", "as_needed"];
 
 export const createMedication = async (
@@ -28,10 +27,12 @@ export const createMedication = async (
     if (!createdBy) {
       throw new Error("createdBy is required to create a medication");
     }
-
-    groupId = isValidID(groupId);
-    recipientId = isValidID(recipientId);
-    createdBy = isValidID(createdBy);
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
+      throw new Error("Invalid groupId");
+    }
+    if (!mongoose.Types.ObjectId.isValid(recipientId)) {
+      throw new Error("Invalid recipientId");
+    }
 
     name = isValidString(name, "name");
 
@@ -156,7 +157,6 @@ export const updateMedication = async (medicationId, updaterId, updates = {}) =>
     if (!mongoose.Types.ObjectId.isValid(medicationId)) {
       throw new Error("Invalid medicationId");
     }
-    updaterId = isValidID(updaterId);
 
     const medication = await Medication.findById(medicationId);
     if (!medication) {
@@ -270,6 +270,14 @@ export const updateMedication = async (medicationId, updaterId, updates = {}) =>
       medication.active = active;
     }
 
+    if (updates.recipientId) {
+      if (!mongoose.Types.ObjectId.isValid(updates.recipientId)) {
+        throw new Error("Invalid recipientId");
+      }
+      await assertRecipientInGroup(updates.recipientId, medication.groupId);
+      medication.recipientId = updates.recipientId;
+    }
+
     const updatedMedication = await medication.save();
     return updatedMedication;
   } catch (error) {
@@ -289,7 +297,6 @@ export const deleteMedication = async (medicationId, deleterId) => {
     if (!mongoose.Types.ObjectId.isValid(medicationId)) {
       throw new Error("Invalid medicationId");
     }
-    deleterId = isValidID(deleterId);
 
     const medication = await Medication.findById(medicationId);
     if (!medication) {
@@ -324,7 +331,6 @@ export const recordDose = async (medicationId, takenBy, takenAt) => {
     if (!mongoose.Types.ObjectId.isValid(medicationId)) {
       throw new Error("Invalid medicationId");
     }
-    takenBy = isValidID(takenBy);
 
     const medication = await Medication.findById(medicationId);
     if (!medication) {
@@ -345,5 +351,28 @@ export const recordDose = async (medicationId, takenBy, takenAt) => {
     return updatedMedication;
   } catch (error) {
     throw new Error(`Error recording medication dose: ${error.message}`);
+  }
+};
+
+export const getMedicationById = async (medicationId) => {
+  try {
+    if (!medicationId) {
+      throw new Error("medicationId is required to get a medication");
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(medicationId)) {
+      throw new Error("Invalid medicationId");
+    }
+
+    const medication = await Medication.findById(medicationId)
+      .populate("recipientId", "firstName lastName email");
+
+    if (!medication) {
+      throw new Error("Medication not found");
+    }
+
+    return medication;
+  } catch (error) {
+    throw new Error(`Error fetching medication: ${error.message}`);
   }
 };

@@ -16,7 +16,7 @@ import {
   validateConfirmPassword,
   validateName,
 } from "../utils/validation";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Check, User, Mail, Lock } from "lucide-react";
 
 // import { useTheme } from "../context/ThemeContext";
 
@@ -73,7 +73,6 @@ export default function Signup() {
 
     // Validate all fields
     const newErrors = {};
-
 
     const firstNameError = validateName(formData.firstName, "First name");
     if (firstNameError) newErrors.firstName = firstNameError;
@@ -160,269 +159,202 @@ export default function Signup() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen w-full bg-white dark:bg-gray-900 transition-colors duration-300">
-      <div className="flex min-h-screen w-full max-w-7xl shadow-2xl">
-        {/* Left Section */}
-        <div className="hidden md:flex md:w-1/2 relative bg-gradient-to-br from-white-100 to-orange-500 overflow-hidden">
-          <div className="absolute inset-0 opacity-10 pointer-events-none">
-            <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <pattern
-                  id="grid"
-                  width="40"
-                  height="40"
-                  patternUnits="userSpaceOnUse"
-                >
-                  <path
-                    d="M 40 0 L 0 0 0 40"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="2"
-                  />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#grid)" />
-            </svg>
-          </div>
-          <div className="flex flex-col items-center justify-center px-12 relative text-center text-white w-full z-10">
-            <div className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mb-6 mx-auto">
-              <svg
-                className="h-16 w-16 text-orange-600 dark:text-orange-400"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12 20l9-5-9-5-9 5 9 5z" />
-                <path d="M12 12l9-5-9-5-9 5 9 5z" />
-              </svg>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 md:p-6 font-sans">
+      <div className="bg-white rounded-3xl shadow-xl w-full max-w-6xl overflow-hidden flex flex-col md:flex-row min-h-[700px]">
+        
+        {/* Left Side - Brand & Decorative (Blue/Indigo Theme) */}
+        <div className="hidden md:flex md:w-5/12 lg:w-1/2 bg-gradient-to-br from-blue-600 to-indigo-700 relative p-12 flex-col justify-between text-white overflow-hidden">
+          {/* Decorative Circles */}
+          <div className="absolute top-0 left-0 w-64 h-64 bg-white opacity-10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl"></div>
+          <div className="absolute bottom-0 right-0 w-80 h-80 bg-blue-400 opacity-20 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl"></div>
+          
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 text-2xl font-bold tracking-tight mb-2">
+              <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                 <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                 </svg>
+              </div>
+              CareConnect
             </div>
-            <h2 className="text-4xl font-bold mb-4">Join CareConnect</h2>
-            <p className="text-lg text-indigo-100 max-w-md mx-auto py-2">
-              Connect with caregivers, coordinate care, and manage everything in
-              one place.
+          </div>
+
+          <div className="relative z-10 max-w-md">
+            <h2 className="text-4xl lg:text-5xl font-extrabold mb-6 leading-tight">
+              Caregiving made <br/> <span className="text-blue-200">Simple & Collaborative.</span>
+            </h2>
+            <p className="text-lg text-blue-100/90 leading-relaxed">
+              Join thousands of families using CareConnect to coordinate support, manage tasks, and stay connected with their loved ones.
             </p>
+          </div>
+
+          <div className="relative z-10 text-sm text-blue-200/60">
+            © 2025 CareConnect Inc.
           </div>
         </div>
 
-        {/* Right Section */}
-        <div className="bg-white dark:bg-gray-900 duration-300 flex flex-col items-center justify-center lg:px-16 md:w-1/2 px-8 py-12 transition-colors w-full">
-          <div className="max-w-md w-full mx-auto">
-            <div className="flex items-center gap-3 mb-6">
-              <svg
-                className="h-10 w-10 text-orange-600 dark:text-orange-400"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12 20l9-5-9-5-9 5 9 5z" />
-                <path d="M12 12l9-5-9-5-9 5 9 5z" />
-              </svg>
-              <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                <Link to="/">CareConnect</Link>
-              </span>
+        {/* Right Side - Form */}
+        <div className="w-full md:w-7/12 lg:w-1/2 p-8 lg:p-12 xl:p-16 flex flex-col justify-center bg-white">
+          <div className="max-w-md mx-auto w-full">
+            <div className="text-center md:text-left mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Create an account</h1>
+              <p className="text-gray-500">
+                Already have an account?{" "}
+                <Link to="/signin" className="text-indigo-600 font-semibold hover:text-indigo-700 transition-colors">
+                  Log in
+                </Link>
+              </p>
             </div>
 
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              Create your account
-            </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-              Already have an account?{" "}
-              <Link
-                to="/signin"
-                className="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
-              >
-                Sign in
-              </Link>
-            </p>
-
-            {/* Google OAuth */}
+            {/* Google Sign In */}
             <button
               onClick={handleGoogleLogin}
               type="button"
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 group hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md mb-6"
+              className="w-full flex items-center justify-center gap-3 px-6 py-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium text-gray-700 mb-8 group"
             >
-              <FcGoogle className="text-xl" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Continue with Google
-              </span>
+              <FcGoogle className="w-6 h-6" />
+              <span>Sign up with Google</span>
             </button>
 
-            {/* Divider */}
-            <div className="relative mb-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">
-                  Or continue with email
-                </span>
-              </div>
+            <div className="relative flex items-center justify-center mb-8">
+              <div className="border-t border-gray-200 w-full absolute"></div>
+              <span className="bg-white px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider relative z-10">
+                Or with Email
+              </span>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label
-                    htmlFor="firstName"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    First Name
-                  </label>
-                  <input
-                    id="firstName"
-                    name="firstName"
-                    type="text"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    placeholder="John"
-                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
-                    required
-                  />
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="grid grid-cols-2 gap-5">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-gray-700 ml-1">First Name</label>
+                  <div className="relative">
+                    <input
+                      name="firstName"
+                      type="text"
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      className="w-full pl-4 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                      placeholder="John"
+                      required
+                    />
+                  </div>
+                  {errors.firstName && <p className="text-xs text-red-500 ml-1">{errors.firstName}</p>}
                 </div>
-                <div>
-                  <label
-                    htmlFor="lastName"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Last Name
-                  </label>
-                  <input
-                    id="lastName"
-                    name="lastName"
-                    type="text"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    placeholder="Doe"
-                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
-                    required
-                  />
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-gray-700 ml-1">Last Name</label>
+                  <div className="relative">
+                    <input
+                      name="lastName"
+                      type="text"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      className="w-full pl-4 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                      placeholder="Doe"
+                      required
+                    />
+                  </div>
+                  {errors.lastName && <p className="text-xs text-red-500 ml-1">{errors.lastName}</p>}
                 </div>
               </div>
 
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                >
-                  Email address
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="you@example.com"
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
-                  required
-                />
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-gray-700 ml-1">Email Address</label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors">
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <input
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                    placeholder="john@example.com"
+                    required
+                  />
+                </div>
+                {errors.email && <p className="text-xs text-red-500 ml-1">{errors.email}</p>}
               </div>
 
-              <div className={`floater ${formData.password ? "filled" : ""}`}>
-                <div className="relative">
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-gray-700 ml-1">Password</label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors">
+                    <Lock className="w-5 h-5" />
+                  </div>
                   <input
                     type={showPassword ? "text" : "password"}
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    className="input pr-10"
-                    minLength={8}
+                    className="w-full pl-11 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                    placeholder="••••••••"
                     required
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    {showPassword ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
-                  <span className="float-label">Password</span>
                 </div>
-                <p className="mt-1 text-xs text-gray-500">Must be at least 8 characters</p>
+                {errors.password && <p className="text-xs text-red-500 ml-1">{errors.password}</p>}
               </div>
 
-              <div className={`floater ${formData.confirmpassword ? "filled" : ""}`}>
-                <div className="relative">
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-gray-700 ml-1">Confirm Password</label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors">
+                    <Lock className="w-5 h-5" />
+                  </div>
                   <input
                     type={showConfirmPassword ? "text" : "password"}
                     name="confirmpassword"
                     value={formData.confirmpassword}
                     onChange={handleChange}
-                    className="input pr-10"
+                    className="w-full pl-11 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                    placeholder="••••••••"
                     required
                   />
                   <button
                     type="button"
-                    onClick={() => setShowConfirmPassword((prev) => !prev)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
-                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    {showConfirmPassword ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
-                  <span className="float-label">Confirm Password</span>
                 </div>
+                {errors.confirmpassword && <p className="text-xs text-red-500 ml-1">{errors.confirmpassword}</p>}
               </div>
 
-              {/* Terms */}
-              <div className="flex items-start gap-2">
-                <input
-                  id="terms"
-                  name="terms"
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                  required
-                />
-                <label
-                  htmlFor="terms"
-                  className="text-sm text-gray-600 dark:text-gray-400"
-                >
-                  I agree to the{" "}
-                  <a
-                    href="#"
-                    className="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
-                  >
-                    Terms of Service
-                  </a>{" "}
-                  and{" "}
-                  <a
-                    href="#"
-                    className="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
-                  >
-                    Privacy Policy
-                  </a>
+              <div className="flex items-start gap-3 pt-2">
+                <div className="flex items-center h-5">
+                  <input
+                    id="terms"
+                    name="terms"
+                    type="checkbox"
+                    className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    required
+                  />
+                </div>
+                <label htmlFor="terms" className="text-sm text-gray-600">
+                  I agree to the <a href="#" className="text-indigo-600 hover:text-indigo-700 font-medium hover:underline">Terms of Service</a> and <a href="#" className="text-indigo-600 hover:text-indigo-700 font-medium hover:underline">Privacy Policy</a>
                 </label>
               </div>
 
-              {/* Submit */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full mt-3 bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 text-white font-semibold py-3 rounded-lg transition-all duration-300 transform hover:scale-105 active:scale-100 shadow-lg hover:shadow-xl disabled:opacity-50"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl transition-all duration-200 transform active:scale-[0.98] shadow-lg hover:shadow-indigo-500/30 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4"
               >
-                {loading ? "Creating account..." : "Create account"}
+                {loading ? (
+                  <>Processing...</>
+                ) : (
+                  <>Create Account <Check className="w-5 h-5" /></>
+                )}
               </button>
             </form>
-
-            <p className="mt-4 text-center text-xs text-gray-500 dark:text-gray-400">
-              By signing up, you agree to receive updates and newsletters from
-              CareConnect.
-            </p>
           </div>
         </div>
       </div>

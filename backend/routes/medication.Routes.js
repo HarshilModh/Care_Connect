@@ -1,5 +1,5 @@
 import express from "express";
-import {createMedication,getGroupMedications,updateMedication,deleteMedication,recordDose} from "../data/medicationController.js";
+import {createMedication,getGroupMedications,updateMedication,deleteMedication,recordDose, getMedicationById} from "../data/medicationController.js";
 
 const router = express.Router();
 
@@ -20,7 +20,24 @@ router.get("/group/:groupId", async (req, res) => {
     return res.status(400).json({ error: error.message });
   }
 });
+//get medications by id
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
 
+    if (!id) {
+      return res
+        .status(400)
+        .json({ error: "id parameter is required" });
+    }
+
+    const medication = await getMedicationById(id);
+    return res.status(200).json(medication);
+  } catch (error) {
+    console.error("Error getting medication by id:", error);
+    return res.status(400).json({ error: error.message });
+  }
+});
 router.get("/", async (req, res) => {
   try {
     const { groupId } = req.query;
