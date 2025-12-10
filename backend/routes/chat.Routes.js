@@ -17,11 +17,7 @@ const router = express.Router();
 
 router.use(requireAuth);
 
-/**
- * @route   POST /api/chats/:groupId/messages
- * @desc    Send a new message to a group
- * @access  Private (Active group members only)
- */
+
 router.post("/:groupId/messages", async (req, res) => {
   try {
     const { groupId } = req.params;
@@ -52,11 +48,7 @@ router.post("/:groupId/messages", async (req, res) => {
   }
 });
 
-/**
- * @route   GET /api/chats/:groupId/messages
- * @desc    Get all messages for a group with pagination
- * @access  Private (Active group members only)
- */
+
 router.get("/:groupId/messages", async (req, res) => {
   try {
     const { groupId } = req.params;
@@ -85,11 +77,6 @@ router.get("/:groupId/messages", async (req, res) => {
   }
 });
 
-/**
- * @route   GET /api/chats/:groupId/messages/recent
- * @desc    Get recent messages (last N messages)
- * @access  Private (Active group members only)
- */
 router.get("/:groupId/messages/recent", async (req, res) => {
   try {
     const { groupId } = req.params;
@@ -112,11 +99,7 @@ router.get("/:groupId/messages/recent", async (req, res) => {
   }
 });
 
-/**
- * @route   GET /api/chats/:groupId/messages/search
- * @desc    Search messages in a group
- * @access  Private (Active group members only)
- */
+
 router.get("/:groupId/messages/search", async (req, res) => {
   try {
     const { groupId } = req.params;
@@ -152,11 +135,6 @@ router.get("/:groupId/messages/search", async (req, res) => {
   }
 });
 
-/**
- * @route   GET /api/chats/:groupId/stats
- * @desc    Get message statistics for a group
- * @access  Private (Active group members only)
- */
 router.get("/:groupId/stats", async (req, res) => {
   try {
     const { groupId } = req.params;
@@ -177,11 +155,7 @@ router.get("/:groupId/stats", async (req, res) => {
   }
 });
 
-/**
- * @route   GET /api/chats/:groupId/unread-count
- * @desc    Get unread message count for a user in a group
- * @access  Private (Active group members only)
- */
+
 router.get("/:groupId/unread-count", async (req, res) => {
   try {
     const { groupId } = req.params;
@@ -202,11 +176,7 @@ router.get("/:groupId/unread-count", async (req, res) => {
   }
 });
 
-/**
- * @route   PATCH /api/chats/messages/:messageId/status
- * @desc    Update message status (sent -> delivered -> read)
- * @access  Private (Group members only)
- */
+
 router.patch("/messages/:messageId/status", async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -236,11 +206,7 @@ router.patch("/messages/:messageId/status", async (req, res) => {
   }
 });
 
-/**
- * @route   PATCH /api/chats/:groupId/mark-all-read
- * @desc    Mark all messages in a group as read for current user
- * @access  Private (Active group members only)
- */
+
 router.patch("/:groupId/mark-all-read", async (req, res) => {
   try {
     const { groupId } = req.params;
@@ -262,11 +228,7 @@ router.patch("/:groupId/mark-all-read", async (req, res) => {
   }
 });
 
-/**
- * @route   PUT /api/chats/messages/:messageId
- * @desc    Edit a message (only by sender, within 15 minutes)
- * @access  Private (Message sender only)
- */
+
 router.put("/messages/:messageId", async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -297,11 +259,7 @@ router.put("/messages/:messageId", async (req, res) => {
   }
 });
 
-/**
- * @route   DELETE /api/chats/messages/:messageId
- * @desc    Delete a message (soft delete by sender or admin)
- * @access  Private (Message sender or group admin)
- */
+
 router.delete("/messages/:messageId", async (req, res) => {
   try {
     const { messageId } = req.params;
