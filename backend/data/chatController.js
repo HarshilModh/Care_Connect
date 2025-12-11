@@ -55,9 +55,7 @@ export const sendMessage = async (groupId, userId, message, meta = {}, io = null
   }
 };
 
-/**
- * Get all messages for a group with pagination
- */
+// Get messages by groupId with pagination
 export const getMessagesByGroupId = async (groupId, userId, options = {}) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(groupId)) throw new Error("Invalid groupId");
@@ -100,9 +98,7 @@ export const getMessagesByGroupId = async (groupId, userId, options = {}) => {
   }
 };
 
-/**
- * Get recent messages (last N messages)
- */
+// Get recent messages for a group
 export const getRecentMessages = async (groupId, userId, limit = 50) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(groupId)) throw new Error("Invalid groupId");
@@ -127,9 +123,7 @@ export const getRecentMessages = async (groupId, userId, limit = 50) => {
   }
 };
 
-/**
- * Update message status (sent -> delivered -> read)
- */
+// Update message status (sent, delivered, read)
 export const updateMessageStatus = async (messageId, userId, status) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(messageId)) throw new Error("Invalid messageId");
@@ -173,9 +167,7 @@ export const updateMessageStatus = async (messageId, userId, status) => {
   }
 };
 
-/**
- * Mark all messages in a group as read for a user
- */
+// Mark all messages as read for a user in a group
 export const markAllAsRead = async (groupId, userId) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(groupId)) throw new Error("Invalid groupId");
@@ -216,9 +208,6 @@ export const markAllAsRead = async (groupId, userId) => {
   }
 };
 
-/**
- * Get unread message count for a user in a group
- */
 export const getUnreadCount = async (groupId, userId) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(groupId)) throw new Error("Invalid groupId");
@@ -244,9 +233,7 @@ export const getUnreadCount = async (groupId, userId) => {
   }
 };
 
-/**
- * Delete a message (soft delete via schema flag)
- */
+
 export const deleteMessage = async (messageId, userId, io = null) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(messageId)) throw new Error("Invalid messageId");
@@ -276,7 +263,6 @@ export const deleteMessage = async (messageId, userId, io = null) => {
 
     await message.save();
 
-    // 🔥 EMIT SOCKET EVENT FOR MESSAGE DELETION
     if (io) {
       io.to(`group:${message.groupId}`).emit("message-deleted", {
         messageId: message._id,
@@ -292,9 +278,7 @@ export const deleteMessage = async (messageId, userId, io = null) => {
   }
 };
 
-/**
- * Edit a message (only by sender, within 15 minutes)
- */
+
 export const editMessage = async (messageId, userId, newMessage, io = null) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(messageId)) throw new Error("Invalid messageId");
@@ -335,7 +319,6 @@ export const editMessage = async (messageId, userId, newMessage, io = null) => {
     await message.save();
     await message.populate("senderId", "firstName lastName profilePicture displayName");
 
-    // 🔥 EMIT SOCKET EVENT FOR MESSAGE EDIT
     if (io) {
       io.to(`group:${message.groupId}`).emit("message-edited", {
         message,
@@ -351,9 +334,7 @@ export const editMessage = async (messageId, userId, newMessage, io = null) => {
   }
 };
 
-/**
- * Search messages in a group
- */
+
 export const searchMessages = async (groupId, userId, searchQuery, options = {}) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(groupId)) throw new Error("Invalid groupId");
@@ -401,9 +382,7 @@ export const searchMessages = async (groupId, userId, searchQuery, options = {})
   }
 };
 
-/**
- * Get message statistics for a group
- */
+
 export const getGroupMessageStats = async (groupId, userId) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(groupId)) throw new Error("Invalid groupId");

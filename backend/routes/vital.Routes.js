@@ -3,6 +3,7 @@ import {
   logVital,
   getVitalsHistory,
   getLatestVitalsByType,
+  deleteVitalById
 } from "../data/vitalController.js";
 
 const router = express.Router();
@@ -84,5 +85,22 @@ router.get("/latest", async (req, res) => {
     return res.status(400).json({ error: error.message });
   }
 });
+router.delete("/:vitalId", async (req, res) => {
+  try {
+    const { vitalId } = req.params;
+    const userId=req.body.userId;
+    const groupId=req.body.groupId;
+    if (!vitalId) {
+      return res.status(400).json({
+        error: "vitalId parameter is required",
+      });
+    }
 
+    await deleteVitalById(vitalId, userId, groupId);
+    return res.status(200).json({ message: "Vital deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting vital:", error);
+    return res.status(400).json({ error: error.message });
+  }
+});
 export default router;

@@ -26,7 +26,9 @@ import EditProfile from "../components/userProfile/EditProfile.jsx";
 import EditGroup from "../components/familyGroups/EditGroup";
 import GroupDetails from "../components/familyGroups/GroupDetails.jsx";
 import UserDocumentsPage from "../pages/Documents.jsx";
-
+import MedicineCabinet from "../components/Medications/MedicineCabinet.jsx";
+import Not_Found from "../pages/Not_Found.jsx";
+import VitalsDashboard from "../components/vitals/VitalsDashboard.jsx";
 const AppRoutes = () => {
   return (
     <Routes>
@@ -153,8 +155,27 @@ const AppRoutes = () => {
           </PrivateRoute>
         }
       />
+      <Route
+        path="/medications/:groupId"
+        element={
+          <PrivateRoute>
+            <MedicineCabinet />
+          </PrivateRoute>
+        }
+      />  
+      <Route
+        path="/vitals/dashboard/:groupId"
+        element={
+          <PrivateRoute>
+            <VitalsDashboard />
+          </PrivateRoute>
+        }
+      />
 
       <Route path="/notifications" element={<Notifications />} />
+
+
+      <Route path="*" element={<Not_Found />} />
     </Routes>
   );
 };
