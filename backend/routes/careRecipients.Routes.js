@@ -51,6 +51,7 @@ router.get("/group/:groupId", async (req, res) => {
 
     return res.status(200).json(recipients);
   } catch (error) {
+    console.error("Error in /group/:groupId route:", error);
     return res.status(400).json({ error: error.message });
   }
 });
