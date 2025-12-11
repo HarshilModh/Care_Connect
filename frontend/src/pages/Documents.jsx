@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { TrashIcon } from "@heroicons/react/24/outline";
+import api from "../api/axios";
 
 export default function UserDocumentsPage() {
   const [data, setData] = useState({});
@@ -26,20 +27,8 @@ export default function UserDocumentsPage() {
         setLoading(true);
         setError("");
 
-        const res = await fetch(
-          `http://localhost:3000/api/documents/user/${userId}`,
-          {
-            credentials: "include",
-          }
-        );
-
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.error || "Failed to fetch documents");
-        }
-
-        const json = await res.json();
-        setData(json || {});
+        const res = await api.get(`/documents/user/${userId}`);
+        setData(res.data || {});
       } catch (err) {
         console.error(err);
         setError(err.message || "Error fetching documents");
@@ -59,18 +48,9 @@ export default function UserDocumentsPage() {
     try {
       console.log("Delete request for:", docId);
 
-      const res = await fetch(`http://localhost:3000/api/documents/${docId}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userId }),
+      await api.delete(`/documents/${docId}`, {
+        data: { userId },
       });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.message || "Failed to delete document");
-      }
 
       const updatedData = {};
       for (const groupName in data) {

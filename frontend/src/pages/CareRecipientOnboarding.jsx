@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import api from "../api/axios";
 import { useNavigate, useParams } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import {
@@ -100,18 +100,7 @@ const CareRecipientOnboarding = () => {
 
       console.log("Submitting careRecipient onboarding payload:", payload);
 
-      const accessToken = localStorage.getItem("accessToken");
-
-      const res = await axios.post(
-        "http://localhost:3000/api/care-recipients",
-        payload,
-        {
-          withCredentials: true,
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
+      const res = await api.post("/care-recipients", payload);
 
       console.log("careRecipient onboarding response:", res);
 
@@ -124,8 +113,8 @@ const CareRecipientOnboarding = () => {
       console.error("Error saving care recipient onboarding", err);
       setError(
         err.response?.data?.error ||
-        err.message ||
-        "Failed to save care recipient onboarding"
+          err.message ||
+          "Failed to save care recipient onboarding"
       );
       toast.error("Failed to save onboarding");
     } finally {

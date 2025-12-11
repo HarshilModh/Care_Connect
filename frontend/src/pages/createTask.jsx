@@ -12,6 +12,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
+import api from "../api/axios";
 
 export default function CreateTask() {
   const [title, setTitle] = useState("");
@@ -64,7 +65,7 @@ export default function CreateTask() {
     const hours = String(now.getHours()).padStart(2, "0");
     const minutes = String(now.getMinutes()).padStart(2, "0");
     return `${year}-${month}-${day}T${hours}:${minutes}`;
-  }
+  };
 
   let storedUser = localStorage.getItem("user");
   let userId = "";
@@ -79,10 +80,8 @@ export default function CreateTask() {
     if (!userId) return;
     async function fetchGroups() {
       try {
-        const res = await fetch(
-          `http://localhost:3000/api/family-groups/user/${userId}`
-        );
-        let data = await res.json();
+        const res = await api.get(`/family-groups/user/${userId}`);
+        let data = res.data;
         data = data.filter(
           (g) =>
             g.members.some((m) => m.userId === userId) ||
@@ -107,11 +106,11 @@ export default function CreateTask() {
     async function fetchData() {
       try {
         // Recipients
-        const resRecipients = await fetch(
-          `http://localhost:3000/api/care-recipients/group/${selectedGroup}`
+        const resRecipients = await api.get(
+          `/care-recipients/group/${selectedGroup}`
         );
-        
-        const dataRecipients = await resRecipients.json();
+
+        const dataRecipients = resRecipients.data;
         //if error in dataRecipients, throw error
         if (dataRecipients.error) {
           throw new Error(dataRecipients.error);
@@ -126,10 +125,8 @@ export default function CreateTask() {
         setRecipients(formattedRecipients);
 
         // Members
-        const resMembers = await fetch(
-          `http://localhost:3000/api/memberships/group/${selectedGroup}`
-        );
-        const dataMembers = await resMembers.json();
+        const resMembers = await api.get(`/memberships/group/${selectedGroup}`);
+        const dataMembers = resMembers.data;
 
         const formattedMembers = [];
         for (const item of dataMembers) {
@@ -173,20 +170,16 @@ export default function CreateTask() {
       let response;
       if (!hasFiles) {
         // OLD BEHAVIOR: JSON request (no files)
-        response = await fetch("http://localhost:3000/api/tasks", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            groupId: selectedGroup,
-            assignedTo: assignedTo || undefined,
-            recipientId: recipient,
-            createdBy: userId,
-            title,
-            description: desc,
-            dueAt: dueDate || undefined,
-            repeatRule: repeatRule || undefined,
-            type,
-          }),
+        response = await api.post("/tasks", {
+          groupId: selectedGroup,
+          assignedTo: assignedTo || undefined,
+          recipientId: recipient,
+          createdBy: userId,
+          title,
+          description: desc,
+          dueAt: dueDate || undefined,
+          repeatRule: repeatRule || undefined,
+          type,
         });
       } else {
         // NEW BEHAVIOR: multipart/form-data with files
@@ -206,13 +199,12 @@ export default function CreateTask() {
           formData.append("dataFiles", file);
         });
 
-        response = await fetch("http://localhost:3000/api/tasks", {
-          method: "POST",
-          body: formData, // do NOT set Content-Type manually
+        response = await api.post("/tasks", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         });
       }
-
-      if (!response.ok) throw new Error("Failed to create task");
 
       toast.success("Task created successfully!");
       navigate("/tasks");

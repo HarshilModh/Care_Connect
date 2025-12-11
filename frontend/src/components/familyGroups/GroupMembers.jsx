@@ -1,151 +1,169 @@
-import React, { useEffect, useMemo, useState } from "react"
-import axios from "axios"
-import { useParams, useNavigate } from "react-router-dom"
-import { toast, ToastContainer } from "react-toastify"
-import "react-toastify/dist/ReactToastify.css"
-import { CheckCircleIcon, ClockIcon } from "@heroicons/react/24/solid"
-
+import React, { useEffect, useMemo, useState } from "react";
+import api from "../../api/axios";
+import { useParams, useNavigate } from "react-router-dom";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { CheckCircleIcon, ClockIcon } from "@heroicons/react/24/solid";
 
 const ROLE_LABEL = {
   admin: "admin",
   caregiver: "Caregiver",
   family: "Family",
   careRecipient: "Care Recipient",
-}
+};
 
 const ROLE_COLOR = {
   admin: "from-indigo-600 to-purple-600",
   caregiver: "from-emerald-600 to-lime-600",
   family: "from-sky-500 to-indigo-500",
-  careRecipient: "from-gray-400 to-gray-600"
-}
+  careRecipient: "from-gray-400 to-gray-600",
+};
 
 function formatDateIso(iso) {
-  if (!iso) return ""
+  if (!iso) return "";
   try {
-    const d = new Date(iso)
-    return d.toLocaleString()
+    const d = new Date(iso);
+    return d.toLocaleString();
   } catch {
-    return iso
+    return iso;
   }
 }
 
 function initials(name) {
-  if (!name) return "U"
-  const parts = name.trim().split(" ").filter(Boolean)
-  if (parts.length === 1) return parts[0][0].toUpperCase()
-  return (parts[0][0] + parts[1][0]).toUpperCase()
+  if (!name) return "U";
+  const parts = name.trim().split(" ").filter(Boolean);
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
 const GroupMembers = () => {
-  let { groupId } = useParams()
-  groupId = groupId.trim()
-  const navigate = useNavigate()
+  let { groupId } = useParams();
+  groupId = groupId.trim();
+  const navigate = useNavigate();
 
-  const [members, setMembers] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [removingId, setRemovingId] = useState(null)
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [removingId, setRemovingId] = useState(null);
 
   // UI filters
-  const [q, setQ] = useState("") // search query: name or email
-  const [roleFilter, setRoleFilter] = useState("") // empty -> all
-  const [statusFilter, setStatusFilter] = useState("") // empty -> all
-  const [showCount, setShowCount] = useState(12) // "load more"
+  const [q, setQ] = useState(""); // search query: name or email
+  const [roleFilter, setRoleFilter] = useState(""); // empty -> all
+  const [statusFilter, setStatusFilter] = useState(""); // empty -> all
+  const [showCount, setShowCount] = useState(12); // "load more"
 
   useEffect(() => {
     if (!groupId) {
-      setMembers([])
-      setLoading(false)
-      return
+      setMembers([]);
+      setLoading(false);
+      return;
     }
 
-    const ctrl = new AbortController()
-    let mounted = true
+    const ctrl = new AbortController();
+    let mounted = true;
 
     const fetchMembers = async () => {
       try {
-        setLoading(true)
-        setError(null)
-        const res = await axios.get(
-          `http://localhost:3000/api/memberships/group/${groupId}`,
-          { withCredentials: true, signal: ctrl.signal }
-        )
-        console.log("get group by id ", res)
-        const payload = Array.isArray(res.data) ? res.data : res.data?.members ?? []
-        if (!mounted) return
-        setMembers(payload)
+        setLoading(true);
+        setError(null);
+        const res = await api.get(`/memberships/group/${groupId}`, {
+          signal: ctrl.signal,
+        });
+        console.log("get group by id ", res);
+        const payload = Array.isArray(res.data)
+          ? res.data
+          : res.data?.members ?? [];
+        if (!mounted) return;
+        setMembers(payload);
       } catch (err) {
-        if (axios.isCancel?.(err)) return
-        const msg = err?.response?.data?.message ?? err?.message ?? "Failed to fetch members"
-        if (!mounted) return
-        setError(msg)
-        setMembers([])
+        if (err.name === "CanceledError") return;
+        const msg =
+          err?.response?.data?.message ??
+          err?.message ??
+          "Failed to fetch members";
+        if (!mounted) return;
+        setError(msg);
+        setMembers([]);
       } finally {
-        if (mounted) setLoading(false)
+        if (mounted) setLoading(false);
       }
-    }
+    };
 
-    fetchMembers()
+    fetchMembers();
     return () => {
-      mounted = false
-      ctrl.abort()
-    }
-  }, [groupId])
+      mounted = false;
+      ctrl.abort();
+    };
+  }, [groupId]);
 
   // derived and filtered list
   const filtered = useMemo(() => {
-    const qlc = q.trim().toLowerCase()
+    const qlc = q.trim().toLowerCase();
     return members
       .filter((m) => {
         console.log("members m >>>", m);
-        if (roleFilter && m.role !== roleFilter) return false
-        if (statusFilter && m.status !== statusFilter) return false
-        if (!qlc) return true
-        const user = typeof m.userId === "object" ? m.userId : null
-        const name = user ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() : (m.userEmail ?? "")
-        const email = user?.email ?? m.userEmail ?? ""
-        return name.toLowerCase().includes(qlc) || email.toLowerCase().includes(qlc)
+        if (roleFilter && m.role !== roleFilter) return false;
+        if (statusFilter && m.status !== statusFilter) return false;
+        if (!qlc) return true;
+        const user = typeof m.userId === "object" ? m.userId : null;
+        const name = user
+          ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim()
+          : m.userEmail ?? "";
+        const email = user?.email ?? m.userEmail ?? "";
+        return (
+          name.toLowerCase().includes(qlc) || email.toLowerCase().includes(qlc)
+        );
       })
       .sort((a, b) => {
-        const ua = (typeof a.userId === "object" ? `${a.userId.firstName ?? ""} ${a.userId.lastName ?? ""}` : a.userEmail || "").toLowerCase()
-        const ub = (typeof b.userId === "object" ? `${b.userId.firstName ?? ""} ${b.userId.lastName ?? ""}` : b.userEmail || "").toLowerCase()
-        return ua.localeCompare(ub)
-      })
-  }, [members, q, roleFilter, statusFilter])
+        const ua = (
+          typeof a.userId === "object"
+            ? `${a.userId.firstName ?? ""} ${a.userId.lastName ?? ""}`
+            : a.userEmail || ""
+        ).toLowerCase();
+        const ub = (
+          typeof b.userId === "object"
+            ? `${b.userId.firstName ?? ""} ${b.userId.lastName ?? ""}`
+            : b.userEmail || ""
+        ).toLowerCase();
+        return ua.localeCompare(ub);
+      });
+  }, [members, q, roleFilter, statusFilter]);
 
-  const visible = filtered.slice(0, showCount)
+  const visible = filtered.slice(0, showCount);
 
   // remove member
   const handleRemove = async (membership) => {
-    if (!membership || !membership._id) return
+    if (!membership || !membership._id) return;
     if (membership.role === "admin") {
-      toast.error("Cannot remove owners or admins")
-      return
+      toast.error("Cannot remove owners or admins");
+      return;
     }
 
     const confirm = window.confirm(
-      `Remove ${membership.userId?.email ?? membership.userEmail ?? "this user"} from the group?`
-    )
-    if (!confirm) return
+      `Remove ${
+        membership.userId?.email ?? membership.userEmail ?? "this user"
+      } from the group?`
+    );
+    if (!confirm) return;
 
-    const prev = members
-    setMembers((m) => m.filter((x) => x._id !== membership._id))
-    setRemovingId(membership._id)
+    const prev = members;
+    setMembers((m) => m.filter((x) => x._id !== membership._id));
+    setRemovingId(membership._id);
 
     try {
-      await axios.delete(`http://localhost:3000/api/memberships/${membership._id}`, { withCredentials: true })
-      toast.success("Member removed")
+      await api.delete(`/memberships/${membership._id}`);
+      toast.success("Member removed");
     } catch (err) {
-      setMembers(prev)
-      const msg = err?.response?.data?.message ?? err?.message ?? "Failed to remove member"
-      toast.error(msg)
+      setMembers(prev);
+      const msg =
+        err?.response?.data?.message ??
+        err?.message ??
+        "Failed to remove member";
+      toast.error(msg);
     } finally {
-      setRemovingId(null)
+      setRemovingId(null);
     }
-  }
-
-
+  };
 
   if (loading) {
     return (
@@ -160,7 +178,7 @@ const GroupMembers = () => {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -168,7 +186,7 @@ const GroupMembers = () => {
       <div className="p-6">
         <div className="text-red-600">Error fetching members: {error}</div>
       </div>
-    )
+    );
   }
 
   return (
@@ -176,7 +194,9 @@ const GroupMembers = () => {
       <div className="flex items-center justify-between gap-4 mb-4">
         <div>
           <h2 className="text-lg font-semibold">Group members</h2>
-          <div className="text-sm text-slate-500 mt-1">{members.length} total</div>
+          <div className="text-sm text-slate-500 mt-1">
+            {members.length} total
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -189,7 +209,11 @@ const GroupMembers = () => {
             style={{ minWidth: 220 }}
           />
 
-          <select className="input" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} >
+          <select
+            className="input"
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+          >
             <option value="">All roles</option>
             <option value="admin">Admin</option>
             <option value="caregiver">Caregiver</option>
@@ -197,7 +221,11 @@ const GroupMembers = () => {
             <option value="careRecipient">Care Recipient</option>
           </select>
 
-          <select className="input" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} >
+          <select
+            className="input"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
             <option value="">All status</option>
             <option value="active">Active</option>
             <option value="pending">Pending</option>
@@ -212,19 +240,26 @@ const GroupMembers = () => {
       ) : (
         <div className="grid gap-3">
           {visible.map((m) => {
-            const id = m._id ?? `${m.groupId}_${m.userId?._id}`
-            const user = typeof m.userId === "object" ? m.userId : null
-            const name = user ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() : (m.userEmail ?? "Unknown")
-            const email = user?.email ?? (m.userEmail ?? "")
-            const role = m.role ?? "family"
-            const status = m.status ?? "unknown"
-            const badgeColor = ROLE_COLOR[role] ?? ROLE_COLOR.family
-            const onboardingStatus = m.onboardingStatus
+            const id = m._id ?? `${m.groupId}_${m.userId?._id}`;
+            const user = typeof m.userId === "object" ? m.userId : null;
+            const name = user
+              ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim()
+              : m.userEmail ?? "Unknown";
+            const email = user?.email ?? m.userEmail ?? "";
+            const role = m.role ?? "family";
+            const status = m.status ?? "unknown";
+            const badgeColor = ROLE_COLOR[role] ?? ROLE_COLOR.family;
+            const onboardingStatus = m.onboardingStatus;
 
             return (
-              <div key={id} className="flex items-center justify-between gap-4 p-4 bg-white rounded-lg shadow-sm">
+              <div
+                key={id}
+                className="flex items-center justify-between gap-4 p-4 bg-white rounded-lg shadow-sm"
+              >
                 <div className="flex items-center gap-4 min-w-0">
-                  <div className={`h-12 w-12 rounded-full flex items-center justify-center text-white font-semibold bg-gradient-to-br ${badgeColor}`}>
+                  <div
+                    className={`h-12 w-12 rounded-full flex items-center justify-center text-white font-semibold bg-gradient-to-br ${badgeColor}`}
+                  >
                     {initials(name)}
                   </div>
 
@@ -232,54 +267,77 @@ const GroupMembers = () => {
                     <div className="flex items-center gap-2">
                       <div className="font-medium truncate">{name}</div>
                       <div className="text-xs text-slate-400">•</div>
-                      <div className="text-xs text-slate-400">{formatDateIso(m.joinedAt ?? m.createdAt)}</div>
+                      <div className="text-xs text-slate-400">
+                        {formatDateIso(m.joinedAt ?? m.createdAt)}
+                      </div>
                     </div>
-                    <div className="text-sm text-slate-500 truncate">{email}</div>
+                    <div className="text-sm text-slate-500 truncate">
+                      {email}
+                    </div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
                   <div className="flex flex-col items-end gap-1">
                     <div className="text-xs font-semibold uppercase tracking-wide">
-                      <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-white text-[11px] bg-gradient-to-r ${badgeColor}`}>
+                      <span
+                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-white text-[11px] bg-gradient-to-r ${badgeColor}`}
+                      >
                         {ROLE_LABEL[role] ?? role}
                       </span>
                     </div>
 
                     <div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${status === "active" ? "bg-green-50 text-green-700" : status === "pending" ? "bg-yellow-50 text-yellow-700" : "bg-gray-50 text-gray-700"}`}>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          status === "active"
+                            ? "bg-green-50 text-green-700"
+                            : status === "pending"
+                            ? "bg-yellow-50 text-yellow-700"
+                            : "bg-gray-50 text-gray-700"
+                        }`}
+                      >
                         {status}
                       </span>
                     </div>
-                    {(onboardingStatus === "required" || onboardingStatus === "completed") && (
+                    {(onboardingStatus === "required" ||
+                      onboardingStatus === "completed") && (
                       <div>
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${onboardingStatus === "completed"
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            : "bg-amber-50 text-amber-700 border-amber-200"
-                          }`}>
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                            onboardingStatus === "completed"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : "bg-amber-50 text-amber-700 border-amber-200"
+                          }`}
+                        >
                           {onboardingStatus === "completed" ? (
                             <CheckCircleIcon className="w-3.5 h-3.5" />
                           ) : (
                             <ClockIcon className="w-3.5 h-3.5" />
                           )}
-                          {onboardingStatus === "completed" ? "Onboarding Complete" : "Onboarding Required"}
+                          {onboardingStatus === "completed"
+                            ? "Onboarding Complete"
+                            : "Onboarding Required"}
                         </span>
                       </div>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-
                     <button
                       className="btn-ghost"
                       onClick={() => handleRemove(m)}
-                      disabled={m.role === "owner" || m.role === "admin" || removingId === m._id}
+                      disabled={
+                        m.role === "owner" ||
+                        m.role === "admin" ||
+                        removingId === m._id
+                      }
                     >
                       {removingId === m._id ? "Removing…" : "Remove"}
                     </button>
                   </div>
                 </div>
               </div>
-            )
+            );
           })}
         </div>
       )}
@@ -296,13 +354,20 @@ const GroupMembers = () => {
       )}
 
       <div className="mt-4 flex gap-2">
-        <button className="btn-ghost" onClick={() => navigate("/family-groups")}>Back to groups</button>
-        <button className="btn-primary" onClick={() => navigate("/addMember")}>Add members</button>
+        <button
+          className="btn-ghost"
+          onClick={() => navigate("/family-groups")}
+        >
+          Back to groups
+        </button>
+        <button className="btn-primary" onClick={() => navigate("/addMember")}>
+          Add members
+        </button>
       </div>
 
       <ToastContainer position="top-right" autoClose={4000} />
     </div>
-  )
-}
+  );
+};
 
-export default GroupMembers
+export default GroupMembers;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../../api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import { auth } from "../../firebase.js";
 import { createUserWithEmailAndPassword } from "firebase/auth";
@@ -21,16 +21,6 @@ import {
 } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
 import { validateEmail, validateRequired } from "../../utils/validation";
-
-/**
- AddMembers.jsx
- Improved UI + UX for adding members to a group.
- - Debounced email search with cancel
- - Shows existing members for selected group
- - Prevent duplicates and simple validation
- - Bulk submit to POST /api/memberships/bulk
- - Invite form disabled until a group is selected
-*/
 
 const ROLE_OPTIONS = [
   { value: "careGiver", label: "Care Giver" },
@@ -79,10 +69,7 @@ const AddMembers = () => {
         if (!user?._id) return;
 
         setIsLoadingGroups(true);
-        const res = await axios.get(
-          `http://localhost:3000/api/family-groups/creator/${user._id}`,
-          { withCredentials: true }
-        );
+        const res = await api.get(`/family-groups/creator/${user._id}`);
         setGroups(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
         console.error("Failed loading groups", err);
@@ -107,17 +94,16 @@ const AddMembers = () => {
     const fetchMembers = async () => {
       try {
         setIsLoadingMembers(true);
-        const res = await axios.get(
-          `http://localhost:3000/api/memberships/group/${groupId}`,
-          { withCredentials: true, signal: ctrl.signal }
-        );
+        const res = await api.get(`/memberships/group/${groupId}`, {
+          signal: ctrl.signal,
+        });
         if (canceled) return;
         const payload = Array.isArray(res.data)
           ? res.data
           : res.data?.members ?? [];
         setExistingMembers(payload);
       } catch (err) {
-        if (axios.isCancel?.(err)) return;
+        if (err.name === "CanceledError") return;
         console.error("Error fetching members", err);
         setExistingMembers([]);
       } finally {
@@ -148,10 +134,9 @@ const AddMembers = () => {
 
     const timer = setTimeout(async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:3000/api/users/search/${encodeURIComponent(email)}`,
+        const res = await api.get(
+          `/users/search/${encodeURIComponent(email)}`,
           {
-            withCredentials: true,
             signal: controller.signal,
           }
         );
@@ -162,7 +147,7 @@ const AddMembers = () => {
           : res.data?.users ?? res.data ?? [];
         setSearchResults(payload);
       } catch (err) {
-        if (axios.isCancel?.(err)) return;
+        if (err.name === "CanceledError") return;
         console.error("Search error", err);
         setSearchError(
           err?.response?.data?.message ?? err.message ?? "Search failed"
@@ -322,21 +307,14 @@ const AddMembers = () => {
 
     try {
       setSubmitting(true);
-      await axios.post(
-        "http://localhost:3000/api/memberships/bulk",
-        { memberships },
-        { withCredentials: true }
-      );
+      await api.post("/memberships/bulk", { memberships });
       toast.success("Members added successfully");
       setPending([]);
       setIsLoadingMembers(true);
 
       // Refresh members list
       try {
-        const mm = await axios.get(
-          `http://localhost:3000/api/memberships/group/${groupId}`,
-          { withCredentials: true }
-        );
+        const mm = await api.get(`/memberships/group/${groupId}`);
         const updatedMembers = Array.isArray(mm.data)
           ? mm.data
           : mm.data?.members ?? [];
@@ -437,35 +415,27 @@ const AddMembers = () => {
       // console.log("inviteRole", inviteRole);
 
       // 2. Create user in backend
-      const resp = await axios.post(
-        "http://localhost:3000/api/users/signUp",
-        {
-          firstName: inviteFirstName,
-          lastName: inviteLastName,
-          email: inviteEmail,
-          password,
-          confirmPassword: password,
-          phone: null,
-          role: inviteRole,
-          needPasswordReset: true,
-          uid: user.uid,
-        },
-        { withCredentials: true }
-      );
+      const resp = await api.post("/users/signUp", {
+        firstName: inviteFirstName,
+        lastName: inviteLastName,
+        email: inviteEmail,
+        password,
+        confirmPassword: password,
+        phone: null,
+        role: inviteRole,
+        needPasswordReset: true,
+        uid: user.uid,
+      });
 
       console.log("user added in db", resp);
       console.log("creating membership in backend");
       // 3. Create membership (single create, not bulk)
-      await axios.post(
-        "http://localhost:3000/api/memberships/",
-        {
-          groupId,
-          userId: resp.data.user._id,
-          role: inviteRole,
-          status: "pending",
-        },
-        { withCredentials: true }
-      );
+      await api.post("/memberships/", {
+        groupId,
+        userId: resp.data.user._id,
+        role: inviteRole,
+        status: "pending",
+      });
       console.log("user added in membership");
       // 4. Send join-request notification
       const senderId = (() => {
@@ -575,8 +545,9 @@ const AddMembers = () => {
           <div className="lg:col-span-7 space-y-6">
             {/* 1. Search existing users */}
             <div
-              className={`bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 ${!groupId ? "opacity-60 grayscale-[0.5] pointer-events-none" : ""
-                }`}
+              className={`bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 ${
+                !groupId ? "opacity-60 grayscale-[0.5] pointer-events-none" : ""
+              }`}
             >
               <div className="p-6 border-b border-gray-100">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -654,10 +625,11 @@ const AddMembers = () => {
                           <button
                             onClick={() => handleAddFromSearch(u)}
                             disabled={isAdded}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${isAdded
-                              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                              : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
-                              }`}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                              isAdded
+                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
+                            }`}
                           >
                             {isAdded ? (
                               <>
@@ -690,8 +662,9 @@ const AddMembers = () => {
 
             {/* 2. Invite New User */}
             <div
-              className={`bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 ${!groupId ? "opacity-60 grayscale-[0.5] pointer-events-none" : ""
-                }`}
+              className={`bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 ${
+                !groupId ? "opacity-60 grayscale-[0.5] pointer-events-none" : ""
+              }`}
             >
               <div className="p-6 border-b border-gray-100">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -789,8 +762,9 @@ const AddMembers = () => {
           <div className="lg:col-span-5 space-y-6">
             {/* 3. Pending List */}
             <div
-              className={`bg-white rounded-2xl shadow-lg border border-indigo-100 overflow-hidden flex flex-col h-[500px] transition-all duration-300 ${!groupId ? "opacity-60 grayscale-[0.5] pointer-events-none" : ""
-                }`}
+              className={`bg-white rounded-2xl shadow-lg border border-indigo-100 overflow-hidden flex flex-col h-[500px] transition-all duration-300 ${
+                !groupId ? "opacity-60 grayscale-[0.5] pointer-events-none" : ""
+              }`}
             >
               <div className="p-5 bg-indigo-50 border-b border-indigo-100 flex justify-between items-center">
                 <div>
@@ -886,8 +860,9 @@ const AddMembers = () => {
 
             {/* 4. Existing Members Reference */}
             <div
-              className={`bg-white rounded-2xl border border-gray-200 p-5 ${!groupId ? "opacity-50" : ""
-                }`}
+              className={`bg-white rounded-2xl border border-gray-200 p-5 ${
+                !groupId ? "opacity-50" : ""
+              }`}
             >
               <h3 className="font-semibold text-gray-900 mb-3 flex justify-between items-center">
                 <span>Existing Members</span>
