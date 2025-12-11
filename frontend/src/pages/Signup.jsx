@@ -17,11 +17,25 @@ import {
   validateName,
 } from "../utils/validation";
 import { Eye, EyeOff, Check, User, Mail, Lock } from "lucide-react";
+import { useEffect } from "react";
 
 // import { useTheme } from "../context/ThemeContext";
 
 export default function Signup() {
+
+  
   const navigate = useNavigate();
+  const { user } = useAuth();
+    useEffect(() => {
+        console.log("Current user in SignIn:", user);
+        if (user) {
+            //toast is not showing up before navigate, so adding a slight delay
+            setTimeout(() =>
+            toast.info("You are already logged in. Redirecting to home...")
+            , 500);
+            navigate("/home", { replace: true });
+        }
+    }, [user, navigate]);
   const { login } = useAuth();
 
   const [showPassword, setShowPassword] = useState(false);

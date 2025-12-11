@@ -8,9 +8,17 @@ import { useAuth } from "../context/AuthContext";
 import api from "../api/axios";
 import { validateEmail, validateRequired } from "../utils/validation";
 import { Eye, EyeOff, Mail, Lock, LogIn } from "lucide-react";
+import { useEffect } from "react";
 
 function SignIn() {
     const navigate = useNavigate();
+    const { user } = useAuth();
+    useEffect(() => {
+        console.log("Current user in SignIn:", user);
+        if (user) {
+            navigate("/home", { replace: true });
+        }
+    }, [user, navigate]);
     const { login } = useAuth();
     const [errors, setErrors] = useState({});
     const [showPassword, setShowPassword] = useState(false);

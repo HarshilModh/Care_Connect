@@ -5,6 +5,7 @@ import {
   isValidString,
 } from "../utils/validation.utils.js";
 import { Membership } from "../models/memberShip.model.js";
+import { mongo } from "mongoose";
 
 //Data Functions
 
@@ -310,13 +311,16 @@ export const getAllCareRecipients = async () => {
 //Get Care Recipients by Group ID
 export const getCareRecipientsByGroupId = async (groupId) => {
   try {
-    if (!groupId || !isValidID(groupId)) {
+    if (!groupId ) {
+      throw new Error("Invalid or missing groupId");
+    }
+    if(!mongo.ObjectId.isValid(groupId)){
       throw new Error("Invalid or missing groupId");
     }
 
-    const recipients = await CareRecipient.find({ groupId }).populate(
+    const recipients = await Membership.find({ groupId, role: "careRecipient",status:"active" }).populate(  
       "userId",
-      "firstName lastName"
+      "firstName lastName email"
     );
 
     console.log("Recipients fetched: ", recipients);

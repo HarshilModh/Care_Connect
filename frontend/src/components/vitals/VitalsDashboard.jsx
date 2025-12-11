@@ -44,12 +44,17 @@ const VitalsDashboard = () => {
         const fetchRecipients = async () => {
             try {
                 const { data } = await api.get(`/care-recipients/group/${groupId}`);
+                console.log("Fetched Recipients:", data);
                 setRecipients(data);
-
+                if (data.length === 0) {
+                    setSelectedRecipientId('');
+                    return;
+                }
                 if (data.length > 0) {
                     setSelectedRecipientId(data[0].userId._id);
                 }
             } catch (err) {
+                // console.log(err.message);
                 console.error("Error fetching recipients", err);
             }
         };
@@ -150,6 +155,17 @@ const VitalsDashboard = () => {
             </div>
         </div>
     );
+    if(recipients.length === 0){
+        return (
+            <div className="min-h-screen bg-gray-50/50 font-sans text-gray-900 p-6 flex flex-col items-center justify-center">
+                <div className="max-w-2xl mx-auto text-center">
+                    <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <h1 className="text-2xl font-bold text-gray-900 mb-2">No Care Recipients Found</h1>
+                    <p className="text-gray-500 mb-6">Please add care recipients to this family group to start logging vitals.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50/50 font-sans text-gray-900 p-6">
