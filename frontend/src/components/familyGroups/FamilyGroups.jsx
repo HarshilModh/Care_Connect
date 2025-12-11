@@ -83,8 +83,9 @@ const FamilyGroups = () => {
   const normalizedGroups = familyGroups.map((g) => {
     const id = g._id || g.id;
     const createdById =
-      (typeof g.createdBy === "object" ? g.createdBy._id : g.createdBy) ||
-      g.createdById;
+      (typeof g.createdBy === "object" && g.createdBy
+        ? g.createdBy._id
+        : g.createdBy) || g.createdById;
     const membership = g.membership || {};
 
     return {
