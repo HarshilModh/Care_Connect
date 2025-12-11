@@ -22,24 +22,35 @@ const Home = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const tasksRes = await api.get('/tasks/user/' + user._id);
-                const fetchedTasks = tasksRes.data.data || [];
-                settasks(fetchedTasks);
+                // Fix: Use query param for tasks
+                const tasksRes = await api.get('/tasks', {
+                    params: { userId: user._id }
+                });
+
+                // Fix: Flatten the grouped tasks response
+                // Response is { groupId: { tasks: [] }, ... }
+                const tasksData = tasksRes.data || {};
+                const allTasks = Object.values(tasksData).flatMap(group => group.tasks || []);
+                settasks(allTasks);
 
                 const groupsRes = await api.get('/family-groups/user/' + user._id);
-                setgroups(groupsRes.data.data || []);
+                // Fix: Access data directly (backend returns array)
+                const fetchedGroups = groupsRes.data || [];
+                setgroups(fetchedGroups);
 
-                const messagesRes = await api.get('/chats/user/' + user._id);
-                setmessages(messagesRes.data.data || []);
+                // Chat stats: Since we don't have a 'all user chats' endpoint, 
+                // we'll use active groups as a proxy for active chats for now.
+                setmessages(fetchedGroups); // Using groups as proxy for now
 
-                // Derive recent activity from tasks (e.g., recently created or completed)
-                // For this example, we'll take the 3 most recently due/created tasks
-                // Assuming tasks have 'createdAt' or just using the array as is
-                const recentTasks = fetchedTasks.slice(0, 3).map(task => ({
-                    text: `${task.status === 'completed' ? 'Completed' : 'New'} task: ${task.title}`,
-                    time: task.dueAt ? new Date(task.dueAt).toLocaleDateString() : 'Recently',
-                    color: task.status === 'completed' ? 'bg-green-500' : 'bg-blue-500'
-                }));
+                // Derive recent activity from tasks
+                const recentTasks = allTasks
+                    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                    .slice(0, 3)
+                    .map(task => ({
+                        text: `${task.status === 'completed' ? 'Completed' : 'New'} task: ${task.title}`,
+                        time: task.dueAt ? new Date(task.dueAt).toLocaleDateString() : 'Recently',
+                        color: task.status === 'completed' ? 'bg-green-500' : 'bg-blue-500'
+                    }));
                 setactivities(recentTasks);
 
             } catch (error) {
@@ -69,7 +80,8 @@ const Home = () => {
     // Calculate stats
     const pendingTasksCount = tasks.filter(t => t.status === 'pending').length;
     const activeGroupsCount = groups.length;
-    const activeChatsCount = messages.length;
+    // Every group is a chat channel
+    const activeChatsCount = groups.length;
 
     return (
         <div className="max-w-6xl mx-auto p-6">

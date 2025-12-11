@@ -181,8 +181,8 @@ const AddVitalsModal = ({ isOpen, onClose, groupId, userId, onSuccess }) => {
                                     key={item.id}
                                     onClick={() => setType(item.id)}
                                     className={`flex flex-col items-center justify-center gap-1.5 p-2 rounded-xl border transition-all h-20 ${type === item.id
-                                            ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-sm'
-                                            : 'border-gray-100 hover:border-gray-300 hover:bg-gray-50 text-gray-500'
+                                        ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-sm'
+                                        : 'border-gray-100 hover:border-gray-300 hover:bg-gray-50 text-gray-500'
                                         }`}
                                 >
                                     <item.icon className={`w-5 h-5 ${type === item.id ? 'text-blue-600' : 'text-gray-400'}`} />
