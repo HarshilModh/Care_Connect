@@ -114,6 +114,7 @@ export default function CreateTask() {
         const dataRecipients = await resRecipients.json();
         //if error in dataRecipients, throw error
         if (dataRecipients.error) {
+          setRecipients([]);  
           throw new Error(dataRecipients.error);
         }
         const formattedRecipients = dataRecipients
