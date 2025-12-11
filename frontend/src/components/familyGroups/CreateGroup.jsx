@@ -47,7 +47,7 @@ const CreateGroup = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        "http://localhost:3000/api/family-groups",
+        "family-groups",
         {
           groupName: groupName.trim(),
           description: description.trim(),

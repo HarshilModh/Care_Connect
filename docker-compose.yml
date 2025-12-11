@@ -6,11 +6,8 @@ services:
     ports:
       - "3000:3000"
     env_file:
-      - ./backend/.env
-    environment:
-      - REDIS_URL=redis://redis:6379
+      - ./backend/.env.prod
     depends_on:
-      - redis
       - mongo
     volumes:
       - ./backend:/app
@@ -19,7 +16,7 @@ services:
   web:
     build: ./frontend
     environment:
-      VITE_API_URL: "http://localhost:3000/api"
+      VITE_API_URL: "http://18.225.8.58:3000/api"
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -32,8 +29,3 @@ services:
     image: mongo:7
     ports:
       - "27017:27017"
-
-  redis:
-    image: redis:7
-    ports:
-      - "6379:6379"
