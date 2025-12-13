@@ -24,12 +24,10 @@ import PanicButton from "../PanicButton";
 const GroupDetails = () => {
   const user = JSON.parse(localStorage.getItem("user")) || null;
   const userId = user?._id || null;
-  // console.log("Current User ID:", userId);
   let { groupId } = useParams();
   groupId = groupId.trim();
   const navigate = useNavigate();
 
-  // State
   const [group, setGroup] = useState(null);
   const [members, setMembers] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -62,13 +60,11 @@ const GroupDetails = () => {
 
       setLoading(true);
       try {
-        // 1. Fetch Group Details
         const groupRes = await axios.get(
           `http://localhost:3000/api/family-groups/group/${groupId}`,
           { withCredentials: true }
         );
         setGroup(groupRes.data);
-        // Check if current user can edit if createdBy matches userId
         setCanEdit(groupRes.data.createdBy === userId);
         // 2. Fetch Members
         const membersRes = await axios.get(
@@ -78,6 +74,16 @@ const GroupDetails = () => {
         const membersData = Array.isArray(membersRes.data)
           ? membersRes.data
           : [];
+        const isMember = membersData.some(
+          (member) => member.userId._id === userId
+        );
+        if (!isMember) {
+          // console.log("User is not a member of this group");
+          toast.error("You are not a member of this group.", {
+            toastId: "not-member-error",
+          });
+          navigate("/family-groups");
+        }
         setMembers(membersData);
 
         // Process roles
@@ -184,7 +190,6 @@ const GroupDetails = () => {
     }
   };
 
-  // Helpers
   const initials = (user) => {
     if (!user?.firstName) return "?";
     return `${user.firstName[0]}${user.lastName?.[0] || ""}`.toUpperCase();
@@ -453,7 +458,6 @@ const GroupDetails = () => {
           </div>
 
           <div className="space-y-6">
-            {/* Care Recipients */}
             <section>
               <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
                 <User className="w-5 h-5 text-amber-500" /> Care Recipients
@@ -478,7 +482,6 @@ const GroupDetails = () => {
               )}
             </section>
 
-            {/* Care Givers */}
             <section>
               <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
                 <Heart className="w-5 h-5 text-rose-500" /> Care Givers
@@ -503,7 +506,6 @@ const GroupDetails = () => {
               )}
             </section>
 
-            {/* Admins */}
             <section>
               <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
                 <Shield className="w-5 h-5 text-indigo-500" /> Admins & Family
@@ -526,7 +528,6 @@ const GroupDetails = () => {
 
         <ToastContainer position="bottom-right" theme="colored" />
 
-        {/* Modals */}
         <CareGiverModal
           isOpen={!!selectedCaregiverId}
           onClose={() => setSelectedCaregiverId(null)}

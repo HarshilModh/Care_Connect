@@ -47,11 +47,10 @@ const GroupMembers = () => {
   const [error, setError] = useState(null)
   const [removingId, setRemovingId] = useState(null)
 
-  // UI filters
-  const [q, setQ] = useState("") // search query: name or email
-  const [roleFilter, setRoleFilter] = useState("") // empty -> all
-  const [statusFilter, setStatusFilter] = useState("") // empty -> all
-  const [showCount, setShowCount] = useState(12) // "load more"
+  const [q, setQ] = useState("") 
+  const [roleFilter, setRoleFilter] = useState("") 
+  const [statusFilter, setStatusFilter] = useState("")
+  const [showCount, setShowCount] = useState(12) 
 
   useEffect(() => {
     if (!groupId) {
@@ -75,6 +74,18 @@ const GroupMembers = () => {
         const payload = Array.isArray(res.data) ? res.data : res.data?.members ?? []
         if (!mounted) return
         setMembers(payload)
+        const userData = localStorage.getItem("user") || ""
+        const user = userData ? JSON.parse(userData) : null
+        const isMember = payload.some(
+          (member) => member.userId._id === user?._id
+        );
+        if (!isMember) {
+          toast.error("You are not a member of this group.", {
+            toastId: "not-member-error",
+          });
+          navigate("/family-groups");
+        }
+
       } catch (err) {
         if (axios.isCancel?.(err)) return
         const msg = err?.response?.data?.message ?? err?.message ?? "Failed to fetch members"
@@ -93,7 +104,6 @@ const GroupMembers = () => {
     }
   }, [groupId])
 
-  // derived and filtered list
   const filtered = useMemo(() => {
     const qlc = q.trim().toLowerCase()
     return members
@@ -116,7 +126,6 @@ const GroupMembers = () => {
 
   const visible = filtered.slice(0, showCount)
 
-  // remove member
   const handleRemove = async (membership) => {
     if (!membership || !membership._id) return
     if (membership.role === "admin") {
@@ -192,7 +201,7 @@ const GroupMembers = () => {
           <select className="input" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} >
             <option value="">All roles</option>
             <option value="admin">Admin</option>
-            <option value="caregiver">Caregiver</option>
+            <option value="careGiver">Caregiver</option>
             <option value="familyMember">Family</option>
             <option value="careRecipient">Care Recipient</option>
           </select>
@@ -254,8 +263,8 @@ const GroupMembers = () => {
                     {(onboardingStatus === "required" || onboardingStatus === "completed") && (
                       <div>
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${onboardingStatus === "completed"
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            : "bg-amber-50 text-amber-700 border-amber-200"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : "bg-amber-50 text-amber-700 border-amber-200"
                           }`}>
                           {onboardingStatus === "completed" ? (
                             <CheckCircleIcon className="w-3.5 h-3.5" />

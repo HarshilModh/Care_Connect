@@ -22,7 +22,19 @@ function App() {
 
   return (
     <div className="h-screen overflow-hidden bg-gray-50 flex flex-col">
-      <ToastContainer position="top-right" />
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+        style={{ zIndex: 9999 }}
+      />
 
       {!hideSidebar && (
         <div

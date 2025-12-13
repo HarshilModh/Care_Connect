@@ -230,27 +230,7 @@ export default function Tasks() {
     }
   };
 
-  const saveTaskUpdates = async (updatedTask) => {
-    try {
-      const res = await fetch(
-        `http://localhost:3000/api/tasks/${updatedTask._id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...updatedTask,
-            groupId: updatedTask.groupId?._id || updatedTask.groupId,
-          }),
-        }
-      );
-      if (!res.ok) throw new Error("Failed to update task");
-      await fetchTasks();
-      setShowEditModal(false);
-      toast.success("Task updated successfully");
-    } catch (err) {
-      toast.error(err.message);
-    }
-  };
+
 
   const getTypeIcon = (type) => {
     switch (type) {
@@ -516,7 +496,7 @@ export default function Tasks() {
             task={taskToEdit}
             isOpen={showEditModal}
             onClose={() => setShowEditModal(false)}
-            onSave={saveTaskUpdates}
+            onSuccess={fetchTasks}
           />
         )}
 

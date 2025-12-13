@@ -7,7 +7,6 @@ const ChatLayout = () => {
 
   return (
     <div className="h-full flex bg-[var(--surface-2)]">
-      {/* Left Sidebar - Group List */}
       <div className="w-full md:w-80 lg:w-96 border-r border-[var(--border)] overflow-hidden bg-white dark:bg-gray-900">
         <GroupList
           onSelectGroup={setSelectedGroup}
@@ -15,13 +14,11 @@ const ChatLayout = () => {
         />
       </div>
 
-      {/* Right Side - Chat Window */}
       <div className="flex-1 overflow-hidden relative">
         {selectedGroup ? (
           <ChatWindow group={selectedGroup} />
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-[var(--surface-2)] relative overflow-hidden">
-            {/* Decorative background elements */}
             <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-[var(--brand-1)]/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }}></div>
             <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[var(--brand-2)]/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '7s' }}></div>
 

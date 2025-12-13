@@ -616,10 +616,14 @@ export const createChatMessageNotification = async (
       }
 
       //get unread chat counts for this user in this group
-      const unreadChatCount = await Chat.countDocuments({
-        groupId: groupId,
-        "readBy.userId": { $ne: member.userId },
+      //getUnreadCount(groupId, member.userId); is return { count: number }
+      let unreadChatCount = await Chat.countDocuments({
+            groupId,
+            senderId: { $ne: member.userId },
+            deleted: { $ne: true },
+            readBy: { $not: { $elemMatch: { userId: member.userId } } }
       });
+      console.log(`User ${member.userId} has ${unreadChatCount} unread messages in group ${groupId}`);
       //if unreadChatCount is greater then 5 then create only one notification like you have x amount of 
       //unreads message in this group
       if (unreadChatCount > 5) {

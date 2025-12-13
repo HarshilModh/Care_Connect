@@ -36,9 +36,7 @@ const GroupDetailsModal = ({ group, onClose }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn p-4">
             <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden animate-scaleIn border border-white/20">
-                {/* Header */}
                 <div className="p-8 bg-gradient-to-br from-[var(--brand-1)] to-[var(--brand-2)] text-white relative overflow-hidden">
-                    {/* Decorative circles */}
                     <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white/10 blur-2xl"></div>
                     <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-24 h-24 rounded-full bg-black/10 blur-xl"></div>
 
@@ -60,7 +58,6 @@ const GroupDetailsModal = ({ group, onClose }) => {
                     </div>
                 </div>
 
-                {/* Tabs */}
                 <div className="flex border-b border-gray-100 dark:border-gray-800 px-6 pt-2">
                     <button
                         onClick={() => setActiveTab("members")}
@@ -88,7 +85,6 @@ const GroupDetailsModal = ({ group, onClose }) => {
                     </button>
                 </div>
 
-                {/* Content */}
                 <div className="p-6 h-80 overflow-y-auto custom-scrollbar bg-gray-50/50 dark:bg-gray-900/50">
                     {loading ? (
                         <div className="flex flex-col justify-center items-center h-full gap-3">

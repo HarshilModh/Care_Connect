@@ -162,11 +162,35 @@ export default function CreateTask() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim() || !selectedGroup || !recipient) {
+    if (!title.trim() || !selectedGroup || !recipient|| !dueDate|| !type|| !userId|| !desc.trim()|| assignedTo===undefined) {
       toast.error("Please fill in all required fields.");
       return;
     }
+    //input validation
+    if (title.length > 100) {
+      toast.error("Title cannot exceed 100 characters.");
+      return;
+    }
+    if (desc.length > 500) {
+      toast.error("Description cannot exceed 500 characters.");
+      return;
+    }
+    //asginedTo cannot be not selected
+    if (!assignedTo) {
+      toast.error("Please select a member to assign the task to.");
+      return;
+    }
 
+    //care recipient cannot be not selected
+    if (!recipient) {
+      toast.error("Please select a care recipient.");
+      return;
+    }
+    //due date cannot be empty
+    if (!dueDate) {
+      toast.error("Please select a due date.");
+      return;
+    }
     setLoading(true);
     try {
       const hasFiles = files && files.length > 0;
@@ -184,8 +208,8 @@ export default function CreateTask() {
             createdBy: userId,
             title,
             description: desc,
-            dueAt: dueDate || undefined,
-            repeatRule: repeatRule || undefined,
+            dueAt: dueDate ,
+            repeatRule: repeatRule,
             type,
           }),
         });
@@ -201,6 +225,9 @@ export default function CreateTask() {
         if (dueDate) formData.append("dueAt", dueDate);
         if (repeatRule) formData.append("repeatRule", repeatRule);
         if (type) formData.append("type", type);
+
+
+
 
         // attachments go as dataFiles -> matches req.files.dataFiles
         files.forEach((file) => {
@@ -389,7 +416,7 @@ export default function CreateTask() {
               {/* Assign To */}
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Assign To (Optional)
+                  Assign To
                 </label>
                 <div className="relative">
                   <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-5 h-5 bg-blue-100 rounded-full text-blue-600 text-xs font-bold">
@@ -401,7 +428,7 @@ export default function CreateTask() {
                     disabled={!selectedGroup}
                     className="w-full pl-10 pr-10 py-3 rounded-lg border border-gray-300 bg-white disabled:bg-gray-100 disabled:text-gray-400 focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
                   >
-                    <option value="">Unassigned</option>
+                    <option value="" disabled>Unassigned</option>
                     {members.map((m) => (
                       <option key={m.id} value={m.id}>
                         {m.name}

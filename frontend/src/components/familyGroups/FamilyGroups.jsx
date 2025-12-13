@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../../api/axios";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
@@ -26,7 +26,6 @@ const FamilyGroups = () => {
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = () => setActiveDropdown(null);
     document.addEventListener("click", handleClickOutside);
@@ -48,10 +47,7 @@ const FamilyGroups = () => {
         return;
       }
 
-      const response = await axios.get(
-        `http://localhost:3000/api/family-groups/user/${userId}`,
-        { withCredentials: true }
-      );
+      const response = await api.get(`/family-groups/user/${userId}`);
 
       const groups = response.data.familyGroups ?? response.data ?? [];
       setFamilyGroups(Array.isArray(groups) ? groups : []);
@@ -71,10 +67,7 @@ const FamilyGroups = () => {
   const handleDelete = async (groupId) => {
     if (!window.confirm("Delete this group? This action cannot be undone.")) return;
     try {
-      await axios.delete(
-        `http://localhost:3000/api/family-groups/group/${groupId}`,
-        { withCredentials: true }
-      );
+      await api.delete(`/family-groups/group/${groupId}`);
       setFamilyGroups((prev) => prev.filter((g) => (g._id || g.id) !== groupId));
       toast.success("Group deleted successfully");
     } catch (err) {
@@ -82,7 +75,6 @@ const FamilyGroups = () => {
     }
   };
 
-  // Processing Data
   const normalizedGroups = familyGroups.map((g) => {
     const id = g._id || g.id;
     const createdById = (typeof g.createdBy === "object" ? g.createdBy._id : g.createdBy) || g.createdById;
@@ -113,7 +105,6 @@ const FamilyGroups = () => {
     );
   });
 
-  // Render Helpers
   const getRoleBadge = (role) => {
     const config = {
       admin: "bg-purple-100 text-purple-700 border-purple-200",
@@ -142,7 +133,6 @@ const FamilyGroups = () => {
     <main className="min-h-screen bg-gray-50/50 py-10 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
 
-        {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Family Groups</h1>
@@ -156,7 +146,6 @@ const FamilyGroups = () => {
           </button>
         </div>
 
-        {/* Filters Bar */}
         <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-200 mb-8 flex items-center gap-3">
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -174,7 +163,6 @@ const FamilyGroups = () => {
           </span>
         </div>
 
-        {/* Content Area */}
         {error ? (
           <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-center gap-3">
             <AlertCircle className="w-5 h-5" /> {error}
@@ -203,14 +191,12 @@ const FamilyGroups = () => {
                 key={group.id}
                 className="group relative bg-white rounded-2xl border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all duration-300 flex flex-col"
               >
-                {/* Card Header */}
                 <div className="p-6 pb-4">
                   <div className="flex justify-between items-start mb-4">
                     <span className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wide border ${getRoleBadge(group.role)}`}>
                       {group.role}
                     </span>
 
-                    {/* Context Menu */}
                     {group.isOwner && (
                       <div className="relative">
                         <button
@@ -263,11 +249,9 @@ const FamilyGroups = () => {
                   </div>
                 </div>
 
-                {/* Card Footer / Actions */}
                 <div className="mt-auto p-6 pt-0">
                   <div className="pt-4 border-t border-gray-100 flex flex-col gap-2">
 
-                    {/* Priority Action: Onboarding */}
                     {(['careGiver', 'careRecipient'].includes(group.role) && group.onboarding === 'required') ? (
                       <button
                         onClick={() => {
@@ -279,7 +263,6 @@ const FamilyGroups = () => {
                         Complete Setup <ArrowRight className="w-4 h-4" />
                       </button>
                     ) : (
-                      // Standard Action: View (Only for Admins)
                       <div className="flex flex-col gap-2">
                         <button
                           onClick={() => navigate(`/groups/details/${group.id}`)}

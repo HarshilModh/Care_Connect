@@ -20,6 +20,35 @@ const EditGroup = () => {
     const fetchGroup = async () => {
       try {
         const response = await api.get(`/family-groups/group/${id}`);
+
+        const userData = localStorage.getItem("user") || "";
+        const userId = JSON.parse(userData)._id || "";
+
+        // Check if user is a member of the group
+        try {
+        const membersRes = await api.get(
+          `/memberships/group/${id}`,
+          { withCredentials: true }
+        );
+        const membersData = Array.isArray(membersRes.data)
+                  ? membersRes.data
+                  : [];
+                const isMember = membersData.some(
+                  (member) => member.userId._id === userId
+                );
+                if (!isMember) {
+                  // console.log("User is not a member of this group");
+                  toast.error("You are not a member of this group.", {
+                    toastId: "not-member-error",
+                  });
+                  navigate("/family-groups");
+                }
+      } catch (err) {
+        console.error("Error checking group membership:", err);
+        toast.error("Failed to verify group membership");
+        navigate("/family-groups");
+        return;
+      }
         const group = response.data;
         setGroupName(group.groupName);
         setGroupDesc(group.description || "");
@@ -40,14 +69,28 @@ const EditGroup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    if (!id) {
+      toast.error("Invalid group ID");
+      return;
+    }
+    if (!groupName.trim()) {
+      toast.error("Group name is required");
+      return;
+    }
+     if(!groupDesc.trim()){
+      toast.error("Description is required");
+      setSaving(false);
+      return;
+    }
     // Validate group name
     const nameError = validateGroupName(groupName);
     if (nameError) {
       toast.error(nameError);
+      setSaving(false);
       return;
     }
 
+   
     // Validate description if provided
     if (groupDesc && groupDesc.trim()) {
       const descError = validateDescription(groupDesc);

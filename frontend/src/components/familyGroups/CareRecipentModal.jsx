@@ -3,7 +3,6 @@ import ReactModal from 'react-modal';
 import { X, User, Calendar, FileText, Phone, Activity } from 'lucide-react';
 import api from '../../api/axios';
 
-// Bind modal to app element (accessibility)
 ReactModal.setAppElement('#root');
 
 const CareRecipentModal = ({ isOpen, onClose, careRecipentId, groupId }) => {
@@ -18,11 +17,9 @@ const CareRecipentModal = ({ isOpen, onClose, careRecipentId, groupId }) => {
             setLoading(true);
             setError(null);
             try {
-                // Fetch by User ID
                 const response = await api.get(`http://localhost:3000/api/care-recipients/user/${careRecipentId}`);
                 const data = response.data;
 
-                // If array, find the one for this group, or default to first
                 let recipientData = null;
                 if (Array.isArray(data)) {
                     recipientData = data.find(r => r.groupId === groupId) || data.find(r => r.groupId?._id === groupId) || data[0];
@@ -77,7 +74,7 @@ const CareRecipentModal = ({ isOpen, onClose, careRecipentId, groupId }) => {
             contentLabel="Care Recipient Details"
         >
             <div className="bg-white">
-                {/* Header */}
+                {/*  */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-100">
                     <h2 className="text-lg font-bold text-gray-900">Care Recipient Profile</h2>
                     <button
@@ -88,7 +85,6 @@ const CareRecipentModal = ({ isOpen, onClose, careRecipentId, groupId }) => {
                     </button>
                 </div>
 
-                {/* Content */}
                 <div className="p-6">
                     {loading ? (
                         <div className="space-y-4 animate-pulse">
@@ -102,7 +98,6 @@ const CareRecipentModal = ({ isOpen, onClose, careRecipentId, groupId }) => {
                         </div>
                     ) : careRecipient ? (
                         <div className="space-y-6">
-                            {/* User Info */}
                             <div className="flex items-center gap-4">
                                 <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 text-2xl font-bold">
                                     {careRecipient.userId?.firstName?.[0]}{careRecipient.userId?.lastName?.[0]}
@@ -115,7 +110,6 @@ const CareRecipentModal = ({ isOpen, onClose, careRecipentId, groupId }) => {
                                 </div>
                             </div>
 
-                            {/* Stats Grid */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
                                     <div className="flex items-center gap-2 text-gray-500 text-xs font-medium uppercase mb-1">
@@ -135,7 +129,6 @@ const CareRecipentModal = ({ isOpen, onClose, careRecipentId, groupId }) => {
                                 </div>
                             </div>
 
-                            {/* Notes */}
                             <div>
                                 <h4 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
                                     <FileText className="w-4 h-4 text-gray-400" /> Medical Notes
@@ -145,7 +138,6 @@ const CareRecipentModal = ({ isOpen, onClose, careRecipentId, groupId }) => {
                                 </p>
                             </div>
 
-                            {/* Emergency Contacts */}
                             <div>
                                 <h4 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
                                     <Phone className="w-4 h-4 text-gray-400" /> Emergency Contacts
