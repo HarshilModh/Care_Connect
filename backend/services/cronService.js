@@ -1,23 +1,23 @@
 import cron from "node-cron";
 import { Task } from "../models/task.model.js";
-
+import { Notification } from "../models/notification.model.js";
 export const initCronJobs = () => {
   console.log("⏰ Initializing Cron Jobs...");
 
-  // JOB 1: Recurring Task Creation
-  // Run every hour
-  // cron.schedule('0 * * * *', async () => {
-  //     console.log('Running hourly recurring task check...');
-  //     try {
-  //         await processRecurringTasks();
-  //     } catch (error) {
-  //         console.error('Error in recurring task cron:', error);
-  //     }
-  // });
+  // Job 1: Recurring Task Creation
+  // Run daily at midnight
+  cron.schedule('0 0 * * *', async () => {
+    console.log('Running daily recurring task check...');
+    try {
+      await processRecurringTasks();
+    } catch (error) {
+      console.error('Error in recurring task cron:', error);
+    }
+  });
 
   // JOB 2: Mark Overdue Tasks as "Missed"
-  // Run every minute
-  cron.schedule("* * * * *", async () => {
+  // Run every 15 minutes
+  cron.schedule("*/15 * * * *", async () => {
     console.log("Checking for overdue tasks to mark as missed...");
     try {
       await markOverdueTasksAsMissed();
@@ -26,30 +26,31 @@ export const initCronJobs = () => {
     }
   });
 
-  // // JOB 3: Send Task Reminders (Due in 24 hours)
-  // // Runs every hour at minute 5
-  // cron.schedule("5 * * * *", async () => {
-  //     console.log("Running Job: Send Task Reminders");
-  //     try {
-  //         await sendTaskReminders();
-  //     } catch (error) {
-  //         console.error("Error in Job: Send Task Reminders", error);
-  //     }
-  // });
+  // JOB 3: Send Task Reminders (Due in 24 hours)
+  // Runs every hour
+  cron.schedule("0 * * * *", async () => {
+    console.log("Running Job: Send Task Reminders");
+    try {
+      await sendTaskReminders();
+    } catch (error) {
+      console.error("Error in Job: Send Task Reminders", error);
+    }
+  });
 
   // Run once on startup for dev convenience
   // processRecurringTasks();
   // markOverdueTasksAsMissed();
   // // JOB 4: Clear Old Notifications
   // // Runs daily at midnight
-  // cron.schedule("0 0 * * *", async () => {
-  //     console.log("Running Job: Clear Old Notifications");
-  //     try {
-  //         await clearOldNotifications();
-  //     } catch (error) {
-  //         console.error("Error in Job: Clear Old Notifications", error);
-  //     }
-  // });
+  //for now runs midnight 
+  cron.schedule("0 0 * * *", async () => {
+    console.log("Running Job: Clear Old Notifications");
+    try {
+      await clearOldNotifications();
+    } catch (error) {
+      console.error("Error in Job: Clear Old Notifications", error);
+    }
+  });
 };
 
 const processRecurringTasks = async () => {
@@ -120,10 +121,11 @@ const markOverdueTasksAsMissed = async () => {
 
 const sendTaskReminders = async () => {
   const now = new Date();
-  const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const in23Hours = new Date(now.getTime() + 23 * 60 * 60 * 1000); // 23 hours from now
+  const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
 
   const tasksDue = await Task.find({
-    dueAt: { $gte: now, $lte: in24Hours },
+    dueAt: { $gt: in23Hours, $lte: in24Hours },
     status: "pending",
   }).lean();
 
@@ -132,14 +134,21 @@ const sendTaskReminders = async () => {
 };
 const clearOldNotifications = async () => {
   const cutoffDate = new Date();
-  cutoffDate.setMonth(cutoffDate.getMonth() - 1); // 1 month ago
 
-  // Assuming Notification is a Mongoose model
-  const result = await Notification.deleteMany({
-    createdAt: { $lt: cutoffDate },
-  });
+  // TESTING: Clear notifications older than 5 days logic
+  // CHANGE THIS BACK TO 30 DAYS FOR PRODUCTION
+  cutoffDate.setDate(cutoffDate.getDate() - 5);
 
-  console.log(`Cleared ${result.deletedCount} old notifications.`);
+  console.log(`Running notification cleanup. Cutoff: ${cutoffDate.toISOString()}`);
+
+  try {
+    const result = await Notification.deleteMany({
+      createdAt: { $lt: cutoffDate },
+    });
+    console.log(`Cleared ${result.deletedCount} old notifications.`);
+  } catch (error) {
+    console.error("Error clearing notifications:", error);
+  }
 };
 const calculateNextDueDate = (currentDate, rule) => {
   const date = new Date(currentDate);

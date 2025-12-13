@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../api/axios';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import AddMedicationModal from './AddMedicationModal';
 import EditMedicationModal from './EditMedicationModal';
 import { useAuth } from '../../context/AuthContext';
@@ -18,8 +18,11 @@ import {
 import { toast } from 'react-toastify';
 
 const MedicineCabinet = () => {
+  const navigate = useNavigate();
   const { groupId } = useParams();
   const { user } = useAuth();
+  const userData = localStorage.getItem("user") || "";
+  const userId = JSON.parse(userData)._id || "";
   const [medications, setMedications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -45,7 +48,37 @@ const MedicineCabinet = () => {
     }
   }, [groupId]);
 
+ useEffect(() => {
+  const checkMembership = async () => {
+    try {
+      const membersRes = await api.get(
+        `/memberships/group/${groupId}`,
+        { withCredentials: true }
+      );
+      const membersData = Array.isArray(membersRes.data)
+        ? membersRes.data
+        : [];
+      const isMember = membersData.some(
+        (member) => member.userId._id === userId
+      );
+      if (!isMember) {
+        toast.error("You are not a member of this group.", {
+          toastId: "not-member-error",
+        });
+        navigate("/family-groups");
+      }
+    } catch (err) {
+      console.error("Error checking group membership:", err);
+      toast.error("Failed to verify group membership");
+      navigate("/family-groups");
+    }
+  };
+
+  checkMembership();
+}, [groupId, userId, navigate]);
+
   useEffect(() => {
+    
     fetchMedications();
   }, [fetchMedications]);
 
@@ -237,7 +270,17 @@ const MedicineCabinet = () => {
                         <span className="text-xs font-medium text-gray-500">pills</span>
                       </div>
                     </div>
-
+                    {/* refildate */}
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Refill Date</p>
+                      <span className="text-sm text-gray-700">
+                        {new Date(med.refillDate).toLocaleDateString(undefined, {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
                     <button
                       onClick={() => handleTakeDose(med._id, med.supplyCount)}
                       className="bg-black hover:bg-gray-800 text-white pl-3 pr-4 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium shadow-sm hover:shadow active:scale-95"

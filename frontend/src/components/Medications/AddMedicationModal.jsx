@@ -93,6 +93,10 @@ const AddMedicationModal = ({ isOpen, onClose, onSuccess }) => {
             setError("Supply count cannot be negative.");
             return;
         }
+        if(!refillDate){
+            setError("Refill date is required.");
+            return;
+        }
         if (refillDate) {
             const selectedDate = new Date(refillDate);
             const today = new Date();
@@ -283,6 +287,8 @@ const AddMedicationModal = ({ isOpen, onClose, onSuccess }) => {
                                         type="date"
                                         className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                                         value={refillDate}
+                                        // min value today's date
+                                        min={new Date().toISOString().split("T")[0]}
                                         onChange={(e) => setRefillDate(e.target.value)}
                                     />
                                 </div>

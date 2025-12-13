@@ -25,46 +25,39 @@ const EditProfile = () => {
 
   // Initialize form once
   useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const res = await api.get("/users/me");
+        const userData = res.data;
+        console.log("Fetched user data:", userData);
+        setFirstName(userData.firstName || "");
+        setLastName(userData.lastName || "");
+        setEmail(userData.email || "");
+        setUid(userData.uid || "");
+      } catch (err) {
+        console.error("Error fetching user data:", err);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  //set firebase name if state is empty
+  useEffect(() => {
     if (firebaseUser) {
-      const display = firebaseUser.displayName || "";
-      const parts = display.trim().split(" ");
-      setFirstName(
-        parts[0] ||
-        (localStorage.getItem("user")
-          ? JSON.parse(localStorage.getItem("user")).firstName
-          : "")
-      );
-      setLastName(
-        parts.slice(1).join(" ") ||
-        (localStorage.getItem("user")
-          ? JSON.parse(localStorage.getItem("user")).lastName
-          : "")
-      );
-      setEmail(firebaseUser.email || "");
-      setUid(firebaseUser.uid || "");
-    } else {
-      setFirstName(
-        localStorage.getItem("user")
-          ? JSON.parse(localStorage.getItem("user")).firstName
-          : ""
-      );
-      setLastName(
-        localStorage.getItem("user")
-          ? JSON.parse(localStorage.getItem("user")).lastName
-          : ""
-      );
-      setEmail(
-        localStorage.getItem("user")
-          ? JSON.parse(localStorage.getItem("user")).email
-          : ""
-      );
-      setUid(
-        localStorage.getItem("user")
-          ? JSON.parse(localStorage.getItem("user")).uid
-          : ""
-      );
+      if (!firstName && firebaseUser.displayName) {
+        const names = firebaseUser.displayName.split(" ");
+        setFirstName(names[0] || "");
+        setLastName(names.slice(1).join(" ") || "");
+      }
+      if (!email && firebaseUser.email) {
+        setEmail(firebaseUser.email);
+      }
+     
+        setUid(firebaseUser.uid);
+      
     }
-  }, [firebaseUser]);
+  }, [firebaseUser, firstName, lastName, email, uid]);
 
   const updateProfile = async () => {
     try {

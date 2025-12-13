@@ -96,7 +96,6 @@ const GroupList = ({ onSelectGroup, selectedGroupId }) => {
 
   return (
     <div className="h-full flex flex-col bg-white dark:bg-gray-900 border-r border-[var(--border)]">
-      {/* Header */}
       <div className="p-5 border-b border-[var(--border)] bg-white/80 dark:bg-gray-900/80 backdrop-blur-md sticky top-0 z-10">
         <h2 className="text-2xl font-bold bg-gradient-to-r from-[var(--brand-1)] to-[var(--brand-2)] bg-clip-text text-transparent">
           Messages
@@ -104,7 +103,6 @@ const GroupList = ({ onSelectGroup, selectedGroupId }) => {
         <p className="text-xs text-gray-500 mt-1 font-medium uppercase tracking-wider">{groups.length} conversations</p>
       </div>
 
-      {/* Group List */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1">
         {groups.map((group) => {
           const isSelected = selectedGroupId === group._id;
@@ -124,7 +122,6 @@ const GroupList = ({ onSelectGroup, selectedGroupId }) => {
               `}
             >
               <div className="flex items-center gap-3">
-                {/* Avatar */}
                 <div className={`
                   h-12 w-12 rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-transform duration-300 group-hover:scale-105
                   ${isSelected

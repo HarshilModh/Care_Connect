@@ -10,8 +10,8 @@ export const getRecentMessages = async (groupId, limit = 50) => {
   return res.data;
 };
 
-export const getMessagesByGroup = async (groupId, { limit = 50, skip = 0, sortOrder = 1 } = {}) => {
-  const res = await api.get(`/chats/${groupId}/messages`, { params: { limit, skip, sortOrder } });
+export const getMessagesByGroup = async (groupId) => {
+  const res = await api.get(`/chats/${groupId}/messages`);
   return res.data;
 };
 

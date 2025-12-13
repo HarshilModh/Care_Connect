@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
+import {toast} from 'react-toastify';
 import {
     Users,
     Heart,
@@ -24,8 +25,9 @@ import VitalChart from './VitalChart.jsx';
 const VitalsDashboard = () => {
     const { groupId } = useParams();
     const { user } = useAuth();
-
-
+    const userData = localStorage.getItem("user") || "";
+    const userId = JSON.parse(userData)._id || "";
+    const navigate = useNavigate();
     // 1. Recipient State
     const [recipients, setRecipients] = useState([]);
     const [selectedRecipientId, setSelectedRecipientId] = useState('');
@@ -39,6 +41,35 @@ const VitalsDashboard = () => {
     const onSuccess = () => {
         fetchVitalsData();
     };
+    //check if user is member of the group
+    useEffect(() => {
+        const checkMembership = async () => {
+            try {
+                const res = await api.get(`/memberships/group/${groupId}`, {
+                    withCredentials: true
+                });
+                const membersData = Array.isArray(res.data) ? res.data : [];
+                const isMember = membersData.some(
+                    (member) => member.userId._id === userId
+                );
+                if (!isMember) {
+                    console.log("User is not a member of this group");
+                    toast.error("You are not a member of this group.", {
+                        toastId: "not-member-error",
+                    });
+                    navigate("/family-groups");
+
+                  }
+            } catch (err) {
+                console.error("Error checking group membership:", err);
+                toast.error("Failed to verify group membership");
+                navigate("/family-groups");
+                return;
+            }
+        };
+            checkMembership();
+       
+    }, [groupId, userId, navigate]);
     // Initial Fetch: Recipients
     useEffect(() => {
         const fetchRecipients = async () => {

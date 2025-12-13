@@ -3,7 +3,6 @@ import ReactModal from 'react-modal';
 import { X, User, Award, BookOpen, Clock, FileText } from 'lucide-react';
 import api from '../../api/axios';
 
-// Bind modal to app element (accessibility)
 ReactModal.setAppElement('#root');
 
 const CareGiverModal = ({ isOpen, onClose, careGiverId }) => {
@@ -18,9 +17,6 @@ const CareGiverModal = ({ isOpen, onClose, careGiverId }) => {
             setLoading(true);
             setError(null);
             try {
-                // Assuming the endpoint is /api/caregivers/user/:userId based on context, 
-                // or /api/caregivers/:id if careGiverId is the caregiver profile ID.
-                // The previous code used /caregivers/:id. Let's stick to that but handle errors.
                 const response = await api.get(`http://localhost:3000/api/caregivers/user/${careGiverId}`);
                 setCareGiver(response.data);
             } catch (err) {
@@ -69,7 +65,6 @@ const CareGiverModal = ({ isOpen, onClose, careGiverId }) => {
             contentLabel="Caregiver Details"
         >
             <div className="bg-white">
-                {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-100">
                     <h2 className="text-lg font-bold text-gray-900">Caregiver Profile</h2>
                     <button
@@ -80,7 +75,6 @@ const CareGiverModal = ({ isOpen, onClose, careGiverId }) => {
                     </button>
                 </div>
 
-                {/* Content */}
                 <div className="p-6">
                     {loading ? (
                         <div className="space-y-4 animate-pulse">
@@ -94,7 +88,6 @@ const CareGiverModal = ({ isOpen, onClose, careGiverId }) => {
                         </div>
                     ) : careGiver ? (
                         <div className="space-y-6">
-                            {/* User Info */}
                             <div className="flex items-center gap-4">
                                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-2xl font-bold">
                                     {careGiver.userId?.firstName?.[0]}{careGiver.userId?.lastName?.[0]}
@@ -107,7 +100,6 @@ const CareGiverModal = ({ isOpen, onClose, careGiverId }) => {
                                 </div>
                             </div>
 
-                            {/* Stats Grid */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
                                     <div className="flex items-center gap-2 text-gray-500 text-xs font-medium uppercase mb-1">
@@ -123,7 +115,6 @@ const CareGiverModal = ({ isOpen, onClose, careGiverId }) => {
                                 </div>
                             </div>
 
-                            {/* Bio */}
                             <div>
                                 <h4 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
                                     <FileText className="w-4 h-4 text-gray-400" /> Bio
@@ -133,7 +124,6 @@ const CareGiverModal = ({ isOpen, onClose, careGiverId }) => {
                                 </p>
                             </div>
 
-                            {/* Skills */}
                             <div>
                                 <h4 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
                                     <BookOpen className="w-4 h-4 text-gray-400" /> Skills
