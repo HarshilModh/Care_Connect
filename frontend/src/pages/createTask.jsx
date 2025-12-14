@@ -116,8 +116,14 @@ export default function CreateTask() {
         );
         
         const dataRecipients = await resRecipients.data;
+        if (!dataRecipients || dataRecipients.length === 0) {
+          setRecipients([]);  
+          toast.info("No care recipients found in this group.");
+   
+        }
         //if error in dataRecipients, throw error
         if (dataRecipients.error) {
+          console.error("Error fetching care recipients:", dataRecipients.error);
           setRecipients([]);  
           throw new Error(dataRecipients.error);
         }
@@ -138,7 +144,11 @@ export default function CreateTask() {
           `/memberships/group/${selectedGroup}`
         );
         const dataMembers = await resMembers.data;
-
+        // console.log("Members fetched: ", dataMembers);
+        if (!dataMembers || dataMembers.length === 0) {
+          setMembers([]);  
+          toast.info("No members found in this group.");
+        }
         const formattedMembers = [];
         for (const item of dataMembers) {
           const user = item.userId;
@@ -159,6 +169,9 @@ export default function CreateTask() {
           });
         }
         setMembers(formattedMembers);
+        if (formattedMembers.length === 0) {
+          toast.info("No assignable members found in this group.");
+        }
       } catch (err) {
         console.error(err);
         toast.error(err.message || "Failed to fetch recipients or members.");

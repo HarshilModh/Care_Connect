@@ -45,7 +45,6 @@ router.post("/",requireAuth, async (req, res) => {
 
     if (!groupName || !createdBy) {
       console.log("groupName and createdBy are required");
-
       return res
         .status(400)
         .json({ error: "groupName and createdBy are required" });
@@ -98,7 +97,7 @@ router.post("/",requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.log("error: ", error);
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
     return;
   }
 });
@@ -118,10 +117,15 @@ router.get("/", requireAuth, async (req, res) => {
 router.get("/search/:searchTerm", requireAuth, async (req, res) => {
   try {
     const searchTerm = isValidString(req.params.searchTerm, "search term");
+    if (searchTerm.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "Search term cannot be an empty string" });
+    }
     const familyGroups = await searchFamilyGroups(searchTerm);
     res.status(200).json(familyGroups);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -138,16 +142,16 @@ router.get("/user/:userId", requireAuth, async (req, res) => {
   try {
     let userId = req.params.userId;
     if (!userId) {
-      throw new Error("User ID is required");
+      return res.status(400).json({ error: "User ID is required" });
     }
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      throw new Error("User ID must be a valid ObjectId");
+      return res.status(400).json({ error: "User ID must be a valid ObjectId" });
     }
     console.log("getFamilyGroupsByUserId route", userId);
     const familyGroups = await getFamilyGroupsByUserId(userId);
     res.status(200).json(familyGroups);
   } catch (error) {
-    res.status(404).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -155,25 +159,29 @@ router.get("/creator/:userId", requireAuth, async (req, res) => {
   try {
     let userId = req.params.userId;
     if (!userId) {
-      throw new Error("User ID is required");
+      return res.status(400).json({ error: "User ID is required" });
     }
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      throw new Error("User ID must be a valid ObjectId");
+      return res.status(400).json({ error: "User ID must be a valid ObjectId" });
     }
     const familyGroups = await getFamilyGroupsCreatedByUser(userId);
     res.status(200).json(familyGroups);
   } catch (error) {
-    res.status(404).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
 router.get("/name/:groupName", requireAuth, async (req, res) => {
   try {
     const groupName = isValidString(req.params.groupName, "group name");
+    if (groupName.length === 0) {
+      return res.status(400).json({ error: "Group name cannot be an empty string" });
+    }
     const familyGroups = await getFamilyGroupsByName(groupName);
+   
     res.status(200).json(familyGroups);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -192,7 +200,7 @@ router.get("/recent", requireAuth, async (req, res) => {
     const recentGroups = await getRecentFamilyGroups(limit);
     res.status(200).json(recentGroups);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -202,7 +210,7 @@ router.get("/recent/:limit", requireAuth, async (req, res) => {
     const recentGroups = await getRecentFamilyGroups(limit);
     res.status(200).json(recentGroups);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -219,6 +227,9 @@ router.get("/filter/date-range", requireAuth, async (req, res) => {
   try {
     const startDate = isValidString(req.query.startDate, "start date");
     const endDate = isValidString(req.query.endDate, "end date");
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: "startDate and endDate are required" });
+    }
 
     const familyGroups = await getFamilyGroupsByCreationDateRange(
       startDate,
@@ -226,7 +237,7 @@ router.get("/filter/date-range", requireAuth, async (req, res) => {
     );
     res.status(200).json(familyGroups);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -234,15 +245,15 @@ router.get("/group/:id", requireAuth, async (req, res) => {
   try {
     const id = req.params.id;
     if (!id) {
-      throw new Error("Group ID is required");
+      return res.status(400).json({ error: "Group ID is required" });
     }
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new Error("Group ID must be a valid ObjectId");
+      return res.status(400).json({ error: "Group ID must be a valid ObjectId" });
     }
     const familyGroup = await getFamilyGroupById(id);
     res.status(200).json(familyGroup);
   } catch (error) {
-    res.status(404).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -250,10 +261,10 @@ router.put("/group/:id", requireAuth, async (req, res) => {
   try {
     const id = req.params.id;
     if (!id) {
-      throw new Error("Group ID is required");
+      return res.status(400).json({ error: "Group ID is required" });
     }
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new Error("Group ID must be a valid ObjectId");
+      return res.status(400).json({ error: "Group ID must be a valid ObjectId" });
     }
     const updateData = { ...req.body };
 
@@ -276,7 +287,7 @@ router.put("/group/:id", requireAuth, async (req, res) => {
       familyGroup: updatedGroup,
     });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -298,7 +309,7 @@ router.delete("/group/:id", requireAuth, async (req, res) => {
       .json({ message: `Family group with ID ${id} deleted successfully` });
   } catch (error) {
     console.error(`DELETE /group/${id} error:`, error.message);
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -327,7 +338,7 @@ router.post("/group/:id/members", requireAuth, async (req, res) => {
       familyGroup: updatedGroup,
     });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -335,17 +346,17 @@ router.delete("/group/:id/members/:memberId", requireAuth, async (req, res) => {
   try {
     const id = req.params.id;
     if (!id) {
-      throw new Error("Group ID is required");
+      return res.status(400).json({ error: "Group ID is required" });
     }
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new Error("Group ID must be a valid ObjectId");
+      return res.status(400).json({ error: "Group ID must be a valid ObjectId" });
     }
     const memberId = req.params.memberId;
     if (!memberId) {
-      throw new Error("Member ID is required");
+      return res.status(400).json({ error: "Member ID is required" });
     }
     if (!mongoose.Types.ObjectId.isValid(memberId)) {
-      throw new Error("Member ID must be a valid ObjectId");
+      return res.status(400).json({ error: "Member ID must be a valid ObjectId" });
     }
 
     const updatedGroup = await removeMemberFromFamilyGroup(id, memberId);
@@ -354,7 +365,7 @@ router.delete("/group/:id/members/:memberId", requireAuth, async (req, res) => {
       familyGroup: updatedGroup,
     });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -362,15 +373,15 @@ router.get("/group/:id/members", requireAuth, async (req, res) => {
   try {
     const id = req.params.id;
     if (!id) {
-      throw new Error("Group ID is required");
+      return res.status(400).json({ error: "Group ID is required" });
     }
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new Error("Group ID must be a valid ObjectId");
+      return res.status(400).json({ error: "Group ID must be a valid ObjectId" });
     }
     const members = await getFamilyGroupMembers(id);
     res.status(200).json(members);
   } catch (error) {
-    res.status(404).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -378,15 +389,15 @@ router.get("/group/:id/stats/members-count", requireAuth, async (req, res) => {
   try {
     const id = req.params.id;
     if (!id) {
-      throw new Error("Group ID is required");
+      return res.status(400).json({ error: "Group ID is required" });
     }
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new Error("Group ID must be a valid ObjectId");
+      return res.status(400).json({ error: "Group ID must be a valid ObjectId" });
     }
     const count = await countMembersInFamilyGroup(id);
     res.status(200).json(count);
   } catch (error) {
-    res.status(404).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -396,7 +407,7 @@ router.get("/timezone/:timeZone", async (req, res) => {
     const familyGroups = await getFamilyGroupsByTimeZone(timeZone);
     res.status(200).json(familyGroups);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -404,10 +415,13 @@ router.patch("/group/:id/visibility", async (req, res) => {
   try {
     const id = req.params.id;
     if (!id) {
-      throw new Error("Group ID is required");
+      return res.status(400).json({ error: "Group ID is required" });
     }
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new Error("Group ID must be a valid ObjectId");
+      return res.status(400).json({ error: "Group ID must be a valid ObjectId" });
+    }
+    if (!await getFamilyGroupById(id)) {
+      return res.status(404).json({ error: "Family group not found" });
     }
     const { isPublic } = req.body;
     const updatedGroup = await updateFamilyGroupVisibility(id, isPublic);
@@ -416,7 +430,7 @@ router.patch("/group/:id/visibility", async (req, res) => {
       familyGroup: updatedGroup,
     });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -424,10 +438,10 @@ router.patch("/group/:id/timezone", async (req, res) => {
   try {
     const id = req.params.id;
     if (!id) {
-      throw new Error("Group ID is required");
+      return res.status(400).json({ error: "Group ID is required" });
     }
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new Error("Group ID must be a valid ObjectId");
+      return res.status(400).json({ error: "Group ID must be a valid ObjectId" });
     }
     const timeZone = isValidString(req.body.timeZone, "time zone");
 
@@ -437,7 +451,7 @@ router.patch("/group/:id/timezone", async (req, res) => {
       familyGroup: updatedGroup,
     });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 router.post("/group/:id/panic", requireAuth, async (req, res) => {
@@ -446,7 +460,16 @@ router.post("/group/:id/panic", requireAuth, async (req, res) => {
     let { senderId } = req.body;
     console.log("Panic Alert Request Received:", { groupId, senderId });
     if (!groupId || !senderId) {
-      throw new Error("Group ID and Sender ID are required");
+      return res.status(400).json({ error: "groupId and senderId are required" });
+    }
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
+      return res.status(400).json({ error: "groupId must be a valid ObjectId" });
+    }
+    if (!mongoose.Types.ObjectId.isValid(senderId)) {
+      return res.status(400).json({ error: "senderId must be a valid ObjectId" });
+    } 
+    if (groupId === senderId) {
+      return res.status(400).json({ error: "groupId and senderId cannot be the same" });
     }
 
     // 1. Get all other group members
