@@ -17,6 +17,7 @@ const Home = () => {
     const [tasks, settasks] = useState([]);
     const [groups, setgroups] = useState([]);
     const [activities, setactivities] = useState([]);
+    const [messages, setmessages] = useState([]);
 
     useEffect(() => {
         const fetchData = async () => {

@@ -88,13 +88,13 @@ export default function Navbar() {
               {user ? (
                 <Menu as="div" className="relative ml-3">
                   <Menu.Button className="flex items-center gap-3 rounded-full bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-white flex items-center justify-center font-semibold">
+                    <span className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-white flex items-center justify-center font-semibold">
                       {user.firstName
                         ? user.firstName.charAt(0).toUpperCase()
                         : user.displayName
                           ? user.displayName.charAt(0).toUpperCase()
                           : user.email?.charAt(0)?.toUpperCase()}
-                    </div>
+                    </span>
                     <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
                       {(user.firstName && user.lastName)
                         ? `${user.firstName} ${user.lastName}`
