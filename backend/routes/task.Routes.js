@@ -214,7 +214,7 @@ router.post("/", uploadDataFiles, async (req, res) => {
       attachments,
       status
     );
-    res.status(200).json(newTask);
+    res.status(201).json(newTask);
   } catch (error) {
     console.error(error);
     if (error.code === "LIMIT_FILE_SIZE") {
@@ -252,7 +252,7 @@ router.get("/search", async (req, res) => {
       sortDue: sortDue === "true",
     });
 
-    res.json(tasks);
+    res.status(200).json(tasks);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
