@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
+import api from "../api/axios";
 import {
   Calendar,
   Users,
@@ -64,7 +65,7 @@ export default function CreateTask() {
     const hours = String(now.getHours()).padStart(2, "0");
     const minutes = String(now.getMinutes()).padStart(2, "0");
     return `${year}-${month}-${day}T${hours}:${minutes}`;
-  }
+  };
 
   let storedUser = localStorage.getItem("user");
   let userId = "";
@@ -79,9 +80,7 @@ export default function CreateTask() {
     if (!userId) return;
     async function fetchGroups() {
       try {
-        const res = await fetch(
-          `http://localhost:3000/api/family-groups/user/${userId}`
-        );
+        const res = await fetch(`family-groups/user/${userId}`);
         let data = await res.json();
         data = data.filter(
           (g) =>
@@ -107,14 +106,14 @@ export default function CreateTask() {
     async function fetchData() {
       try {
         // Recipients
-        const resRecipients = await fetch(
-          `http://localhost:3000/api/care-recipients/group/${selectedGroup}`
+        const resRecipients = await api.get(
+          `/care-recipients/group/${selectedGroup}`
         );
-        
-        const dataRecipients = await resRecipients.json();
+
+        const dataRecipients = resRecipients.data;
         //if error in dataRecipients, throw error
         if (dataRecipients.error) {
-          setRecipients([]);  
+          setRecipients([]);
           throw new Error(dataRecipients.error);
         }
         const formattedRecipients = dataRecipients
@@ -127,10 +126,8 @@ export default function CreateTask() {
         setRecipients(formattedRecipients);
 
         // Members
-        const resMembers = await fetch(
-          `http://localhost:3000/api/memberships/group/${selectedGroup}`
-        );
-        const dataMembers = await resMembers.json();
+        const resMembers = await api.get(`/memberships/group/${selectedGroup}`);
+        const dataMembers = resMembers.data;
 
         const formattedMembers = [];
         for (const item of dataMembers) {
@@ -162,7 +159,16 @@ export default function CreateTask() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim() || !selectedGroup || !recipient|| !dueDate|| !type|| !userId|| !desc.trim()|| assignedTo===undefined) {
+    if (
+      !title.trim() ||
+      !selectedGroup ||
+      !recipient ||
+      !dueDate ||
+      !type ||
+      !userId ||
+      !desc.trim() ||
+      assignedTo === undefined
+    ) {
       toast.error("Please fill in all required fields.");
       return;
     }
@@ -198,20 +204,16 @@ export default function CreateTask() {
       let response;
       if (!hasFiles) {
         // OLD BEHAVIOR: JSON request (no files)
-        response = await fetch("http://localhost:3000/api/tasks", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            groupId: selectedGroup,
-            assignedTo: assignedTo || undefined,
-            recipientId: recipient,
-            createdBy: userId,
-            title,
-            description: desc,
-            dueAt: dueDate ,
-            repeatRule: repeatRule,
-            type,
-          }),
+        response = await api.post("/tasks", {
+          groupId: selectedGroup,
+          assignedTo: assignedTo || undefined,
+          recipientId: recipient,
+          createdBy: userId,
+          title,
+          description: desc,
+          dueAt: dueDate,
+          repeatRule: repeatRule,
+          type,
         });
       } else {
         // NEW BEHAVIOR: multipart/form-data with files
@@ -226,21 +228,13 @@ export default function CreateTask() {
         if (repeatRule) formData.append("repeatRule", repeatRule);
         if (type) formData.append("type", type);
 
-
-
-
         // attachments go as dataFiles -> matches req.files.dataFiles
         files.forEach((file) => {
           formData.append("dataFiles", file);
         });
 
-        response = await fetch("http://localhost:3000/api/tasks", {
-          method: "POST",
-          body: formData, // do NOT set Content-Type manually
-        });
+        response = await api.post("/tasks", formData);
       }
-
-      if (!response.ok) throw new Error("Failed to create task");
 
       toast.success("Task created successfully!");
       navigate("/tasks");
@@ -428,7 +422,9 @@ export default function CreateTask() {
                     disabled={!selectedGroup}
                     className="w-full pl-10 pr-10 py-3 rounded-lg border border-gray-300 bg-white disabled:bg-gray-100 disabled:text-gray-400 focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
                   >
-                    <option value="" disabled>Unassigned</option>
+                    <option value="" disabled>
+                      Unassigned
+                    </option>
                     {members.map((m) => (
                       <option key={m.id} value={m.id}>
                         {m.name}
