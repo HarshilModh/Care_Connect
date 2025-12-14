@@ -1,31 +1,27 @@
-// firebaseAdmin.js
+// integrations/firebaseAdmin.js
 import admin from "firebase-admin";
 import fs from "fs";
 import path from "path";
-import dotenv from "dotenv";
 
-dotenv.config();
+const serviceAccountPath = path.resolve("./dbConfig/serviceAccountKey.json");
 
-const serviceAccountPath = path.resolve("./dbconfig/serviceAccountKey.json");
+if (fs.existsSync(serviceAccountPath)) {
+  const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
 
-if (!fs.existsSync(serviceAccountPath)) {
-  console.error(
+  if (!admin.apps.length) {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+  }
+
+  console.log("Firebase Admin initialized (integrations)");
+} else {
+  console.warn(
     "Firebase service account file not found at:",
     serviceAccountPath
   );
-  process.exit(1);
+  // IMPORTANT: don't throw or exit here – let the app start without Firebase
 }
 
-//  Initialize Firebase Admin only once
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(
-      JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"))
-    ),
-  });
-  console.log("Firebase Admin initialized successfully");
-}
-
-const firebaseAuth = admin.auth();
-export { firebaseAuth };
 export default admin;
+
