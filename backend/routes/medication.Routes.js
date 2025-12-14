@@ -1,5 +1,12 @@
 import express from "express";
-import {createMedication,getGroupMedications,updateMedication,deleteMedication,recordDose, getMedicationById} from "../data/medicationController.js";
+import {
+  createMedication,
+  getGroupMedications,
+  updateMedication,
+  deleteMedication,
+  recordDose,
+  getMedicationById,
+} from "../data/medicationController.js";
 import { requireAuth, verifyFirebaseToken } from "../middlewares/auth.js";
 
 const router = express.Router();
@@ -9,9 +16,7 @@ router.get("/group/:groupId", requireAuth, async (req, res) => {
     const { groupId } = req.params;
 
     if (!groupId) {
-      return res
-        .status(400)
-        .json({ error: "groupId parameter is required" });
+      return res.status(400).json({ error: "groupId parameter is required" });
     }
 
     const medications = await getGroupMedications(groupId);
@@ -27,9 +32,7 @@ router.get("/:id", requireAuth, async (req, res) => {
     const { id } = req.params;
 
     if (!id) {
-      return res
-        .status(400)
-        .json({ error: "id parameter is required" });
+      return res.status(400).json({ error: "id parameter is required" });
     }
 
     const medication = await getMedicationById(id);
@@ -127,7 +130,12 @@ router.delete("/:id", requireAuth, async (req, res) => {
     const medication = await deleteMedication(id, deleterId);
     return res.status(200).json(medication);
   } catch (error) {
-    console.error("Error deleting medication:", error);
+    console.error("Error deleting medication:", error.message);
+
+    if (error.statusCode === 403) {
+      return res.status(403).json({ error: error.message });
+    }
+
     return res.status(400).json({ error: error.message });
   }
 });

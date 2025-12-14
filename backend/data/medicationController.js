@@ -1,7 +1,10 @@
 import mongoose from "mongoose";
 import { Medication } from "../models/medication.model.js";
 import { isValidString } from "../utils/validation.utils.js";
-import { assertActiveMember, assertRecipientInGroup } from "../utils/taskHelper.js";
+import {
+  assertActiveMember,
+  assertRecipientInGroup,
+} from "../utils/taskHelper.js";
 const VALID_FREQUENCIES = ["daily", "weekly", "as_needed"];
 
 export const createMedication = async (
@@ -42,7 +45,11 @@ export const createMedication = async (
       dosage = "";
     }
 
-    if (instructions !== undefined && instructions !== null && instructions !== "") {
+    if (
+      instructions !== undefined &&
+      instructions !== null &&
+      instructions !== ""
+    ) {
       instructions = isValidString(instructions, "instructions");
     } else {
       instructions = "";
@@ -59,12 +66,18 @@ export const createMedication = async (
     }
     if (!VALID_FREQUENCIES.includes(frequency)) {
       throw new Error(
-        `Invalid frequency value. Expected one of ${VALID_FREQUENCIES.join(", ")}`
+        `Invalid frequency value. Expected one of ${VALID_FREQUENCIES.join(
+          ", "
+        )}`
       );
     }
 
     let normalizedTimesPerDay = null;
-    if (timesPerDay !== undefined && timesPerDay !== null && timesPerDay !== "") {
+    if (
+      timesPerDay !== undefined &&
+      timesPerDay !== null &&
+      timesPerDay !== ""
+    ) {
       const num = Number(timesPerDay);
       if (Number.isNaN(num)) {
         throw new Error("timesPerDay must be a number");
@@ -85,7 +98,11 @@ export const createMedication = async (
     }
 
     let normalizedSupplyCount = null;
-    if (supplyCount !== undefined && supplyCount !== null && supplyCount !== "") {
+    if (
+      supplyCount !== undefined &&
+      supplyCount !== null &&
+      supplyCount !== ""
+    ) {
       const num = Number(supplyCount);
       if (Number.isNaN(num)) {
         throw new Error("supplyCount must be a number");
@@ -139,13 +156,15 @@ export const getGroupMedications = async (groupId) => {
 
     return medications;
   } catch (error) {
-    throw new Error(
-      `Error fetching medications for group: ${error.message}`
-    );
+    throw new Error(`Error fetching medications for group: ${error.message}`);
   }
 };
 
-export const updateMedication = async (medicationId, updaterId, updates = {}) => {
+export const updateMedication = async (
+  medicationId,
+  updaterId,
+  updates = {}
+) => {
   try {
     if (!medicationId) {
       throw new Error("medicationId is required to update a medication");
@@ -286,38 +305,35 @@ export const updateMedication = async (medicationId, updaterId, updates = {}) =>
 };
 
 export const deleteMedication = async (medicationId, deleterId) => {
-  try {
-    if (!medicationId) {
-      throw new Error("medicationId is required to delete a medication");
-    }
-    if (!deleterId) {
-      throw new Error("deleterId is required to delete a medication");
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(medicationId)) {
-      throw new Error("Invalid medicationId");
-    }
-
-    const medication = await Medication.findById(medicationId);
-    if (!medication) {
-      throw new Error("Medication not found");
-    }
-
-    const memberRole = await assertActiveMember(deleterId, medication.groupId);
-    if (memberRole !== "admin") {
-      throw new Error(
-        "User does not have permission to delete medications in this group"
-      );
-    }
-
-    medication.active = false;
-    const updatedMedication = await medication.save();
-    return updatedMedication;
-  } catch (error) {
-    throw new Error(`Error deleting medication: ${error.message}`);
+  if (!medicationId) {
+    throw new Error("medicationId is required to delete a medication");
   }
-};
 
+  if (!deleterId) {
+    throw new Error("deleterId is required to delete a medication");
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(medicationId)) {
+    throw new Error("Invalid medicationId");
+  }
+
+  const medication = await Medication.findById(medicationId);
+  if (!medication) {
+    throw new Error("Medication not found");
+  }
+
+  const memberRole = await assertActiveMember(deleterId, medication.groupId);
+  if (memberRole !== "admin") {
+    const err = new Error(
+      "User does not have permission to delete medications in this group"
+    );
+    err.statusCode = 403;
+    throw err;
+  }
+
+  medication.active = false;
+  return await medication.save();
+};
 
 export const recordDose = async (medicationId, takenBy, takenAt) => {
   try {
@@ -364,8 +380,10 @@ export const getMedicationById = async (medicationId) => {
       throw new Error("Invalid medicationId");
     }
 
-    const medication = await Medication.findById(medicationId)
-      .populate("recipientId", "firstName lastName email");
+    const medication = await Medication.findById(medicationId).populate(
+      "recipientId",
+      "firstName lastName email"
+    );
 
     if (!medication) {
       throw new Error("Medication not found");
