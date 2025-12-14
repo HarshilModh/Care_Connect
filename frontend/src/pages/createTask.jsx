@@ -12,6 +12,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
+import api from "../api/axios";
 
 export default function CreateTask() {
   const [title, setTitle] = useState("");
@@ -79,10 +80,10 @@ export default function CreateTask() {
     if (!userId) return;
     async function fetchGroups() {
       try {
-        const res = await fetch(
-          `http://localhost:3000/api/family-groups/user/${userId}`
+        const res = await api.get(
+          `/family-groups/user/${userId}`
         );
-        let data = await res.json();
+        let data = await res.data;
         data = data.filter(
           (g) =>
             g.members.some((m) => m.userId === userId) ||
@@ -107,11 +108,14 @@ export default function CreateTask() {
     async function fetchData() {
       try {
         // Recipients
-        const resRecipients = await fetch(
-          `http://localhost:3000/api/care-recipients/group/${selectedGroup}`
+        // const resRecipients = await fetch(
+        //   `http://localhost:3000/api/care-recipients/group/${selectedGroup}`
+        // );
+        const resRecipients = await api.get(
+          `/care-recipients/group/${selectedGroup}`
         );
         
-        const dataRecipients = await resRecipients.json();
+        const dataRecipients = await resRecipients.data;
         //if error in dataRecipients, throw error
         if (dataRecipients.error) {
           setRecipients([]);  
@@ -127,10 +131,13 @@ export default function CreateTask() {
         setRecipients(formattedRecipients);
 
         // Members
-        const resMembers = await fetch(
-          `http://localhost:3000/api/memberships/group/${selectedGroup}`
+        // const resMembers = await fetch(
+        //   `http://localhost:3000/api/memberships/group/${selectedGroup}`
+        // );
+        const resMembers = await api.get(
+          `/memberships/group/${selectedGroup}`
         );
-        const dataMembers = await resMembers.json();
+        const dataMembers = await resMembers.data;
 
         const formattedMembers = [];
         for (const item of dataMembers) {
@@ -198,20 +205,31 @@ export default function CreateTask() {
       let response;
       if (!hasFiles) {
         // OLD BEHAVIOR: JSON request (no files)
-        response = await fetch("http://localhost:3000/api/tasks", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            groupId: selectedGroup,
-            assignedTo: assignedTo || undefined,
-            recipientId: recipient,
-            createdBy: userId,
-            title,
-            description: desc,
-            dueAt: dueDate ,
-            repeatRule: repeatRule,
-            type,
-          }),
+        // response = await fetch("http://localhost:3000/api/tasks", {
+        //   method: "POST",
+        //   headers: { "Content-Type": "application/json" },
+        //   body: JSON.stringify({
+        //     groupId: selectedGroup,
+        //     assignedTo: assignedTo || undefined,
+        //     recipientId: recipient,
+        //     createdBy: userId,
+        //     title,
+        //     description: desc,
+        //     dueAt: dueDate ,
+        //     repeatRule: repeatRule,
+        //     type,
+        //   }),
+        // });
+         response = await api.post("/tasks", {
+          groupId: selectedGroup,
+          recipientId: recipient,
+          createdBy: userId,
+          title,
+          description: desc || "",
+          assignedTo: assignedTo || undefined,
+          dueAt: dueDate ,
+          repeatRule: repeatRule,
+          type,
         });
       } else {
         // NEW BEHAVIOR: multipart/form-data with files
@@ -234,10 +252,12 @@ export default function CreateTask() {
           formData.append("dataFiles", file);
         });
 
-        response = await fetch("http://localhost:3000/api/tasks", {
-          method: "POST",
-          body: formData, // do NOT set Content-Type manually
-        });
+        // response = await fetch("http://localhost:3000/api/tasks", {
+        //   method: "POST",
+        //   body: formData, // do NOT set Content-Type manually
+        // });
+        response = await api.post("/tasks", formData);
+
       }
 
       if (!response.ok) throw new Error("Failed to create task");
