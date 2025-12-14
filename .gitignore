@@ -4,3 +4,8 @@
 # Ignore environment variable files
 /backend/.env
 /frontend/.env
+
+# prod env + secrets
+backend/.env.prod
+backend/dbConfig/serviceAccountKey.json
+backend/dbConfig/firebaseAdmin.js
