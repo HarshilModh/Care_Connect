@@ -80,8 +80,8 @@ export default function CreateTask() {
     if (!userId) return;
     async function fetchGroups() {
       try {
-        const res = await fetch(`family-groups/user/${userId}`);
-        let data = await res.json();
+        const res = await api.get(`/family-groups/user/${userId}`);
+        let data = res.data;
         data = data.filter(
           (g) =>
             g.members.some((m) => m.userId === userId) ||
