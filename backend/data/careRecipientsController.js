@@ -324,7 +324,7 @@ export const getCareRecipientsByGroupId = async (groupId) => {
     );
 
     console.log("Recipients fetched: ", recipients);
-    if (!recipients || recipients.length === 0) {
+    if (!recipients) {
       throw new Error("No care recipients found for this group");
     }
     return recipients;
