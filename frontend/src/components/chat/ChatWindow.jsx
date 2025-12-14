@@ -39,7 +39,7 @@ const ChatWindow = ({ group }) => {
       try {
         setLoading(true);
 
-        // Initialize socket with user info
+        // Initialize socket with loged in user info
         initializeSocket(user._id, `${user.firstName} ${user.lastName}`);
         const socket = getSocket();
 
@@ -47,7 +47,7 @@ const ChatWindow = ({ group }) => {
         joinGroup(group._id);
 
         // Load recent messages
-        const response = await getRecentMessages(group._id, 5000);
+        const response = await getRecentMessages(group._id); //need to check
         setMessages(response.data);
 
         // Mark all as read
@@ -162,7 +162,9 @@ const ChatWindow = ({ group }) => {
   const handleSendMessage = async (e) => {
     e.preventDefault();
 
-    if (!newMessage.trim() || sending) return;
+    if (!newMessage.trim() || sending) {
+      return;
+    }
 
     try {
       setSending(true);

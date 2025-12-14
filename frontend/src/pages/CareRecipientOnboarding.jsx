@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import api from "../api/axios";
 import { useNavigate, useParams } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import {
@@ -102,16 +103,21 @@ const CareRecipientOnboarding = () => {
 
       const accessToken = localStorage.getItem("accessToken");
 
-      const res = await axios.post(
-        "http://localhost:3000/api/care-recipients",
-        payload,
-        {
-          withCredentials: true,
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
+      // const res = await axios.post(
+      //   "http://localhost:3000/api/care-recipients",
+      //   payload,
+      //   {
+      //     withCredentials: true,
+      //     headers: {
+      //       Authorization: `Bearer ${accessToken}`,
+      //     },
+      //   }
+      // );
+      const res = await api.post("/care-recipients", payload, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
 
       console.log("careRecipient onboarding response:", res);
 

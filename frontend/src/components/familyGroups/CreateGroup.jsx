@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import api from "../../api/axios";
 import { useNavigate } from "react-router-dom"; 
 import { toast } from "react-toastify";
 import { validateGroupName, validateDescription } from "../../utils/validation";
@@ -57,15 +58,21 @@ const CreateGroup = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post(
-        "http://localhost:3000/api/family-groups",
-        {
-          groupName: groupName.trim(),
-          description: description.trim(),
-          isPublic,
-          createdBy,
-        }
-      );
+      // const response = await axios.post(
+      //   "http://localhost:3000/api/family-groups",
+      //   {
+      //     groupName: groupName.trim(),
+      //     description: description.trim(),
+      //     isPublic,
+      //     createdBy,
+      //   }
+      // );
+      const response = await api.post("/family-groups", {
+        groupName: groupName.trim(),
+        description: description.trim(),
+        isPublic,
+        createdBy,
+      });
       console.log(response);
 
       const data = response.data;

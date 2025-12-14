@@ -71,15 +71,11 @@ export const getMessagesByGroupId = async (groupId, userId, options = {}) => {
     });
     if (!membershipRecord) throw new Error("User is not a member of the group");
 
-    const limit = options.limit || 50;
-    const skip = options.skip || 0;
     const sortOrder = options.sortOrder || 1;
 
     const messages = await Chat.find({ groupId })
       .populate("senderId", "firstName lastName profilePicture displayName email role")
       .sort({ createdAt: sortOrder })
-      .limit(limit)
-      .skip(skip)
       .lean();
 
     const totalCount = await Chat.countDocuments({ groupId });
@@ -88,9 +84,9 @@ export const getMessagesByGroupId = async (groupId, userId, options = {}) => {
       messages,
       pagination: {
         total: totalCount,
-        limit,
-        skip,
-        hasMore: skip + messages.length < totalCount
+        limit: messages.length,
+        skip: 0,
+        hasMore: false
       }
     };
   } catch (error) {
@@ -99,7 +95,7 @@ export const getMessagesByGroupId = async (groupId, userId, options = {}) => {
 };
 
 // Get recent messages for a group
-export const getRecentMessages = async (groupId, userId, limit = 50) => {
+export const getRecentMessages = async (groupId, userId) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(groupId)) throw new Error("Invalid groupId");
     if (!mongoose.Types.ObjectId.isValid(userId)) throw new Error("Invalid userId");
@@ -114,7 +110,6 @@ export const getRecentMessages = async (groupId, userId, limit = 50) => {
     const messages = await Chat.find({ groupId })
       .populate("senderId", "firstName lastName profilePicture displayName")
       .sort({ createdAt: -1 })
-      .limit(limit)
       .lean();
 
     return messages.reverse();

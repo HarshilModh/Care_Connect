@@ -17,7 +17,8 @@ const CareGiverModal = ({ isOpen, onClose, careGiverId }) => {
             setLoading(true);
             setError(null);
             try {
-                const response = await api.get(`http://localhost:3000/api/caregivers/user/${careGiverId}`);
+                // const response = await api.get(`http://localhost:3000/api/caregivers/user/${careGiverId}`);
+                const response = await api.get(`/caregivers/user/${careGiverId}`);
                 setCareGiver(response.data);
             } catch (err) {
                 console.error("Error fetching care giver:", err);

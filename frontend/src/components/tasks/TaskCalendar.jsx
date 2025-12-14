@@ -1,22 +1,22 @@
 // src/components/tasks/TaskCalendar.jsx
 import React, { useMemo, useState } from "react";
 
-// Helper to normalize any date-like value to "YYYY-MM-DD"
+//get key for date
 function getDateKey(dateLike) {
     if (!dateLike) return null;
 
     const d = new Date(dateLike);
     if (Number.isNaN(d.getTime())) return null;
 
-    // toISOString is UTC; if you want local date, adjust logic accordingly
+    // toISOString is UTC; if yu want local date, adjust logic accordingly
     return d.toISOString().slice(0, 10);
 }
 
 const WEEK_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-// Helper: detect if a task is completed (adjust to your schema)
+//check if task is complted or not
 function isTaskCompleted(task) {
-    // tweak this based on your actual model
+
     if (!task) return false;
     if (task.completed === true) return true;
     if (task.isCompleted === true) return true;
@@ -43,8 +43,9 @@ export default function TaskCalendar({ tasks, onTaskClick, onTaskEdit }) {
     // Map tasks by date for quick lookup
     const tasksByDate = useMemo(() => {
         const map = {};
+        //Loop through tasks and group them by date
+       
         for (const task of tasks || []) {
-            // adjust this field if your date field is named differently
             const dateKey =
                 getDateKey(task.dueDate || task.dueAt || task.date || task.createdAt);
             if (!dateKey) continue;
@@ -61,13 +62,14 @@ export default function TaskCalendar({ tasks, onTaskClick, onTaskEdit }) {
     const startWeekDay = firstDayOfMonth.getDay(); // 0 = Sun
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    // Build array of day cells (including blanks at start)
+    // Build calendar cells
+    
     const calendarCells = [];
-    // Leading blanks
+    
     for (let i = 0; i < startWeekDay; i++) {
         calendarCells.push(null);
     }
-    // Real days
+    // Fill in days of month
     for (let day = 1; day <= daysInMonth; day++) {
         calendarCells.push(day);
     }
@@ -229,7 +231,7 @@ export default function TaskCalendar({ tasks, onTaskClick, onTaskEdit }) {
                                 )}
                             </div>
 
-                            {/* Optional inline "edit first task" small link */}
+                                {/* optional */}
                             {dayTasks.length > 0 && onTaskEdit && (
                                 <button
                                     type="button"

@@ -4,18 +4,12 @@ let socket = null;
 
 export const initializeSocket = (userId, userName) => {
   if (socket) return socket;
-
-  // Determine the socket URL
-  // If VITE_API_URL is set, use it (removing /api if present)
-  // Otherwise fallback to the current window hostname with port 3000
   let connectionUrl = "http://localhost:3000";
 
   const apiUrl = import.meta.env.VITE_API_URL;
   if (apiUrl) {
-    // If apiUrl is like "http://localhost:3000/api", we want "http://localhost:3000"
     connectionUrl = apiUrl.replace(/\/api\/?$/, "");
   } else if (typeof window !== "undefined") {
-    // Fallback: assume backend is on the same host, port 3000
     connectionUrl = `${window.location.protocol}//${window.location.hostname}:3000`;
   }
 
@@ -28,9 +22,9 @@ export const initializeSocket = (userId, userName) => {
     reconnectionAttempts: 5
   });
 
-  socket.on("connect", () => console.log("✅ Socket connected:", socket.id));
-  socket.on("disconnect", (r) => console.log("❌ Socket disconnected:", r));
-  socket.on("connect_error", (e) => console.error("⚠️ Socket connect_error:", e.message));
+  socket.on("connect", () => console.log("Socket connected:", socket.id));
+  socket.on("disconnect", (r) => console.log("Socket disconnected:", r));
+  socket.on("connect_error", (e) => console.error("Socket connect_error:", e.message));
 
   return socket;
 };
