@@ -259,8 +259,10 @@ export default function CreateTask() {
         response = await api.post("/tasks", formData);
 
       }
-
-      if (!response.ok) throw new Error("Failed to create task");
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      // if (!response.ok) throw new Error("Failed to create task");
 
       toast.success("Task created successfully!");
       navigate("/tasks");
