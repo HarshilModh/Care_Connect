@@ -23,9 +23,25 @@ const router = express.Router();
 router.post("/signUp", async (req, res) => {
   try {
     console.log("In signup route");
-    const { firstName, lastName, email, password, confirmPassword, needPasswordReset, firebaseUid, } = req.body;
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      confirmPassword,
+      needPasswordReset,
+      firebaseUid,
+    } = req.body;
 
-    console.log("Received data:", { firstName, lastName, email, password, confirmPassword, needPasswordReset, firebaseUid, });
+    console.log("Received data:", {
+      firstName,
+      lastName,
+      email,
+      password,
+      confirmPassword,
+      needPasswordReset,
+      firebaseUid,
+    });
     if (!firstName || !lastName || !email || !password || !confirmPassword) {
       throw new Error("All fields are required");
     }
@@ -160,19 +176,16 @@ router.get("/profile/", requireAuth, async (req, res, next) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    res.json(user);
-
-
+    res.status(200).json(user);
   } catch (e) {
     next(e);
   }
-
 });
 
 router.get("/me", requireAuth, async (req, res, next) => {
   try {
     const me = await getUserById(req.user._id);
-    res.json(me);
+    res.status(200).json(me);
   } catch (e) {
     next(e);
   }
@@ -194,7 +207,7 @@ router.patch("/me", async (req, res, next) => {
       firebaseUid: firebaseUid,
     };
     const updated = await updateUser(id, updateData);
-    res.json(updated);
+    res.status(200).json(updated);
   } catch (e) {
     next(e);
   }
@@ -203,7 +216,7 @@ router.patch("/me", async (req, res, next) => {
 router.post("/logout", requireAuth, async (req, res, next) => {
   try {
     const out = await logoutUser(req.user._id);
-    res.json(out);
+    res.status(200).json(out);
   } catch (e) {
     next(e);
   }
@@ -215,7 +228,7 @@ router.post("/refresh", async (req, res, next) => {
     if (!oldRefreshToken)
       return res.status(400).json({ error: "Refresh token required" });
     const tokens = await refreshToken(oldRefreshToken);
-    res.json(tokens);
+    res.status(200).json(tokens);
   } catch (e) {
     next(e);
   }
@@ -228,7 +241,7 @@ router.patch("/me/password", requireAuth, async (req, res, next) => {
       return res.status(400).json({ error: "password is required" });
     }
     const result = await changeUserPassword(req.user._id, newPassword);
-    res.json(result); // { ok: true }
+    res.status(200).json(result); // { ok: true }
   } catch (e) {
     next(e);
   }
@@ -240,7 +253,7 @@ router.patch("/me/reset_passoword", async (req, res) => {
     const { email, password } = req.body || {};
     console.log("email?>>>", email, password);
     const result = await resetUserPassword(email, password);
-    res.json(result);
+    res.status(200).json(result);
     console.log("password");
   } catch (error) {
     console.log(error);
@@ -309,7 +322,9 @@ router.delete("/delete/:id", requireAuth, async (req, res) => {
 
     const userId = req.params.id;
     if (req.user._id.toString() !== userId) {
-      return res.status(403).json({ error: "Unauthorized to delete this user" });
+      return res
+        .status(403)
+        .json({ error: "Unauthorized to delete this user" });
     }
     const result = await deleteUser(userId);
     res.status(200).json({ message: "User deleted successfully", result });
