@@ -5,10 +5,11 @@ import {
   getLatestVitalsByType,
   deleteVitalById
 } from "../data/vitalController.js";
+import { requireAuth, verifyFirebaseToken } from "../middlewares/auth.js";
 
 const router = express.Router();
 
-router.post("/", async (req, res) => {
+router.post("/", requireAuth, async (req, res) => {
   try {
     const {
       groupId,
@@ -44,7 +45,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.get("/history", async (req, res) => {
+router.get("/history", requireAuth, async (req, res) => {
   try {
     const { groupId, userId, type, from, to, rangeDays } = req.query;
 
@@ -68,7 +69,7 @@ router.get("/history", async (req, res) => {
   }
 });
 
-router.get("/latest", async (req, res) => {
+router.get("/latest", requireAuth, async (req, res) => {
   try {
     const { groupId, userId } = req.query;
 
@@ -85,7 +86,7 @@ router.get("/latest", async (req, res) => {
     return res.status(400).json({ error: error.message });
   }
 });
-router.delete("/:vitalId", async (req, res) => {
+router.delete("/:vitalId", requireAuth, async (req, res) => {
   try {
     const { vitalId } = req.params;
     const userId=req.body.userId;

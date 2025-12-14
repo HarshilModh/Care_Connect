@@ -30,9 +30,10 @@ import { sendPanicAlertEmail } from "../integrations/nodemailer.js";
 // Change this line:
 import { isValidString } from "../utils/validation.utils.js";
 import User from "../models/user.model.js";
+import { requireAuth, verifyFirebaseToken } from "../middlewares/auth.js";
 const router = express.Router();
 
-router.post("/", async (req, res) => {
+router.post("/",requireAuth, async (req, res) => {
   try {
     console.log("here in the post route");
 
@@ -104,7 +105,7 @@ router.post("/", async (req, res) => {
 //demo data for testing
 //{ "groupName": "smith_family", "description": "Family group for the Smiths", "createdBy": "691424557001f755961365fe", "isPublic": true }
 
-router.get("/", async (req, res) => {
+router.get("/", requireAuth, async (req, res) => {
   try {
     const familyGroups = await getAllFamilyGroups();
     res.status(200).json(familyGroups);
@@ -114,7 +115,7 @@ router.get("/", async (req, res) => {
 });
 
 // Specific routes MUST come before /:id to avoid being caught by the dynamic parameter
-router.get("/search/:searchTerm", async (req, res) => {
+router.get("/search/:searchTerm", requireAuth, async (req, res) => {
   try {
     const searchTerm = isValidString(req.params.searchTerm, "search term");
     const familyGroups = await searchFamilyGroups(searchTerm);
@@ -133,7 +134,7 @@ router.get("/public/all", async (req, res) => {
   }
 });
 
-router.get("/user/:userId", async (req, res) => {
+router.get("/user/:userId", requireAuth, async (req, res) => {
   try {
     let userId = req.params.userId;
     if (!userId) {
@@ -150,7 +151,7 @@ router.get("/user/:userId", async (req, res) => {
   }
 });
 
-router.get("/creator/:userId", async (req, res) => {
+router.get("/creator/:userId", requireAuth, async (req, res) => {
   try {
     let userId = req.params.userId;
     if (!userId) {
@@ -166,7 +167,7 @@ router.get("/creator/:userId", async (req, res) => {
   }
 });
 
-router.get("/name/:groupName", async (req, res) => {
+router.get("/name/:groupName", requireAuth, async (req, res) => {
   try {
     const groupName = isValidString(req.params.groupName, "group name");
     const familyGroups = await getFamilyGroupsByName(groupName);
@@ -176,7 +177,7 @@ router.get("/name/:groupName", async (req, res) => {
   }
 });
 
-router.get("/stats/count", async (req, res) => {
+router.get("/stats/count", requireAuth, async (req, res) => {
   try {
     const count = await countFamilyGroups();
     res.status(200).json(count);
@@ -185,7 +186,7 @@ router.get("/stats/count", async (req, res) => {
   }
 });
 
-router.get("/recent", async (req, res) => {
+router.get("/recent", requireAuth, async (req, res) => {
   try {
     const limit = 10;
     const recentGroups = await getRecentFamilyGroups(limit);
@@ -195,7 +196,7 @@ router.get("/recent", async (req, res) => {
   }
 });
 
-router.get("/recent/:limit", async (req, res) => {
+router.get("/recent/:limit", requireAuth, async (req, res) => {
   try {
     const limit = req.params.limit || 10;
     const recentGroups = await getRecentFamilyGroups(limit);
@@ -205,7 +206,7 @@ router.get("/recent/:limit", async (req, res) => {
   }
 });
 
-router.get("/filter/empty", async (req, res) => {
+router.get("/filter/empty", requireAuth, async (req, res) => {
   try {
     const emptyGroups = await getFamilyGroupsWithNoMembers();
     res.status(200).json(emptyGroups);
@@ -214,7 +215,7 @@ router.get("/filter/empty", async (req, res) => {
   }
 });
 
-router.get("/filter/date-range", async (req, res) => {
+router.get("/filter/date-range", requireAuth, async (req, res) => {
   try {
     const startDate = isValidString(req.query.startDate, "start date");
     const endDate = isValidString(req.query.endDate, "end date");
@@ -229,7 +230,7 @@ router.get("/filter/date-range", async (req, res) => {
   }
 });
 
-router.get("/group/:id", async (req, res) => {
+router.get("/group/:id", requireAuth, async (req, res) => {
   try {
     const id = req.params.id;
     if (!id) {
@@ -245,7 +246,7 @@ router.get("/group/:id", async (req, res) => {
   }
 });
 
-router.put("/group/:id", async (req, res) => {
+router.put("/group/:id", requireAuth, async (req, res) => {
   try {
     const id = req.params.id;
     if (!id) {
@@ -279,7 +280,7 @@ router.put("/group/:id", async (req, res) => {
   }
 });
 
-router.delete("/group/:id", async (req, res) => {
+router.delete("/group/:id", requireAuth, async (req, res) => {
   try {
     const id = req.params.id;
 
@@ -301,7 +302,7 @@ router.delete("/group/:id", async (req, res) => {
   }
 });
 
-router.post("/group/:id/members", async (req, res) => {
+router.post("/group/:id/members", requireAuth, async (req, res) => {
   try {
     const groupId = req.params.id;
     if (!groupId) {
@@ -330,7 +331,7 @@ router.post("/group/:id/members", async (req, res) => {
   }
 });
 
-router.delete("/group/:id/members/:memberId", async (req, res) => {
+router.delete("/group/:id/members/:memberId", requireAuth, async (req, res) => {
   try {
     const id = req.params.id;
     if (!id) {
@@ -357,7 +358,7 @@ router.delete("/group/:id/members/:memberId", async (req, res) => {
   }
 });
 
-router.get("/group/:id/members", async (req, res) => {
+router.get("/group/:id/members", requireAuth, async (req, res) => {
   try {
     const id = req.params.id;
     if (!id) {
@@ -373,7 +374,7 @@ router.get("/group/:id/members", async (req, res) => {
   }
 });
 
-router.get("/group/:id/stats/members-count", async (req, res) => {
+router.get("/group/:id/stats/members-count", requireAuth, async (req, res) => {
   try {
     const id = req.params.id;
     if (!id) {
@@ -439,7 +440,7 @@ router.patch("/group/:id/timezone", async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 });
-router.post("/group/:id/panic", async (req, res) => {
+router.post("/group/:id/panic", requireAuth, async (req, res) => {
   try {
     let groupId = req.params.id;
     let { senderId } = req.body;

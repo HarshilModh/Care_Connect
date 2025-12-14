@@ -33,6 +33,7 @@ export const requireAuth = async (req, res, next) => {
       req.firebaseUser = decoded;
       return next();
     } catch (firebaseError) {
+      console.error('Authentication failed:', firebaseError);
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
   }

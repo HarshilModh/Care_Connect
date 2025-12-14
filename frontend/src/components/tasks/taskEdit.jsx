@@ -60,7 +60,7 @@ export default function EditTaskModal({
   const [repeatRule, setRepeatRule] = useState("");
   const [members, setMembers] = useState([]);
 
-  // Memoize userId to avoid JSON parsing on every render
+  // Get userId from localStorage with useMemo just once to check the perf of this
   const userId = useMemo(() => {
     try {
       const storedUser = localStorage.getItem("user");
@@ -217,8 +217,9 @@ export default function EditTaskModal({
 
   if (!isOpen) return null;
 
-  return (
-    // Removed backdrop-blur to improve performance on some devices
+  // Modal JSX
+  
+    return (
     <div className="fixed inset-0 bg-black/60 flex justify-center items-center p-4 z-[9999]" onClick={onClose}>
       <div
         className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
@@ -237,11 +238,9 @@ export default function EditTaskModal({
             <X className="w-5 h-5" />
           </button>
         </div>
-
-        {/* Scrollable Content */}
+        {/* Task category */}
         <div className="overflow-y-auto p-6 space-y-6 custom-scrollbar">
-
-          {/* Type Selector */}
+        
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-3">
               Task Category
@@ -271,7 +270,7 @@ export default function EditTaskModal({
             </div>
           </div>
 
-          {/* Title & Desc */}
+       
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -301,14 +300,14 @@ export default function EditTaskModal({
             </div>
           </div>
 
-          {/* Context (Group, Recipient, Member) */}
+
           <div className="p-5 bg-gray-50 rounded-xl space-y-4 border border-gray-100">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
               Assignment Details
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Group */}
+     
               <div className="relative">
                 <label className="block text-xs font-medium text-gray-600 mb-1">Family Group</label>
                 <div className="relative">
@@ -329,7 +328,7 @@ export default function EditTaskModal({
                 </div>
               </div>
 
-              {/* Recipient */}
+
               <div className="relative">
                 <label className="block text-xs font-medium text-gray-600 mb-1">Care Recipient</label>
                 <div className="relative">
@@ -351,7 +350,7 @@ export default function EditTaskModal({
                 </div>
               </div>
 
-              {/* Assign To */}
+
               <div className="relative">
                 <label className="block text-xs font-medium text-gray-600 mb-1">Assign To</label>
                 <div className="relative">
@@ -373,7 +372,7 @@ export default function EditTaskModal({
                 </div>
               </div>
 
-              {/* Repeat Rule */}
+
               <div className="relative">
                 <label className="block text-xs font-medium text-gray-600 mb-1">Repeat</label>
                 <div className="relative">
@@ -392,7 +391,7 @@ export default function EditTaskModal({
               </div>
             </div>
 
-            {/* Due Date - Full Width */}
+    
             <div className="relative pt-2">
               <label className="block text-xs font-medium text-gray-600 mb-1">Due Date</label>
               <div className="relative">
@@ -408,7 +407,7 @@ export default function EditTaskModal({
           </div>
         </div>
 
-        {/* Footer */}
+
         <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 sticky bottom-0">
           <button
             onClick={onClose}

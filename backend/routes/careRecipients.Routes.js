@@ -10,10 +10,10 @@ import {
   searchCareRecipients,
   getCareRecipientsByPrimaryCondition,
 } from "../data/careRecipientsController.js";
-
+import { requireAuth } from "../middlewares/auth.js";
 const router = express.Router();
 
-router.get("/", async (req, res) => {
+router.get("/", requireAuth, async (req, res) => {
   try {
     const recipients = await getAllCareRecipients();
     return res.status(200).json(recipients);
@@ -21,7 +21,7 @@ router.get("/", async (req, res) => {
     return res.status(400).json({ error: error.message });
   }
 });
-router.post("/", async (req, res) => {
+router.post("/", requireAuth, async (req, res) => {
   try {
     const { groupId, userId, dob, primaryCondition, notes, emergencyContacts } =
       req.body;
@@ -41,7 +41,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.get("/group/:groupId", async (req, res) => {
+router.get("/group/:groupId", requireAuth, async (req, res) => {
   try {
     const { groupId } = req.params;
 
@@ -56,7 +56,7 @@ router.get("/group/:groupId", async (req, res) => {
   }
 });
 
-router.get("/user/:userId", async (req, res) => {
+router.get("/user/:userId", requireAuth, async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -69,7 +69,7 @@ router.get("/user/:userId", async (req, res) => {
   }
 });
 
-router.get("/search", async (req, res) => {
+router.get("/search", requireAuth, async (req, res) => {
   try {
     const { term } = req.query;
 
@@ -81,7 +81,7 @@ router.get("/search", async (req, res) => {
   }
 });
 
-router.get("/condition/:condition", async (req, res) => {
+router.get("/condition/:condition", requireAuth, async (req, res) => {
   try {
     const { condition } = req.params;
 
@@ -93,7 +93,7 @@ router.get("/condition/:condition", async (req, res) => {
   }
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -105,7 +105,7 @@ router.get("/:id", async (req, res) => {
     return res.status(400).json({ error: error.message });
   }
 });
-router.put("/:id", async (req, res) => {
+router.put("/:id", requireAuth, async (req, res) => {
   try {
     console.log("Update request body:", req.body);
     const { id } = req.params;
@@ -118,7 +118,7 @@ router.put("/:id", async (req, res) => {
     return res.status(400).json({ error: error.message });
   }
 });
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
 

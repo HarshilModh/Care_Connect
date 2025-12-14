@@ -16,33 +16,27 @@ const Home = () => {
     const { user } = useAuth();
     const [tasks, settasks] = useState([]);
     const [groups, setgroups] = useState([]);
-    const [messages, setmessages] = useState([]);
     const [activities, setactivities] = useState([]);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Fix: Use query param for tasks
                 const tasksRes = await api.get('/tasks', {
                     params: { userId: user._id }
                 });
 
-                // Fix: Flatten the grouped tasks response
-                // Response is { groupId: { tasks: [] }, ... }
+             
                 const tasksData = tasksRes.data || {};
                 const allTasks = Object.values(tasksData).flatMap(group => group.tasks || []);
                 settasks(allTasks);
 
                 const groupsRes = await api.get('/family-groups/user/' + user._id);
-                // Fix: Access data directly (backend returns array)
                 const fetchedGroups = groupsRes.data || [];
                 setgroups(fetchedGroups);
 
-                // Chat stats: Since we don't have a 'all user chats' endpoint, 
-                // we'll use active groups as a proxy for active chats for now.
-                setmessages(fetchedGroups); // Using groups as proxy for now
 
-                // Derive recent activity from tasks
+                setmessages(fetchedGroups);
+
                 const recentTasks = allTasks
                     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                     .slice(0, 3)
@@ -77,10 +71,8 @@ const Home = () => {
         show: { opacity: 1, y: 0 }
     };
 
-    // Calculate stats
     const pendingTasksCount = tasks.filter(t => t.status === 'pending').length;
     const activeGroupsCount = groups.length;
-    // Every group is a chat channel
     const activeChatsCount = groups.length;
 
     return (
@@ -91,7 +83,6 @@ const Home = () => {
                 animate="show"
                 className="space-y-8"
             >
-                {/* Welcome Section */}
                 <motion.div variants={item} className="text-center md:text-left mb-8">
                     <h1 className="section-title text-4xl mb-2">
                         Welcome back, {user?.displayName?.split(' ')[0] || 'User'}!
@@ -101,7 +92,6 @@ const Home = () => {
                     </p>
                 </motion.div>
 
-                {/* Quick Stats Grid */}
                 <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="card card-pad shadow-lg hover:shadow-xl transition-shadow border-l-4 border-indigo-500">
                         <div className="flex items-center justify-between">
@@ -177,7 +167,6 @@ const Home = () => {
                         </div>
                     </motion.div>
 
-                    {/* Recent Activity */}
                     <motion.div variants={item} className="card card-pad shadow-lg">
                         <h2 className="text-lg font-bold text-slate-800 mb-4">Recent Activity</h2>
                         <div className="space-y-4">

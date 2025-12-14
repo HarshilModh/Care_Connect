@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import api from "../../api/axios";
 import { useParams, useNavigate } from "react-router-dom";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import {
   ArrowLeft,
   Users,
@@ -16,11 +17,13 @@ import {
   Paperclip,
   Upload,
   Activity,
+  LogOut,
 } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
 import CareGiverModal from "./CareGiverModal";
 import CareRecipentModal from "./CareRecipentModal";
 import PanicButton from "../PanicButton";
+
 const GroupDetails = () => {
   const user = JSON.parse(localStorage.getItem("user")) || null;
   const userId = user?._id || null;
@@ -60,16 +63,14 @@ const GroupDetails = () => {
 
       setLoading(true);
       try {
-        const groupRes = await axios.get(
-          `http://localhost:3000/api/family-groups/group/${groupId}`,
-          { withCredentials: true }
+        const groupRes = await api.get(
+          `/family-groups/group/${groupId}`
         );
         setGroup(groupRes.data);
         setCanEdit(groupRes.data.createdBy === userId);
         // 2. Fetch Members
-        const membersRes = await axios.get(
-          `http://localhost:3000/api/memberships/group/${groupId}`,
-          { withCredentials: true }
+        const membersRes = await api.get(
+          `/memberships/group/${groupId}`
         );
         const membersData = Array.isArray(membersRes.data)
           ? membersRes.data
@@ -101,9 +102,8 @@ const GroupDetails = () => {
 
         // 3. Fetch Tasks
         try {
-          const tasksRes = await axios.get(
-            `http://localhost:3000/api/tasks/group/${groupId}`,
-            { withCredentials: true }
+          const tasksRes = await api.get(
+            `/tasks/group/${groupId}`
           );
           setTasks(Array.isArray(tasksRes.data) ? tasksRes.data : []);
           console.log("Fetched tasks:", tasksRes.data);
@@ -158,8 +158,8 @@ const GroupDetails = () => {
     });
 
     try {
-      const response = await axios.post(
-        "http://localhost:3000/api/documents/",
+      const response = await api.post(
+        `/attachments/upload/group/${groupId}`,
         formData,
         {
           headers: {
@@ -173,7 +173,6 @@ const GroupDetails = () => {
           },
         }
       );
-
       if (response.data.success) {
         toast.success(
           `Successfully uploaded ${filesArray.length
@@ -194,7 +193,45 @@ const GroupDetails = () => {
     if (!user?.firstName) return "?";
     return `${user.firstName[0]}${user.lastName?.[0] || ""}`.toUpperCase();
   };
-
+  // router.post("/:groupId/leave", requireAuth, async (req, res) => {
+  //     try {
+  //         const groupId = req.params.groupId;
+  //         const userId = req.body.userId;
+  //         if (!groupId) {
+  //             return res.status(400).json({ error: 'Group ID is required' });
+  //         }
+  //         if (!userId) {
+  //             return res.status(400).json({ error: 'User ID is required' });
+  //         }
+  //         if (!mongoose.Types.ObjectId.isValid(groupId)) {
+  //             return res.status(400).json({ error: 'Invalid Group ID' });
+  //         }
+  //         if (!mongoose.Types.ObjectId.isValid(userId)) {
+  //             return res.status(400).json({ error: 'Invalid User ID' });
+  //         }
+  //         const result = await leaveGroup(groupId, userId);
+  //         res.status(200).json(result);
+  //     } catch (error) {
+  //         res.status(500).json({ error: error.message });
+  //     }
+  // });
+  const handleLeaveGroup = async () => {
+    if (!window.confirm("Are you sure you want to leave this group?")) {
+      return;
+    }
+    try {
+      const res = await api.post(`/memberships/${groupId}/leave`, { userId });
+      if (res.data.success) {
+        toast.success("You have left the group.");
+        navigate("/family-groups");
+      } else {
+        toast.error(res.data.message || "Failed to leave the group.");
+      }
+    } catch (error) {
+      console.error("Leave group error:", error);
+      toast.error(error.response?.data?.error || "Failed to leave the group.");
+    }
+  };
   const MemberCard = ({ member, icon: Icon, colorClass, bgClass, onClick }) => (
     <div
       onClick={onClick}
@@ -275,10 +312,6 @@ const GroupDetails = () => {
     </div>
   );
 
-  const Skeleton = () => (
-    <div className="animate-pulse bg-gray-200 rounded-xl h-24 w-full"></div>
-  );
-
   if (loading) {
     return (
       <main className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6">
@@ -286,9 +319,8 @@ const GroupDetails = () => {
           <div className="h-8 bg-gray-200 rounded w-1/3 animate-pulse"></div>
           <div className="h-32 bg-gray-200 rounded-xl animate-pulse"></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Skeleton />
-            <Skeleton />
-            <Skeleton />
+            <div className="h-48 bg-gray-200 rounded-xl animate-pulse col-span-2"></div>
+            <div className="h-48 bg-gray-200 rounded-xl animate-pulse"></div>
           </div>
         </div>
       </main>
@@ -411,6 +443,15 @@ const GroupDetails = () => {
                 >
                   <Activity className="w-4 h-4" /> Vitals & Health
                 </button>
+                {/* admin cannot leave the group */}
+                {!canEdit && (
+                  <button
+                    onClick={handleLeaveGroup}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-sm font-medium"
+                  >
+                    <LogOut className="w-4 h-4" /> Leave Group
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -526,7 +567,7 @@ const GroupDetails = () => {
         </div>
 
 
-        <ToastContainer position="bottom-right" theme="colored" />
+
 
         <CareGiverModal
           isOpen={!!selectedCaregiverId}

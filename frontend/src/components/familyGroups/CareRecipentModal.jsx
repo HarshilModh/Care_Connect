@@ -17,7 +17,8 @@ const CareRecipentModal = ({ isOpen, onClose, careRecipentId, groupId }) => {
             setLoading(true);
             setError(null);
             try {
-                const response = await api.get(`http://localhost:3000/api/care-recipients/user/${careRecipentId}`);
+                // const response = await api.get(`http://localhost:3000/api/care-recipients/user/${careRecipentId}`);
+                const response = await api.get(`/care-recipients/user/${careRecipentId}`);
                 const data = response.data;
 
                 let recipientData = null;

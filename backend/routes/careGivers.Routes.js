@@ -5,7 +5,7 @@ import { requireAuth } from "../middlewares/auth.js";
 
 const router = express.Router();
 
-router.get("/", async (req, res) => {
+router.get("/", requireAuth, async (req, res) => {
   try {
     const careGivers = await getAllCareGivers();
     return res.status(200).json(careGivers);
@@ -51,7 +51,7 @@ router.post("/", requireAuth, async (req, res) => {
   }
 });
 
-router.get("/user/:userId", async (req, res) => {
+router.get("/user/:userId", requireAuth, async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -70,7 +70,7 @@ router.get("/user/:userId", async (req, res) => {
   }
 });
 
-router.get("/skill/:skill", async (req, res) => {
+router.get("/skill/:skill", requireAuth, async (req, res) => {
   try {
     const { skill } = req.params;
 
@@ -82,7 +82,7 @@ router.get("/skill/:skill", async (req, res) => {
   }
 });
 
-router.get("/certification/:certification", async (req, res) => {
+router.get("/certification/:certification", requireAuth, async (req, res) => {
   try {
     const { certification } = req.params;
 
@@ -94,7 +94,7 @@ router.get("/certification/:certification", async (req, res) => {
   }
 });
 
-router.get("/search", async (req, res) => {
+router.get("/search", requireAuth, async (req, res) => {
   try {
     const { term } = req.query;
 
@@ -106,7 +106,7 @@ router.get("/search", async (req, res) => {
   }
 });
 
-router.get("/:careGiverId", async (req, res) => {
+router.get("/:careGiverId", requireAuth, async (req, res) => {
   try {
     const { careGiverId } = req.params;
 
@@ -123,7 +123,7 @@ router.get("/:careGiverId", async (req, res) => {
     return res.status(404).json({ error: error.message });
   }
 });
-router.put("/:careGiverId", async (req, res) => {
+router.put("/:careGiverId", requireAuth, async (req, res) => {
   try {
     const { careGiverId } = req.params;
     const updateData = req.body;
@@ -141,7 +141,7 @@ router.put("/:careGiverId", async (req, res) => {
     return res.status(400).json({ error: error.message });
   }
 });
-router.delete("/:careGiverId", async (req, res) => {
+router.delete("/:careGiverId", requireAuth, async (req, res) => {
   try {
     const { careGiverId } = req.params;
 
