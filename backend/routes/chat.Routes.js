@@ -18,7 +18,7 @@ const router = express.Router();
 router.use(requireAuth);
 
 
-router.post("/:groupId/messages", async (req, res) => {
+router.post("/:groupId/messages", requireAuth, async (req, res) => {
   try {
     const { groupId } = req.params;
     const { message, meta = {} } = req.body;
@@ -49,15 +49,13 @@ router.post("/:groupId/messages", async (req, res) => {
 });
 
 
-router.get("/:groupId/messages", async (req, res) => {
+router.get("/:groupId/messages", requireAuth, async (req, res) => {
   try {
     const { groupId } = req.params;
     const userId = req.user._id;
-    const { limit, skip, sortOrder } = req.query;
+    const {sortOrder } = req.query;
 
     const options = {
-      limit: limit ? parseInt(limit) : 50,
-      skip: skip ? parseInt(skip) : 0,
       sortOrder: sortOrder ? parseInt(sortOrder) : 1
     };
 
@@ -77,13 +75,13 @@ router.get("/:groupId/messages", async (req, res) => {
   }
 });
 
-router.get("/:groupId/messages/recent", async (req, res) => {
+router.get("/:groupId/messages/recent", requireAuth, async (req, res) => {
   try {
     const { groupId } = req.params;
     const userId = req.user._id;
-    const limit = req.query.limit ? parseInt(req.query.limit) : 50;
+    
 
-    const messages = await getRecentMessages(groupId, userId, limit);
+    const messages = await getRecentMessages(groupId, userId);
 
     res.status(200).json({
       success: true,
@@ -100,7 +98,7 @@ router.get("/:groupId/messages/recent", async (req, res) => {
 });
 
 
-router.get("/:groupId/messages/search", async (req, res) => {
+router.get("/:groupId/messages/search", requireAuth, async (req, res) => {
   try {
     const { groupId } = req.params;
     const userId = req.user._id;
@@ -135,7 +133,7 @@ router.get("/:groupId/messages/search", async (req, res) => {
   }
 });
 
-router.get("/:groupId/stats", async (req, res) => {
+router.get("/:groupId/stats", requireAuth, async (req, res) => {
   try {
     const { groupId } = req.params;
     const userId = req.user._id;
@@ -156,7 +154,7 @@ router.get("/:groupId/stats", async (req, res) => {
 });
 
 
-router.get("/:groupId/unread-count", async (req, res) => {
+router.get("/:groupId/unread-count", requireAuth, async (req, res) => {
   try {
     const { groupId } = req.params;
     const userId = req.user._id;
@@ -177,7 +175,7 @@ router.get("/:groupId/unread-count", async (req, res) => {
 });
 
 
-router.patch("/messages/:messageId/status", async (req, res) => {
+router.patch("/messages/:messageId/status", requireAuth, async (req, res) => {
   try {
     const { messageId } = req.params;
     const { status } = req.body;
@@ -207,7 +205,7 @@ router.patch("/messages/:messageId/status", async (req, res) => {
 });
 
 
-router.patch("/:groupId/mark-all-read", async (req, res) => {
+router.patch("/:groupId/mark-all-read", requireAuth, async (req, res) => {
   try {
     const { groupId } = req.params;
     const userId = req.user._id;
@@ -229,7 +227,7 @@ router.patch("/:groupId/mark-all-read", async (req, res) => {
 });
 
 
-router.put("/messages/:messageId", async (req, res) => {
+router.put("/messages/:messageId", requireAuth, async (req, res) => {
   try {
     const { messageId } = req.params;
     const { message } = req.body;
@@ -260,7 +258,7 @@ router.put("/messages/:messageId", async (req, res) => {
 });
 
 
-router.delete("/messages/:messageId", async (req, res) => {
+router.delete("/messages/:messageId", requireAuth, async (req, res) => {
   try {
     const { messageId } = req.params;
     const userId = req.user._id;

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import api from "../../api/axios";
 import { useParams, useNavigate } from "react-router-dom";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import {
   ArrowLeft,
   Users,
@@ -16,20 +17,20 @@ import {
   Paperclip,
   Upload,
   Activity,
+  LogOut,
 } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
 import CareGiverModal from "./CareGiverModal";
 import CareRecipentModal from "./CareRecipentModal";
 import PanicButton from "../PanicButton";
+
 const GroupDetails = () => {
   const user = JSON.parse(localStorage.getItem("user")) || null;
   const userId = user?._id || null;
-  // console.log("Current User ID:", userId);
   let { groupId } = useParams();
   groupId = groupId.trim();
   const navigate = useNavigate();
 
-  // State
   const [group, setGroup] = useState(null);
   const [members, setMembers] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -62,16 +63,28 @@ const GroupDetails = () => {
 
       setLoading(true);
       try {
-        // 1. Fetch Group Details
-        const groupRes = await api.get(`/family-groups/group/${groupId}`);
+        const groupRes = await api.get(
+          `/family-groups/group/${groupId}`
+        );
         setGroup(groupRes.data);
-        // Check if current user can edit if createdBy matches userId
         setCanEdit(groupRes.data.createdBy === userId);
         // 2. Fetch Members
-        const membersRes = await api.get(`/memberships/group/${groupId}`);
+        const membersRes = await api.get(
+          `/memberships/group/${groupId}`
+        );
         const membersData = Array.isArray(membersRes.data)
           ? membersRes.data
           : [];
+        const isMember = membersData.some(
+          (member) => member.userId._id === userId
+        );
+        if (!isMember) {
+          // console.log("User is not a member of this group");
+          toast.error("You are not a member of this group.", {
+            toastId: "not-member-error",
+          });
+          navigate("/family-groups");
+        }
         setMembers(membersData);
 
         // Process roles
@@ -89,7 +102,9 @@ const GroupDetails = () => {
 
         // 3. Fetch Tasks
         try {
-          const tasksRes = await api.get(`/tasks/group/${groupId}`);
+          const tasksRes = await api.get(
+            `/tasks/group/${groupId}`
+          );
           setTasks(Array.isArray(tasksRes.data) ? tasksRes.data : []);
           console.log("Fetched tasks:", tasksRes.data);
         } catch (taskErr) {
@@ -143,19 +158,24 @@ const GroupDetails = () => {
     });
 
     try {
-      const response = await api.post("/documents/", formData, {
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          );
-          setUploadProgress(percentCompleted);
-        },
-      });
-
+      const response = await api.post(
+        `/attachments/upload/group/${groupId}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setUploadProgress(percentCompleted);
+          },
+        }
+      );
       if (response.data.success) {
         toast.success(
-          `Successfully uploaded ${
-            filesArray.length
+          `Successfully uploaded ${filesArray.length
           } document(s)! Document IDs: ${response.data.attachments.join(", ")}`
         );
         event.target.value = "";
@@ -169,18 +189,54 @@ const GroupDetails = () => {
     }
   };
 
-  // Helpers
   const initials = (user) => {
     if (!user?.firstName) return "?";
     return `${user.firstName[0]}${user.lastName?.[0] || ""}`.toUpperCase();
   };
-
+  // router.post("/:groupId/leave", requireAuth, async (req, res) => {
+  //     try {
+  //         const groupId = req.params.groupId;
+  //         const userId = req.body.userId;
+  //         if (!groupId) {
+  //             return res.status(400).json({ error: 'Group ID is required' });
+  //         }
+  //         if (!userId) {
+  //             return res.status(400).json({ error: 'User ID is required' });
+  //         }
+  //         if (!mongoose.Types.ObjectId.isValid(groupId)) {
+  //             return res.status(400).json({ error: 'Invalid Group ID' });
+  //         }
+  //         if (!mongoose.Types.ObjectId.isValid(userId)) {
+  //             return res.status(400).json({ error: 'Invalid User ID' });
+  //         }
+  //         const result = await leaveGroup(groupId, userId);
+  //         res.status(200).json(result);
+  //     } catch (error) {
+  //         res.status(500).json({ error: error.message });
+  //     }
+  // });
+  const handleLeaveGroup = async () => {
+    if (!window.confirm("Are you sure you want to leave this group?")) {
+      return;
+    }
+    try {
+      const res = await api.post(`/memberships/${groupId}/leave`, { userId });
+      if (res.data.success) {
+        toast.success("You have left the group.");
+        navigate("/family-groups");
+      } else {
+        toast.error(res.data.message || "Failed to leave the group.");
+      }
+    } catch (error) {
+      console.error("Leave group error:", error);
+      toast.error(error.response?.data?.error || "Failed to leave the group.");
+    }
+  };
   const MemberCard = ({ member, icon: Icon, colorClass, bgClass, onClick }) => (
     <div
       onClick={onClick}
-      className={`flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all ${
-        onClick ? "cursor-pointer hover:border-indigo-200" : ""
-      }`}
+      className={`flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all ${onClick ? "cursor-pointer hover:border-indigo-200" : ""
+        }`}
     >
       <div
         className={`w-10 h-10 rounded-full ${bgClass} flex items-center justify-center ${colorClass} font-bold text-sm shrink-0`}
@@ -206,11 +262,10 @@ const GroupDetails = () => {
       <div className="flex items-center gap-3 overflow-hidden">
         <div className="min-w-0">
           <p
-            className={`text-sm font-medium truncate ${
-              task.status === "completed"
-                ? "text-gray-400 line-through"
-                : "text-gray-900"
-            }`}
+            className={`text-sm font-medium truncate ${task.status === "completed"
+              ? "text-gray-400 line-through"
+              : "text-gray-900"
+              }`}
           >
             {task.title}
           </p>
@@ -247,19 +302,14 @@ const GroupDetails = () => {
         </div>
       </div>
       <div
-        className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
-          task.status === "completed"
-            ? "bg-green-100 text-green-700"
-            : "bg-yellow-100 text-yellow-700"
-        }`}
+        className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${task.status === "completed"
+          ? "bg-green-100 text-green-700"
+          : "bg-yellow-100 text-yellow-700"
+          }`}
       >
         {task.status || "Pending"}
       </div>
     </div>
-  );
-
-  const Skeleton = () => (
-    <div className="animate-pulse bg-gray-200 rounded-xl h-24 w-full"></div>
   );
 
   if (loading) {
@@ -269,9 +319,8 @@ const GroupDetails = () => {
           <div className="h-8 bg-gray-200 rounded w-1/3 animate-pulse"></div>
           <div className="h-32 bg-gray-200 rounded-xl animate-pulse"></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Skeleton />
-            <Skeleton />
-            <Skeleton />
+            <div className="h-48 bg-gray-200 rounded-xl animate-pulse col-span-2"></div>
+            <div className="h-48 bg-gray-200 rounded-xl animate-pulse"></div>
           </div>
         </div>
       </main>
@@ -348,11 +397,10 @@ const GroupDetails = () => {
                       />
                       <label
                         htmlFor="document-upload"
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
-                          uploading
-                            ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-                            : "bg-indigo-600 text-white hover:bg-indigo-700"
-                        }`}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${uploading
+                          ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+                          : "bg-indigo-600 text-white hover:bg-indigo-700"
+                          }`}
                       >
                         Add Document
                       </label>
@@ -395,6 +443,15 @@ const GroupDetails = () => {
                 >
                   <Activity className="w-4 h-4" /> Vitals & Health
                 </button>
+                {/* admin cannot leave the group */}
+                {!canEdit && (
+                  <button
+                    onClick={handleLeaveGroup}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-sm font-medium"
+                  >
+                    <LogOut className="w-4 h-4" /> Leave Group
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -442,7 +499,6 @@ const GroupDetails = () => {
           </div>
 
           <div className="space-y-6">
-            {/* Care Recipients */}
             <section>
               <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
                 <User className="w-5 h-5 text-amber-500" /> Care Recipients
@@ -467,7 +523,6 @@ const GroupDetails = () => {
               )}
             </section>
 
-            {/* Care Givers */}
             <section>
               <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
                 <Heart className="w-5 h-5 text-rose-500" /> Care Givers
@@ -492,7 +547,6 @@ const GroupDetails = () => {
               )}
             </section>
 
-            {/* Admins */}
             <section>
               <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
                 <Shield className="w-5 h-5 text-indigo-500" /> Admins & Family
@@ -512,9 +566,9 @@ const GroupDetails = () => {
           </div>
         </div>
 
-        <ToastContainer position="bottom-right" theme="colored" />
 
-        {/* Modals */}
+
+
         <CareGiverModal
           isOpen={!!selectedCaregiverId}
           onClose={() => setSelectedCaregiverId(null)}

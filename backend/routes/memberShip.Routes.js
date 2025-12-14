@@ -5,12 +5,13 @@ import {
     getMembershipsByUserId, getPendingMemberships
     , getRemovedMemberships, updateMembership,
     updateMembershipRole, updateMembershipStatus,
-    createMultipleMemberships
+    createMultipleMemberships,leaveGroup
 }
     from "../data/memberShipController.js";
 import { Membership } from "../models/memberShip.model.js";
 import express from "express";
 import { CareRecipient } from "../models/careRecipients.model.js";
+import { requireAuth } from "../middlewares/auth.js";
 const router = express.Router();
 
 
@@ -24,7 +25,7 @@ const ROLES_REQUIRING_ONBOARDING = ["careGiver", "careRecipient"];
 
 
 //Create Membership
-router.post("/", async (req, res) => {
+router.post("/", requireAuth, async (req, res) => {
     try {
         console.log("req.body", req.body);
         console.log("inside create membership route");
@@ -92,7 +93,7 @@ router.post("/", async (req, res) => {
 });
 
 //Create Multiple Memberships
-router.post("/bulk", async (req, res) => {
+router.post("/bulk", requireAuth, async (req, res) => {
     try {
         const memberships = req.body.memberships;
         console.log("memberships", memberships)
@@ -161,7 +162,7 @@ router.post("/bulk", async (req, res) => {
     }
 });
 //Get Memberships by User ID
-router.get("/user/:userId", async (req, res) => {
+router.get("/user/:userId", requireAuth, async (req, res) => {
     try {
         const userId = req.params.userId;
         if (!userId) {
@@ -177,7 +178,7 @@ router.get("/user/:userId", async (req, res) => {
     }
 });
 //Get Memberships by Group ID
-router.get("/group/:groupId", async (req, res) => {
+router.get("/group/:groupId", requireAuth, async (req, res) => {
     try {
         const groupId = req.params.groupId;
         if (!groupId) {
@@ -189,11 +190,12 @@ router.get("/group/:groupId", async (req, res) => {
         const memberships = await getMembershipsByGroupId(groupId);
         res.status(200).json(memberships);
     } catch (error) {
+        console.log(error);
         res.status(500).json({ error: error.message });
     }
 });
 //Update Membership Role
-router.put("/:membershipId/role", async (req, res) => {
+router.put("/:membershipId/role", requireAuth, async (req, res) => {
     try {
         const membershipId = req.params.membershipId;
         const role = req.body.role;
@@ -220,7 +222,7 @@ router.put("/:membershipId/role", async (req, res) => {
     }
 });
 //Update Membership Status
-router.put("/:membershipId/status", async (req, res) => {
+router.put("/:membershipId/status", requireAuth, async (req, res) => {
     try {
         const membershipId = req.params.membershipId;
         const status = req.body.status;
@@ -248,7 +250,7 @@ router.put("/:membershipId/status", async (req, res) => {
 });
 
 //Delete Membership
-router.delete("/:membershipId", async (req, res) => {
+router.delete("/:membershipId", requireAuth, async (req, res) => {
     try {
         const membershipId = req.params.membershipId;
         if (!membershipId) {
@@ -265,7 +267,7 @@ router.delete("/:membershipId", async (req, res) => {
 });
 
 //Count Memberships in Group
-router.get("/group/:groupId/count", async (req, res) => {
+router.get("/group/:groupId/count", requireAuth, async (req, res) => {
     try {
         const groupId = req.params.groupId;
         if (!groupId) {
@@ -282,7 +284,7 @@ router.get("/group/:groupId/count", async (req, res) => {
 });
 
 //getActiveMemberships
-router.get("/active", async (req, res) => {
+router.get("/active", requireAuth, async (req, res) => {
     try {
         const memberships = await getActiveMemberships();
         res.status(200).json(memberships);
@@ -291,7 +293,7 @@ router.get("/active", async (req, res) => {
     }
 });
 //getPendingMemberships
-router.get("/pending", async (req, res) => {
+router.get("/pending", requireAuth, async (req, res) => {
     try {
         const memberships = await getPendingMemberships();
         res.status(200).json(memberships);
@@ -300,7 +302,7 @@ router.get("/pending", async (req, res) => {
     }
 });
 //getRemovedMemberships
-router.get("/removed", async (req, res) => {
+router.get("/removed", requireAuth, async (req, res) => {
     try {
         const memberships = await getRemovedMemberships();
         res.status(200).json(memberships);
@@ -309,7 +311,7 @@ router.get("/removed", async (req, res) => {
     }
 });
 //getAllMemberships
-router.get("/", async (req, res) => {
+router.get("/", requireAuth, async (req, res) => {
     try {
         const memberships = await getAllMemberships();
         res.status(200).json(memberships);
@@ -318,7 +320,7 @@ router.get("/", async (req, res) => {
     }
 });
 //Get Membership by ID
-router.get("/:membershipId", async (req, res) => {
+router.get("/:membershipId", requireAuth, async (req, res) => {
     try {
         const membershipId = req.params.membershipId;
         if (!membershipId) {
@@ -334,7 +336,7 @@ router.get("/:membershipId", async (req, res) => {
     }
 });
 //getMembershipsByRole  
-router.get("/role/:role", async (req, res) => {
+router.get("/role/:role", requireAuth, async (req, res) => {
     try {
         const role = req.params.role;
         if (!role) {
@@ -350,7 +352,7 @@ router.get("/role/:role", async (req, res) => {
     }
 });
 //updateMembership
-router.put("/:membershipId", async (req, res) => {
+router.put("/:membershipId", requireAuth, async (req, res) => {
     try {
         const membershipId = req.params.membershipId;
         let groupId = req.body.groupId;
@@ -401,7 +403,29 @@ router.put("/:membershipId", async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-
+//leave Group
+router.post("/:groupId/leave", requireAuth, async (req, res) => {
+    try {
+        const groupId = req.params.groupId;
+        const userId = req.body.userId;
+        if (!groupId) {
+            return res.status(400).json({ error: 'Group ID is required' });
+        }
+        if (!userId) {
+            return res.status(400).json({ error: 'User ID is required' });
+        }
+        if (!mongoose.Types.ObjectId.isValid(groupId)) {
+            return res.status(400).json({ error: 'Invalid Group ID' });
+        }
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({ error: 'Invalid User ID' });
+        }
+        const result = await leaveGroup(groupId, userId);
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 //Export Router
 export default router;
 

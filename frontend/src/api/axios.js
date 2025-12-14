@@ -4,7 +4,8 @@ import { auth } from '../firebase';
 
 //Base setup
 const api = axios.create({
-   baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api",
+    baseURL: (import.meta.env.VITE_API_URL || "http://localhost:3000/api") + "/",
+    // note the trailing slash ↑
     withCredentials: true,
 });
 
@@ -12,20 +13,19 @@ const api = axios.create({
 api.interceptors.request.use(
     async (config) => {
         // Get current user's token
-        // Get current user's token
+        await auth.authStateReady();
         const user = auth.currentUser;
         if (user) {
             const token = await user.getIdToken();
             config.headers.Authorization = `Bearer ${token}`;
         } else {
-            // Fallback to stored access token (for custom backend auth)
             const token = localStorage.getItem("accessToken");
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
             }
         }
         console.log(config);
-        
+
         return config;
     },
     (error) => {
@@ -44,4 +44,5 @@ api.interceptors.response.use(
         return Promise.reject(error);
     }
 );
+api.isCancel = axios.isCancel;
 export default api;

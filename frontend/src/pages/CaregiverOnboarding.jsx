@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import axios from "axios";
 import api from "../api/axios";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
@@ -115,7 +116,22 @@ const CaregiverOnboarding = () => {
         rate: Number(rate) || 0,
       };
 
-      const res = await api.post("/caregivers", payload);
+      const accessToken = localStorage.getItem("accessToken");
+      // const res = await axios.post(
+      //   "http://localhost:3000/api/caregivers",
+      //   payload,
+      //   {
+      //     withCredentials: true,
+      //     headers: {
+      //       Authorization: `Bearer ${accessToken}`,
+      //     },
+      //   }
+      // );
+      const res = await api.post("/caregivers", payload, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
       console.log("resres", res);
 
       toast.success("Caregiver onboarding saved 🎉");

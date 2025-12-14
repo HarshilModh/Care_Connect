@@ -9,17 +9,14 @@ const Not_Found = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans">
       <div className="max-w-md w-full text-center space-y-8">
         
-        {/* Icon Animation */}
         <div className="relative flex justify-center">
           <div className="w-32 h-32 bg-blue-100 rounded-full flex items-center justify-center">
             <FileQuestion className="w-16 h-16 text-blue-600" />
           </div>
-          {/* Decorative elements */}
           <div className="absolute top-0 right-1/4 w-4 h-4 bg-orange-400 rounded-full animate-bounce delay-100"></div>
           <div className="absolute bottom-4 left-1/4 w-3 h-3 bg-indigo-400 rounded-full animate-bounce delay-300"></div>
         </div>
 
-        {/* Text Content */}
         <div className="space-y-2">
           <h1 className="text-6xl font-extrabold text-gray-900 tracking-tight">404</h1>
           <h2 className="text-2xl font-bold text-gray-800">Page not found</h2>
@@ -28,7 +25,6 @@ const Not_Found = () => {
           </p>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
            
 
@@ -42,7 +38,6 @@ const Not_Found = () => {
         </div>
       </div>
 
-      {/* Footer Text */}
       <div className="absolute bottom-8 text-sm text-gray-400">
         CareConnect Help Center
       </div>

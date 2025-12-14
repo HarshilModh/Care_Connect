@@ -1,9 +1,10 @@
 import express from "express";
 import {createMedication,getGroupMedications,updateMedication,deleteMedication,recordDose, getMedicationById} from "../data/medicationController.js";
+import { requireAuth, verifyFirebaseToken } from "../middlewares/auth.js";
 
 const router = express.Router();
 
-router.get("/group/:groupId", async (req, res) => {
+router.get("/group/:groupId", requireAuth, async (req, res) => {
   try {
     const { groupId } = req.params;
 
@@ -21,7 +22,7 @@ router.get("/group/:groupId", async (req, res) => {
   }
 });
 //get medications by id
-router.get("/:id", async (req, res) => {
+router.get("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -38,7 +39,7 @@ router.get("/:id", async (req, res) => {
     return res.status(400).json({ error: error.message });
   }
 });
-router.get("/", async (req, res) => {
+router.get("/", requireAuth, async (req, res) => {
   try {
     const { groupId } = req.query;
 
@@ -56,7 +57,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", requireAuth, async (req, res) => {
   try {
     const {
       groupId,
@@ -93,7 +94,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { updaterId, ...updates } = req.body;
@@ -112,7 +113,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { deleterId } = req.body;
@@ -131,7 +132,7 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-router.post("/:id/record-dose", async (req, res) => {
+router.post("/:id/record-dose", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { takenBy, takenAt } = req.body;

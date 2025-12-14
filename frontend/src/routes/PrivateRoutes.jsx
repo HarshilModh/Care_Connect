@@ -34,5 +34,13 @@ const PrivateRoute = ({ children }) => {
 
     return children;
 };
+//check ig loged in user is member of the group or not
+// const isUserMemberOfGroup = (userId, groupMembers) => {
+//     if (!userId || !groupMembers || groupMembers.length === 0) {
+//         return false;
+//     }
+//     return groupMembers.some(member => member._id === userId);
+// };
+    
 
 export default PrivateRoute;

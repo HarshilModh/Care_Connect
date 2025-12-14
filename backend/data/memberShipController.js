@@ -1,12 +1,13 @@
 import { Membership } from "../models/memberShip.model.js";
 import { FamilyGroup } from "../models/familyGroups.model.js";
 import User from "../models/user.model.js";
-import {CareGiver} from "../models/careGivers.model.js";
-import {CareRecipient} from "../models/careRecipients.model.js";
+import { CareGiver } from "../models/careGivers.model.js";
+import { CareRecipient } from "../models/careRecipients.model.js";
 import { Notification } from "../models/notification.model.js";
 import { isValidID } from "../utils/validation.utils.js";
 import { createNotification } from "./notificationController.js";
 import mongoose from "mongoose";
+import { assertActiveMember } from "../utils/taskHelper.js";
 
 //need to update role values in create and update functions
 //Data Functions
@@ -553,6 +554,30 @@ export const getRemovedMemberships = async () => {
     return removedMemberships;
   } catch (error) {
     throw new Error("Error fetching removed memberships: " + error.message);
+  }
+};
+
+//leave group function
+export const leaveGroup = async (groupId, userId) => {
+  try {
+    if (!groupId || !userId) {
+      throw new Error("Group ID and User ID are required");
+    }
+    if (!isValidID(groupId) || !isValidID(userId)) {
+      throw new Error("Invalid Group ID or User ID");
+    }
+    await assertActiveMember(userId, groupId);
+    const membership = await Membership.findOne({ groupId, userId });
+    if (!membership) {
+      throw new Error("Membership not found for this user in the group");
+    }
+
+    //hard delete option
+    await Membership.findByIdAndDelete(membership._id);
+
+    return { success: true, message: "Successfully left the group" };
+  } catch (error) {
+    throw new Error("Error leaving group: " + error.message);
   }
 };
 //Get Memberships with Specific Permission

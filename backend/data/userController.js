@@ -210,8 +210,10 @@ Care Connect Team`,
 //Get User by ID
 export const getUserById = async (userId) => {
   try {
-    if (!isValidID(userId, "userId")) throw new Error("Invalid user id");
-
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new Error("Invalid user id");
+    }
+  
     const user = await User.findById(userId).select("-password -refreshToken");
     if (!user) throw new Error("User not found");
 

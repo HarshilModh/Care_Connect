@@ -176,9 +176,7 @@ export default function Signup() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 md:p-6 font-sans">
       <div className="bg-white rounded-3xl shadow-xl w-full max-w-6xl overflow-hidden flex flex-col md:flex-row min-h-[700px]">
         
-        {/* Left Side - Brand & Decorative (Blue/Indigo Theme) */}
         <div className="hidden md:flex md:w-5/12 lg:w-1/2 bg-gradient-to-br from-blue-600 to-indigo-700 relative p-12 flex-col justify-between text-white overflow-hidden">
-          {/* Decorative Circles */}
           <div className="absolute top-0 left-0 w-64 h-64 bg-white opacity-10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl"></div>
           <div className="absolute bottom-0 right-0 w-80 h-80 bg-blue-400 opacity-20 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl"></div>
           
@@ -207,7 +205,6 @@ export default function Signup() {
           </div>
         </div>
 
-        {/* Right Side - Form */}
         <div className="w-full md:w-7/12 lg:w-1/2 p-8 lg:p-12 xl:p-16 flex flex-col justify-center bg-white">
           <div className="max-w-md mx-auto w-full">
             <div className="text-center md:text-left mb-8">
@@ -220,7 +217,6 @@ export default function Signup() {
               </p>
             </div>
 
-            {/* Google Sign In */}
             <button
               onClick={handleGoogleLogin}
               type="button"

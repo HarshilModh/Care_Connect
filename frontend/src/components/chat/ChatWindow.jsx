@@ -39,7 +39,7 @@ const ChatWindow = ({ group }) => {
       try {
         setLoading(true);
 
-        // Initialize socket with user info
+        // Initialize socket with loged in user info
         initializeSocket(user._id, `${user.firstName} ${user.lastName}`);
         const socket = getSocket();
 
@@ -47,7 +47,7 @@ const ChatWindow = ({ group }) => {
         joinGroup(group._id);
 
         // Load recent messages
-        const response = await getRecentMessages(group._id, 50);
+        const response = await getRecentMessages(group._id); //need to check
         setMessages(response.data);
 
         // Mark all as read
@@ -162,12 +162,14 @@ const ChatWindow = ({ group }) => {
   const handleSendMessage = async (e) => {
     e.preventDefault();
 
-    if (!newMessage.trim() || sending) return;
+    if (!newMessage.trim() || sending) {
+      return;
+    }
 
     try {
       setSending(true);
       emitTyping(group._id, false);
-      setNewMessage(""); // Clear input immediately for better UX
+      setNewMessage(""); 
 
       if (editingMessage) {
         await editMessage(editingMessage._id, newMessage.trim());
@@ -177,7 +179,6 @@ const ChatWindow = ({ group }) => {
         const response = await sendMessageAPI(group._id, newMessage.trim());
         if (response && response.success && response.data) {
           setMessages((prev) => {
-            // Check if message already exists (from socket)
             if (prev.some(m => m._id === response.data._id)) return prev;
             return [...prev, response.data];
           });
@@ -214,7 +215,7 @@ const ChatWindow = ({ group }) => {
     try {
       setIsSearching(true);
       const res = await searchMessages(group._id, searchQuery);
-      setMessages(res.data.reverse()); // Show search results
+      setMessages(res.data.reverse()); 
     } catch (error) {
       console.error("Search failed", error);
       toast.error("Search failed");
@@ -233,20 +234,19 @@ const ChatWindow = ({ group }) => {
     }
   };
 
-  // Format timestamp
   const formatTime = (date) => {
     return new Date(date).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit'
+      hour: "2-digit",
+      minute: "2-digit",
+      month: "2-digit",
+      day: "2-digit",
+      year: "2-digit"
     });
   };
-
-  // Helper to get initials
   const getInitials = (firstName, lastName) => {
     return `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`.toUpperCase();
   };
 
-  // Helper to group messages
   const groupMessages = (msgs) => {
     const groups = [];
     let currentGroup = [];
@@ -288,7 +288,6 @@ const ChatWindow = ({ group }) => {
 
   return (
     <div className="h-full flex flex-col bg-gray-50/50 dark:bg-gray-900/50 relative">
-      {/* Header */}
       <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md px-6 py-3 border-b border-[var(--border)] sticky top-0 z-10 shadow-sm flex items-center justify-between">
         <div className="flex items-center gap-4 cursor-pointer group" onClick={() => setShowDetails(true)}>
           <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[var(--brand-1)] to-[var(--brand-2)] flex items-center justify-center text-white font-bold text-lg shadow-md group-hover:scale-105 transition-transform">
@@ -343,7 +342,6 @@ const ChatWindow = ({ group }) => {
         </div>
       </div>
 
-      {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar scroll-smooth">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center opacity-0 animate-fadeIn" style={{ animationFillMode: 'forwards' }}>
@@ -382,7 +380,6 @@ const ChatWindow = ({ group }) => {
                     const isFirst = msgIndex === 0;
                     const isDeleted = msg.deleted;
 
-                    // Dynamic border radius
                     let borderRadiusClass = "rounded-2xl";
                     if (isOwn) {
                       if (!isFirst) borderRadiusClass += " rounded-tr-md";
@@ -420,7 +417,6 @@ const ChatWindow = ({ group }) => {
                           )}
                         </div>
 
-                        {/* Message Actions */}
                         {isOwn && !isDeleted && (
                           <div className="absolute -top-8 right-0 hidden group-hover/msg:flex bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 p-1 gap-1 z-10 animate-fadeIn">
                             {(new Date() - new Date(msg.createdAt) < 15 * 60 * 1000) && (
@@ -458,7 +454,6 @@ const ChatWindow = ({ group }) => {
           })
         )}
 
-        {/* Typing indicator */}
         {typingUsers.size > 0 && (
           <div className="flex items-center gap-2 ml-12 animate-fadeIn">
             <div className="bg-gray-100 dark:bg-gray-800 rounded-full px-3 py-2 flex items-center gap-1 shadow-sm border border-gray-200 dark:border-gray-700">
@@ -475,7 +470,6 @@ const ChatWindow = ({ group }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
       <div className="p-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-t border-[var(--border)]">
         {editingMessage && (
           <div className="flex items-center justify-between bg-[var(--brand-1)]/10 border border-[var(--brand-1)]/20 p-2 rounded-lg mb-2 text-sm animate-slideUp">
@@ -537,7 +531,6 @@ const ChatWindow = ({ group }) => {
         </div>
       </div>
 
-      {/* Group Details Modal */}
       {showDetails && (
         <GroupDetailsModal
           group={group}

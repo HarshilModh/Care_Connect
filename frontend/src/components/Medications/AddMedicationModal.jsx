@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import { useParams } from 'react-router-dom';
@@ -91,6 +90,10 @@ const AddMedicationModal = ({ isOpen, onClose, onSuccess }) => {
         }
         if (Number(supplyCount) < 0) {
             setError("Supply count cannot be negative.");
+            return;
+        }
+        if(!refillDate){
+            setError("Refill date is required.");
             return;
         }
         if (refillDate) {
@@ -283,6 +286,8 @@ const AddMedicationModal = ({ isOpen, onClose, onSuccess }) => {
                                         type="date"
                                         className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                                         value={refillDate}
+                                        // min value today's date
+                                        min={new Date().toISOString().split("T")[0]}
                                         onChange={(e) => setRefillDate(e.target.value)}
                                     />
                                 </div>

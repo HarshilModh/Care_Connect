@@ -271,11 +271,11 @@ export const unmarkTaskCompleted = async (taskId, uncompletedBy) => {
       throw new Error("Task not found");
     }
     const memberRole = await assertActiveMember(uncompletedBy, task.groupId);
-    if (!["admin", "owner"].includes(memberRole)) {
-      throw new Error(
-        "Permission denied: Only group admin can unmark this task."
-      );
-    }
+    // if (!["admin", "owner"].includes(memberRole)) {
+    //   throw new Error(
+    //     "Permission denied: Only group admin can unmark this task."
+    //   );
+    // }
     const updatedTask = await taskModel.findByIdAndUpdate(
       taskId,
       {

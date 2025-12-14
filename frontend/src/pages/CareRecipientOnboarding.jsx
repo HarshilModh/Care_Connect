@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import axios from "axios";
 import api from "../api/axios";
 import { useNavigate, useParams } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
@@ -100,7 +101,23 @@ const CareRecipientOnboarding = () => {
 
       console.log("Submitting careRecipient onboarding payload:", payload);
 
-      const res = await api.post("/care-recipients", payload);
+      const accessToken = localStorage.getItem("accessToken");
+
+      // const res = await axios.post(
+      //   "http://localhost:3000/api/care-recipients",
+      //   payload,
+      //   {
+      //     withCredentials: true,
+      //     headers: {
+      //       Authorization: `Bearer ${accessToken}`,
+      //     },
+      //   }
+      // );
+      const res = await api.post("/care-recipients", payload, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
 
       console.log("careRecipient onboarding response:", res);
 
@@ -113,8 +130,8 @@ const CareRecipientOnboarding = () => {
       console.error("Error saving care recipient onboarding", err);
       setError(
         err.response?.data?.error ||
-          err.message ||
-          "Failed to save care recipient onboarding"
+        err.message ||
+        "Failed to save care recipient onboarding"
       );
       toast.error("Failed to save onboarding");
     } finally {
@@ -146,6 +163,11 @@ const CareRecipientOnboarding = () => {
                 <input
                   type="date"
                   className="input"
+                  max={new Date(
+                    new Date().setFullYear(new Date().getFullYear() - 18)
+                  )
+                    .toISOString()
+                    .split("T")[0]}
                   value={dob}
                   onChange={(e) => setDob(e.target.value)}
                   required

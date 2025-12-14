@@ -1,11 +1,12 @@
 import React, { useState } from "react";
+import axios from "axios";
 import api from "../../api/axios";
-// import { useNavigate } from "react-router-dom"; // enable when you want to route to Add Members
-import { ToastContainer, toast } from "react-toastify";
+import { useNavigate } from "react-router-dom"; 
+import { toast } from "react-toastify";
 import { validateGroupName, validateDescription } from "../../utils/validation";
 
 const CreateGroup = () => {
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const [groupName, setGroupName] = useState("");
   const [description, setDescription] = useState("");
@@ -27,7 +28,18 @@ const CreateGroup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMsg({ type: "", text: "" });
-
+    if (!groupName.trim()) {
+      const errorText = "Group name is required";
+      setMsg({ type: "error", text: errorText });
+      toast.error(errorText);
+      return;
+    }
+    if (!description.trim()) {
+      const errorText = "Description is required";
+      setMsg({ type: "error", text: errorText });
+      toast.error(errorText);
+      return;
+    }
     // Validate group name
     const groupNameError = validateGroupName(groupName);
     if (groupNameError) {
@@ -46,6 +58,15 @@ const CreateGroup = () => {
 
     setLoading(true);
     try {
+      // const response = await axios.post(
+      //   "http://localhost:3000/api/family-groups",
+      //   {
+      //     groupName: groupName.trim(),
+      //     description: description.trim(),
+      //     isPublic,
+      //     createdBy,
+      //   }
+      // );
       const response = await api.post("/family-groups", {
         groupName: groupName.trim(),
         description: description.trim(),
@@ -58,14 +79,12 @@ const CreateGroup = () => {
       console.log("data", data);
       toast.success("Family group created successfully!");
       resetForm();
-
-      // Optionally, navigate to Add Members page with the new group ID
-      // navigate(`/addMember`, { state: { groupId: data.familyGroup._id } });
+      navigate(`/addMember`, { state: { groupId: data.familyGroup._id } });
     } catch (err) {
       console.error("Error creating family group:", err);
       toast.error(
         "Error creating family group: " +
-          (err.response?.data?.error || err.message)
+        (err.response?.data?.error || err.message)
       );
       setMsg({
         type: "error",
@@ -90,7 +109,6 @@ const CreateGroup = () => {
 
         <div className="card mx-auto max-w-2xl">
           <form className="card-pad form-grid" onSubmit={handleSubmit}>
-            {/* Group name */}
             <div>
               <label className="card-sub font-semibold">Group Name</label>
             </div>
@@ -112,7 +130,6 @@ const CreateGroup = () => {
               </p>
             </div>
 
-            {/* Description */}
             <div>
               <label className="card-sub font-semibold">Description</label>
             </div>
@@ -160,7 +177,6 @@ const CreateGroup = () => {
               )}
             </div>
 
-            {/* Actions */}
             <div className="sm:col-span-2 flex items-center justify-end gap-3">
               <button
                 type="button"
@@ -181,18 +197,7 @@ const CreateGroup = () => {
           You can add members after creating the group.
         </p>
       </div>
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="colored"
-      />
+
     </main>
   );
 };
