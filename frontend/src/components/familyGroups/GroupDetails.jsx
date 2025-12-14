@@ -63,15 +63,11 @@ const GroupDetails = () => {
 
       setLoading(true);
       try {
-        const groupRes = await api.get(
-          `/family-groups/group/${groupId}`
-        );
+        const groupRes = await api.get(`/family-groups/group/${groupId}`);
         setGroup(groupRes.data);
         setCanEdit(groupRes.data.createdBy === userId);
         // 2. Fetch Members
-        const membersRes = await api.get(
-          `/memberships/group/${groupId}`
-        );
+        const membersRes = await api.get(`/memberships/group/${groupId}`);
         const membersData = Array.isArray(membersRes.data)
           ? membersRes.data
           : [];
@@ -102,9 +98,7 @@ const GroupDetails = () => {
 
         // 3. Fetch Tasks
         try {
-          const tasksRes = await api.get(
-            `/tasks/group/${groupId}`
-          );
+          const tasksRes = await api.get(`/tasks/group/${groupId}`);
           setTasks(Array.isArray(tasksRes.data) ? tasksRes.data : []);
           console.log("Fetched tasks:", tasksRes.data);
         } catch (taskErr) {
@@ -158,24 +152,21 @@ const GroupDetails = () => {
     });
 
     try {
-      const response = await api.post(
-        `/attachments/upload/group/${groupId}`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          onUploadProgress: (progressEvent) => {
-            const percentCompleted = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
-            );
-            setUploadProgress(percentCompleted);
-          },
-        }
-      );
+      const response = await api.post(`/documents/`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setUploadProgress(percentCompleted);
+        },
+      });
       if (response.data.success) {
         toast.success(
-          `Successfully uploaded ${filesArray.length
+          `Successfully uploaded ${
+            filesArray.length
           } document(s)! Document IDs: ${response.data.attachments.join(", ")}`
         );
         event.target.value = "";
@@ -235,8 +226,9 @@ const GroupDetails = () => {
   const MemberCard = ({ member, icon: Icon, colorClass, bgClass, onClick }) => (
     <div
       onClick={onClick}
-      className={`flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all ${onClick ? "cursor-pointer hover:border-indigo-200" : ""
-        }`}
+      className={`flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all ${
+        onClick ? "cursor-pointer hover:border-indigo-200" : ""
+      }`}
     >
       <div
         className={`w-10 h-10 rounded-full ${bgClass} flex items-center justify-center ${colorClass} font-bold text-sm shrink-0`}
@@ -262,10 +254,11 @@ const GroupDetails = () => {
       <div className="flex items-center gap-3 overflow-hidden">
         <div className="min-w-0">
           <p
-            className={`text-sm font-medium truncate ${task.status === "completed"
-              ? "text-gray-400 line-through"
-              : "text-gray-900"
-              }`}
+            className={`text-sm font-medium truncate ${
+              task.status === "completed"
+                ? "text-gray-400 line-through"
+                : "text-gray-900"
+            }`}
           >
             {task.title}
           </p>
@@ -302,10 +295,11 @@ const GroupDetails = () => {
         </div>
       </div>
       <div
-        className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${task.status === "completed"
-          ? "bg-green-100 text-green-700"
-          : "bg-yellow-100 text-yellow-700"
-          }`}
+        className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
+          task.status === "completed"
+            ? "bg-green-100 text-green-700"
+            : "bg-yellow-100 text-yellow-700"
+        }`}
       >
         {task.status || "Pending"}
       </div>
@@ -397,10 +391,11 @@ const GroupDetails = () => {
                       />
                       <label
                         htmlFor="document-upload"
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${uploading
-                          ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-                          : "bg-indigo-600 text-white hover:bg-indigo-700"
-                          }`}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                          uploading
+                            ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+                            : "bg-indigo-600 text-white hover:bg-indigo-700"
+                        }`}
                       >
                         Add Document
                       </label>
@@ -565,9 +560,6 @@ const GroupDetails = () => {
             </section>
           </div>
         </div>
-
-
-
 
         <CareGiverModal
           isOpen={!!selectedCaregiverId}
