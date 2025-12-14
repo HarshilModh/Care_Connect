@@ -18,24 +18,25 @@ import {
 } from "../utils/validation";
 import { Eye, EyeOff, Check, User, Mail, Lock } from "lucide-react";
 import { useEffect } from "react";
+const FRONTEND_URL =
+  import.meta.env.VITE_FRONTEND_URL || window.location.origin;
 
 // import { useTheme } from "../context/ThemeContext";
 
 export default function Signup() {
-
-  
   const navigate = useNavigate();
   const { user } = useAuth();
-    useEffect(() => {
-        console.log("Current user in SignIn:", user);
-        if (user) {
-            //toast is not showing up before navigate, so adding a slight delay
-            setTimeout(() =>
-            toast.info("You are already logged in. Redirecting to home...")
-            , 500);
-            navigate("/home", { replace: true });
-        }
-    }, [user, navigate]);
+  useEffect(() => {
+    console.log("Current user in SignIn:", user);
+    if (user) {
+      //toast is not showing up before navigate, so adding a slight delay
+      setTimeout(
+        () => toast.info("You are already logged in. Redirecting to home..."),
+        500
+      );
+      navigate("/home", { replace: true });
+    }
+  }, [user, navigate]);
   const { login } = useAuth();
 
   const [showPassword, setShowPassword] = useState(false);
@@ -127,7 +128,7 @@ export default function Signup() {
 
       console.log("Sending email verification");
       await sendEmailVerification(user, {
-        url: "http://localhost:5173/verify-success",
+        url: `${FRONTEND_URL}/verify-success`,
       });
       console.log("Email verification sent");
       //toast.success("Verification email sent! Redirecting to login...");
@@ -145,12 +146,16 @@ export default function Signup() {
       console.log("Sending signup data to backend:", payload);
       const response = await api.post("users/signUp", payload);
       const data = response.data;
-      
+
       console.log("User created in backend:", data);
-      
-      if (data?.error) {throw new Error(data.error);}
-      
-      toast.success("Verification email sent! Please verify your email, then sign in.");
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      toast.success(
+        "Verification email sent! Please verify your email, then sign in."
+      );
 
       setFormData({
         firstName: "",
@@ -165,7 +170,10 @@ export default function Signup() {
       }, 2000);
     } catch (error) {
       console.error("Signup error:", error);
-      const message =error.response?.data?.error || error.message || "Signup failed. Please try again.";
+      const message =
+        error.response?.data?.error ||
+        error.message ||
+        "Signup failed. Please try again.";
       toast.error(message);
     } finally {
       setLoading(false);
@@ -175,17 +183,26 @@ export default function Signup() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 md:p-6 font-sans">
       <div className="bg-white rounded-3xl shadow-xl w-full max-w-6xl overflow-hidden flex flex-col md:flex-row min-h-[700px]">
-        
         <div className="hidden md:flex md:w-5/12 lg:w-1/2 bg-gradient-to-br from-blue-600 to-indigo-700 relative p-12 flex-col justify-between text-white overflow-hidden">
           <div className="absolute top-0 left-0 w-64 h-64 bg-white opacity-10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl"></div>
           <div className="absolute bottom-0 right-0 w-80 h-80 bg-blue-400 opacity-20 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl"></div>
-          
+
           <div className="relative z-10">
             <div className="flex items-center gap-3 text-2xl font-bold tracking-tight mb-2">
               <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
-                 <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                 </svg>
+                <svg
+                  className="w-6 h-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  />
+                </svg>
               </div>
               CareConnect
             </div>
@@ -193,10 +210,12 @@ export default function Signup() {
 
           <div className="relative z-10 max-w-md">
             <h2 className="text-4xl lg:text-5xl font-extrabold mb-6 leading-tight">
-              Caregiving made <br/> <span className="text-blue-200">Simple & Collaborative.</span>
+              Caregiving made <br />{" "}
+              <span className="text-blue-200">Simple & Collaborative.</span>
             </h2>
             <p className="text-lg text-blue-100/90 leading-relaxed">
-              Join thousands of families using CareConnect to coordinate support, manage tasks, and stay connected with their loved ones.
+              Join thousands of families using CareConnect to coordinate
+              support, manage tasks, and stay connected with their loved ones.
             </p>
           </div>
 
@@ -208,10 +227,15 @@ export default function Signup() {
         <div className="w-full md:w-7/12 lg:w-1/2 p-8 lg:p-12 xl:p-16 flex flex-col justify-center bg-white">
           <div className="max-w-md mx-auto w-full">
             <div className="text-center md:text-left mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Create an account</h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Create an account
+              </h1>
               <p className="text-gray-500">
                 Already have an account?{" "}
-                <Link to="/signin" className="text-indigo-600 font-semibold hover:text-indigo-700 transition-colors">
+                <Link
+                  to="/signin"
+                  className="text-indigo-600 font-semibold hover:text-indigo-700 transition-colors"
+                >
                   Log in
                 </Link>
               </p>
@@ -236,7 +260,9 @@ export default function Signup() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="grid grid-cols-2 gap-5">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-gray-700 ml-1">First Name</label>
+                  <label className="text-sm font-semibold text-gray-700 ml-1">
+                    First Name
+                  </label>
                   <div className="relative">
                     <input
                       name="firstName"
@@ -248,10 +274,16 @@ export default function Signup() {
                       required
                     />
                   </div>
-                  {errors.firstName && <p className="text-xs text-red-500 ml-1">{errors.firstName}</p>}
+                  {errors.firstName && (
+                    <p className="text-xs text-red-500 ml-1">
+                      {errors.firstName}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-gray-700 ml-1">Last Name</label>
+                  <label className="text-sm font-semibold text-gray-700 ml-1">
+                    Last Name
+                  </label>
                   <div className="relative">
                     <input
                       name="lastName"
@@ -263,12 +295,18 @@ export default function Signup() {
                       required
                     />
                   </div>
-                  {errors.lastName && <p className="text-xs text-red-500 ml-1">{errors.lastName}</p>}
+                  {errors.lastName && (
+                    <p className="text-xs text-red-500 ml-1">
+                      {errors.lastName}
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-gray-700 ml-1">Email Address</label>
+                <label className="text-sm font-semibold text-gray-700 ml-1">
+                  Email Address
+                </label>
                 <div className="relative group">
                   <div className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors">
                     <Mail className="w-5 h-5" />
@@ -283,11 +321,15 @@ export default function Signup() {
                     required
                   />
                 </div>
-                {errors.email && <p className="text-xs text-red-500 ml-1">{errors.email}</p>}
+                {errors.email && (
+                  <p className="text-xs text-red-500 ml-1">{errors.email}</p>
+                )}
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-gray-700 ml-1">Password</label>
+                <label className="text-sm font-semibold text-gray-700 ml-1">
+                  Password
+                </label>
                 <div className="relative group">
                   <div className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors">
                     <Lock className="w-5 h-5" />
@@ -306,14 +348,22 @@ export default function Signup() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
                   </button>
                 </div>
-                {errors.password && <p className="text-xs text-red-500 ml-1">{errors.password}</p>}
+                {errors.password && (
+                  <p className="text-xs text-red-500 ml-1">{errors.password}</p>
+                )}
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-gray-700 ml-1">Confirm Password</label>
+                <label className="text-sm font-semibold text-gray-700 ml-1">
+                  Confirm Password
+                </label>
                 <div className="relative group">
                   <div className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-indigo-500 transition-colors">
                     <Lock className="w-5 h-5" />
@@ -332,10 +382,18 @@ export default function Signup() {
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
                   </button>
                 </div>
-                {errors.confirmpassword && <p className="text-xs text-red-500 ml-1">{errors.confirmpassword}</p>}
+                {errors.confirmpassword && (
+                  <p className="text-xs text-red-500 ml-1">
+                    {errors.confirmpassword}
+                  </p>
+                )}
               </div>
 
               <div className="flex items-start gap-3 pt-2">
@@ -349,7 +407,20 @@ export default function Signup() {
                   />
                 </div>
                 <label htmlFor="terms" className="text-sm text-gray-600">
-                  I agree to the <a href="#" className="text-indigo-600 hover:text-indigo-700 font-medium hover:underline">Terms of Service</a> and <a href="#" className="text-indigo-600 hover:text-indigo-700 font-medium hover:underline">Privacy Policy</a>
+                  I agree to the{" "}
+                  <a
+                    href="#"
+                    className="text-indigo-600 hover:text-indigo-700 font-medium hover:underline"
+                  >
+                    Terms of Service
+                  </a>{" "}
+                  and{" "}
+                  <a
+                    href="#"
+                    className="text-indigo-600 hover:text-indigo-700 font-medium hover:underline"
+                  >
+                    Privacy Policy
+                  </a>
                 </label>
               </div>
 
@@ -361,7 +432,9 @@ export default function Signup() {
                 {loading ? (
                   <>Processing...</>
                 ) : (
-                  <>Create Account <Check className="w-5 h-5" /></>
+                  <>
+                    Create Account <Check className="w-5 h-5" />
+                  </>
                 )}
               </button>
             </form>
