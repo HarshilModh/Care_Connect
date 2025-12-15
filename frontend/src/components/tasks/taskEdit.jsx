@@ -71,9 +71,18 @@ export default function EditTaskModal({ task, isOpen, onClose, onSuccess }) {
     if (task) {
       setTitle(task.title || "");
       setDesc(task.description || "");
-      setDueDate(
-        task.dueAt ? new Date(task.dueAt).toISOString().slice(0, 16) : ""
-      );
+      // Format date for datetime-local input (local timezone)
+      if (task.dueAt) {
+        const date = new Date(task.dueAt);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        setDueDate(`${year}-${month}-${day}T${hours}:${minutes}`);
+      } else {
+        setDueDate("");
+      }
       setType(task.type || "task");
 
       const groupId = task.groupId?._id || task.groupId || "";
