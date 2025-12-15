@@ -13,7 +13,6 @@ import {
   ChevronDown,
 } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
-import api from "../api/axios";
 
 export default function CreateTask() {
   const [title, setTitle] = useState("");
