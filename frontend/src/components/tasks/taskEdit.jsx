@@ -11,7 +11,7 @@ import {
   StickyNote,
   ChevronDown,
   X,
-  Clock
+  Clock,
 } from "lucide-react";
 
 const TASK_TYPES = [
@@ -41,12 +41,7 @@ const TASK_TYPES = [
   },
 ];
 
-export default function EditTaskModal({
-  task,
-  isOpen,
-  onClose,
-  onSuccess,
-}) {
+export default function EditTaskModal({ task, isOpen, onClose, onSuccess }) {
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -76,7 +71,9 @@ export default function EditTaskModal({
     if (task) {
       setTitle(task.title || "");
       setDesc(task.description || "");
-      setDueDate(task.dueAt ? new Date(task.dueAt).toISOString().slice(0, 16) : "");
+      setDueDate(
+        task.dueAt ? new Date(task.dueAt).toISOString().slice(0, 16) : ""
+      );
       setType(task.type || "task");
 
       const groupId = task.groupId?._id || task.groupId || "";
@@ -87,12 +84,13 @@ export default function EditTaskModal({
 
       const assignedId = task.assignedTo?._id || task.assignedTo || "";
       // Handle populated assignedTo (object) or ID (string)
-      setAssignedTo(task.assignedTo?.userId?._id || task.assignedTo?._id || assignedId);
+      setAssignedTo(
+        task.assignedTo?.userId?._id || task.assignedTo?._id || assignedId
+      );
 
       setRepeatRule(task.repeatRule || "");
     }
   }, [task]);
-
 
   // 2. Fetch Groups
   useEffect(() => {
@@ -117,7 +115,6 @@ export default function EditTaskModal({
     fetchGroups();
   }, [userId]);
 
-
   // 3. Fetch Recipients and Members when group changes
   useEffect(() => {
     if (!selectedGroup) {
@@ -129,14 +126,16 @@ export default function EditTaskModal({
     async function fetchData() {
       try {
         // Fetch recipients
-        const resRecipients = await api.get(`/care-recipients/group/${selectedGroup}`);
+        const resRecipients = await api.get(
+          `/care-recipients/group/${selectedGroup}`
+        );
         const dataRecipients = resRecipients.data;
 
         const validRecipients = [];
         const recipientUserIdSet = new Set();
 
         if (!dataRecipients.error && Array.isArray(dataRecipients)) {
-          dataRecipients.forEach(item => {
+          dataRecipients.forEach((item) => {
             if (item.userId) {
               validRecipients.push({
                 id: item.userId._id,
@@ -174,14 +173,12 @@ export default function EditTaskModal({
           }
           setMembers(validMembers);
         }
-
       } catch (err) {
         console.error("Error fetching context:", err);
       }
     }
     fetchData();
   }, [selectedGroup]);
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -192,6 +189,9 @@ export default function EditTaskModal({
 
     setLoading(true);
     try {
+      // Convert datetime-local to ISO string to preserve timezone
+      const dueAtISO = dueDate ? new Date(dueDate).toISOString() : null;
+
       await api.put(`/tasks/${task._id}`, {
         createdBy: userId,
         groupId: selectedGroup,
@@ -199,7 +199,7 @@ export default function EditTaskModal({
         recipientId: recipient,
         title,
         description: desc,
-        dueAt: dueDate || null,
+        dueAt: dueAtISO,
         repeatRule: repeatRule || null,
         type,
       });
@@ -209,7 +209,9 @@ export default function EditTaskModal({
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error("Error updating task: " + (err.response?.data?.error || err.message));
+      toast.error(
+        "Error updating task: " + (err.response?.data?.error || err.message)
+      );
     } finally {
       setLoading(false);
     }
@@ -218,12 +220,15 @@ export default function EditTaskModal({
   if (!isOpen) return null;
 
   // Modal JSX
-  
-    return (
-    <div className="fixed inset-0 bg-black/60 flex justify-center items-center p-4 z-[9999]" onClick={onClose}>
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/60 flex justify-center items-center p-4 z-[9999]"
+      onClick={onClose}
+    >
       <div
         className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
@@ -240,7 +245,6 @@ export default function EditTaskModal({
         </div>
         {/* Task category */}
         <div className="overflow-y-auto p-6 space-y-6 custom-scrollbar">
-        
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-3">
               Task Category
@@ -254,14 +258,16 @@ export default function EditTaskModal({
                     key={t.id}
                     type="button"
                     onClick={() => setType(t.id)}
-                    className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200 ${isSelected
-                      ? `${t.color} ring-2 ring-offset-1 ring-blue-500`
-                      : "bg-white border-gray-200 hover:bg-gray-50 text-gray-600"
-                      }`}
+                    className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200 ${
+                      isSelected
+                        ? `${t.color} ring-2 ring-offset-1 ring-blue-500`
+                        : "bg-white border-gray-200 hover:bg-gray-50 text-gray-600"
+                    }`}
                   >
                     <Icon
-                      className={`w-6 h-6 mb-1 ${isSelected ? "scale-110" : ""
-                        }`}
+                      className={`w-6 h-6 mb-1 ${
+                        isSelected ? "scale-110" : ""
+                      }`}
                     />
                     <span className="text-xs font-medium">{t.label}</span>
                   </button>
@@ -270,7 +276,6 @@ export default function EditTaskModal({
             </div>
           </div>
 
-       
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -300,16 +305,16 @@ export default function EditTaskModal({
             </div>
           </div>
 
-
           <div className="p-5 bg-gray-50 rounded-xl space-y-4 border border-gray-100">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
               Assignment Details
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-     
               <div className="relative">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Family Group</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Family Group
+                </label>
                 <div className="relative">
                   <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <select
@@ -328,9 +333,10 @@ export default function EditTaskModal({
                 </div>
               </div>
 
-
               <div className="relative">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Care Recipient</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Care Recipient
+                </label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <select
@@ -350,11 +356,14 @@ export default function EditTaskModal({
                 </div>
               </div>
 
-
               <div className="relative">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Assign To</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Assign To
+                </label>
                 <div className="relative">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full text-[10px] font-bold">@</div>
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full text-[10px] font-bold">
+                    @
+                  </div>
                   <select
                     value={assignedTo}
                     onChange={(e) => setAssignedTo(e.target.value)}
@@ -372,9 +381,10 @@ export default function EditTaskModal({
                 </div>
               </div>
 
-
               <div className="relative">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Repeat</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Repeat
+                </label>
                 <div className="relative">
                   <select
                     value={repeatRule}
@@ -391,9 +401,10 @@ export default function EditTaskModal({
               </div>
             </div>
 
-    
             <div className="relative pt-2">
-              <label className="block text-xs font-medium text-gray-600 mb-1">Due Date</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Due Date
+              </label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
@@ -406,7 +417,6 @@ export default function EditTaskModal({
             </div>
           </div>
         </div>
-
 
         <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 sticky bottom-0">
           <button
