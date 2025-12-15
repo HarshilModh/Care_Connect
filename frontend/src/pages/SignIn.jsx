@@ -123,7 +123,7 @@ function SignIn() {
         "Login error:",
         error.response?.data?.error || error.message
       );
-      toast.error(error.response?.data?.error || "Login failed. Try again.");
+      toast.error("Invalid email or password.");
     } finally {
       setLoading(false);
     }
