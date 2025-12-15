@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import api from "../../api/axios.js";
-import { toast } from "react-toastify";
+import { toast,ToastContainer } from "react-toastify";
 import { auth } from "../../firebase.js";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
@@ -411,6 +411,7 @@ const AddMembers = () => {
       const user = userCredential.user;
       console.log("creating user in backend");
       console.log("user.uid", user.uid);
+      let uidForBackend = user.uid;
       // console.log("inviteFirstName", inviteFirstName);
       // console.log("inviteLastName", inviteLastName);
       // console.log("inviteEmail", inviteEmail);
@@ -443,7 +444,7 @@ const AddMembers = () => {
           phone: null,
           role: inviteRole,
           needPasswordReset: true,
-          uid: user.uid,
+          firebaseUid: uidForBackend,
         },
         { withCredentials: true }
       );
@@ -936,6 +937,7 @@ const AddMembers = () => {
         </div>
 
       </div>
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
     </main>
   );
 };

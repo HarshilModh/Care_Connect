@@ -114,11 +114,11 @@ export const createMedication = async (
     }
 
     const memberRole = await assertActiveMember(createdBy, groupId);
-    if (memberRole !== "admin") {
-      throw new Error(
-        "User does not have permission to create medications in this group"
-      );
-    }
+    // if (memberRole !== "admin") {
+    //   throw new Error(
+    //     "User does not have permission to create medications in this group"
+    //   );
+    // }
 
     await assertRecipientInGroup(recipientId, groupId);
 
@@ -183,11 +183,11 @@ export const updateMedication = async (
     }
 
     const memberRole = await assertActiveMember(updaterId, medication.groupId);
-    if (memberRole !== "admin") {
-      throw new Error(
-        "User does not have permission to update medications in this group"
-      );
-    }
+    // if (memberRole !== "admin") {
+    //   throw new Error(
+    //     "User does not have permission to update medications in this group"
+    //   );
+    // }
 
     const {
       name,
@@ -323,13 +323,13 @@ export const deleteMedication = async (medicationId, deleterId) => {
   }
 
   const memberRole = await assertActiveMember(deleterId, medication.groupId);
-  if (memberRole !== "admin") {
-    const err = new Error(
-      "User does not have permission to delete medications in this group"
-    );
-    err.statusCode = 403;
-    throw err;
-  }
+  // if (memberRole !== "admin") {
+  //   const err = new Error(
+  //     "User does not have permission to delete medications in this group"
+  //   );
+  //   err.statusCode = 403;
+  //   throw err;
+  // }
 
   medication.active = false;
   return await medication.save();

@@ -72,6 +72,7 @@ export const AuthProvider = ({ children }) => {
         const normalizedUser = Array.isArray(userData) ? userData[0] : userData;
 
         console.log("Logging in user function authcontext", normalizedUser);
+        
         storeSession(normalizedUser, accessToken);
     };
 

@@ -388,10 +388,14 @@ export const rejectJoinRequest = async (notificationId, userId) => {
       throw new Error("Invalid join request: missing membership reference");
     }
 
-    const membership = await Membership.findByIdAndUpdate(
-      notification.membershipId,
-      { $set: { status: "removed" } },
-      { new: true }
+    // const membership = await Membership.findByIdAndUpdate(
+    //   notification.membershipId,
+    //   { $set: { status: "removed" } },
+    //   { new: true }
+    // );
+    // Instead of updating status to removed, we delete the membership
+    const membership = await Membership.findByIdAndDelete(
+      notification.membershipId
     );
 
     if (!membership) {

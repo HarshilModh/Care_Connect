@@ -93,7 +93,8 @@ function SignIn() {
         try {
             setLoading(true);
             const res = await api.post("users/login", payload);
-            console.log("Login response:", res);
+            setTimeout(() => console.log("Response after login:", res), 1000);
+
             if (res.data?.user && res.data?.tokens?.accessToken) {
                 login(res.data.user, res.data.tokens?.accessToken);
 

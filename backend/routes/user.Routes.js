@@ -103,7 +103,7 @@ router.post("/login", async (req, res) => {
     const authResult = await authenticateUser(email, password);
     res.status(200).json(authResult);
   } catch (error) {
-    res.status(401).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 //search user by email
