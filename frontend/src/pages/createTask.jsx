@@ -240,6 +240,9 @@ export default function CreateTask() {
         //     type,
         //   }),
         // });
+        // Convert datetime-local to ISO string to preserve timezone
+        const dueAtISO = dueDate ? new Date(dueDate).toISOString() : null;
+
         response = await api.post("/tasks", {
           groupId: selectedGroup,
           recipientId: recipient,
@@ -247,7 +250,7 @@ export default function CreateTask() {
           title,
           description: desc || "",
           assignedTo: assignedTo || undefined,
-          dueAt: dueDate,
+          dueAt: dueAtISO,
           repeatRule: repeatRule,
           type,
         });
@@ -260,7 +263,8 @@ export default function CreateTask() {
         formData.append("title", title);
         formData.append("description", desc || "");
         if (assignedTo) formData.append("assignedTo", assignedTo);
-        if (dueDate) formData.append("dueAt", dueDate);
+        // Convert datetime-local to ISO string to preserve timezone
+        if (dueDate) formData.append("dueAt", new Date(dueDate).toISOString());
         if (repeatRule) formData.append("repeatRule", repeatRule);
         if (type) formData.append("type", type);
 
