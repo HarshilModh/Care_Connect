@@ -43,21 +43,7 @@ const SideBar = () => {
 
         {link("/tasks", RectangleStackIcon, "Tasks")}
         {link("/documents", DocumentIcon, "Documents")}
-
       </nav>
-
-      <div className="sidebar-footer">
-        <button
-          type="button"
-          className="sidebar-logout"
-          onClick={() => {
-            window.location.href = "/signin";
-          }}
-        >
-          <ArrowLeftOnRectangleIcon className="h-5 w-5" />
-          Sign out
-        </button>
-      </div>
     </aside>
   );
 };
