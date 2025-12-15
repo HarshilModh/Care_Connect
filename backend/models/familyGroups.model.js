@@ -10,7 +10,7 @@ const familyGroupSchema = new mongoose.Schema(
       minlength: 2,
       maxlength: 100
     },
-    description: { type: String, trim: true, maxlength: 500, default: "" },
+    description: { type: String, trim: true, maxlength: 500, default: "" ,required:true},
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
     timeZone: {
       type: String,

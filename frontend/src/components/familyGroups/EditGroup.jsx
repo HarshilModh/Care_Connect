@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import { useParams, useNavigate } from "react-router-dom";
-import { toast } from 'react-toastify';
+import { toast,ToastContainer } from 'react-toastify';
 import { Users, Save, ArrowLeft, Globe, Lock } from 'lucide-react';
 import { validateGroupName, validateDescription } from '../../utils/validation';
 
@@ -224,6 +224,7 @@ const EditGroup = () => {
           </form>
         </div>
       </div>
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
     </div>
   );
 };

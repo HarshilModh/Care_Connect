@@ -16,7 +16,7 @@ import {
   Edit,
   ArrowRight
 } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast,ToastContainer } from "react-toastify";
 
 const FamilyGroups = () => {
   const [familyGroups, setFamilyGroups] = useState([]);
@@ -288,6 +288,7 @@ const FamilyGroups = () => {
           </div>
         )}
       </div>
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
     </main>
   );
 };

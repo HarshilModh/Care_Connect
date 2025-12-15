@@ -23,6 +23,7 @@ export const requireAuth = async (req, res, next) => {
       );
 
       if (!user) {
+        console.error("User not found for decoded token:", decoded);
         return res.status(401).json({ error: "User not found in system" });
       }
 
@@ -30,7 +31,8 @@ export const requireAuth = async (req, res, next) => {
       req.firebaseUser = decoded;
       return next();
     } catch (firebaseError) {
-      console.error("Authentication failed:", firebaseError);
+      console.log("Decoded JWT error:", jwtError);
+      console.log("Authentication failed:", firebaseError);
       return res.status(401).json({ error: "Invalid or expired token" });
     }
   }

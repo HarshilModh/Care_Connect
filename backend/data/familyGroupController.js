@@ -14,6 +14,7 @@ import { Membership } from "../models/memberShip.model.js";
 import { deleteNotificationsByGroupId } from "./notificationController.js";
 import { isValidObjectId } from "mongoose";
 import mongoose from "mongoose";
+import { th } from "zod/v4/locales";
 //Data Functions
 
 //changes made here by Harshil Modh
@@ -25,9 +26,9 @@ export const createFamilyGroup = async (
   isPublic
 ) => {
   try {
-    if (!groupName || !createdBy) {
+    if (!groupName || !createdBy|| !description) {
       throw new Error(
-        "groupName and createdBy are required to create a family group"
+        "groupName, createdBy, and description are required to create a family group"
       );
     }
     if (typeof groupName !== "string") {
@@ -35,6 +36,9 @@ export const createFamilyGroup = async (
     }
     if (typeof isPublic !== "boolean") {
       throw new Error("isPublic must be a boolean value");
+    }
+    if(!description || typeof description !== "string"){
+      throw new Error("description must be a string");
     }
     if (description) {
       description = isValidString(description, "description");

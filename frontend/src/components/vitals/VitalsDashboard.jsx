@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
-import {toast} from 'react-toastify';
+import { toast } from 'react-toastify';
 import {
     Users,
     Heart,
@@ -36,6 +36,8 @@ const VitalsDashboard = () => {
     const [latestVitals, setLatestVitals] = useState({});
     const [historyData, setHistoryData] = useState([]);
     const [loading, setLoading] = useState(true);
+    //chart data
+    const [chartData, setChartData] = useState({});
     //modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
     const onSuccess = () => {
@@ -59,7 +61,7 @@ const VitalsDashboard = () => {
                     });
                     navigate("/family-groups");
 
-                  }
+                }
             } catch (err) {
                 console.error("Error checking group membership:", err);
                 toast.error("Failed to verify group membership");
@@ -67,8 +69,8 @@ const VitalsDashboard = () => {
                 return;
             }
         };
-            checkMembership();
-       
+        checkMembership();
+
     }, [groupId, userId, navigate]);
     // Initial Fetch: Recipients
     useEffect(() => {
@@ -121,6 +123,11 @@ const VitalsDashboard = () => {
                 .sort((a, b) => new Date(b.recordedAt) - new Date(a.recordedAt));
 
             setHistoryData(sortedData);
+            let chartDataObj = {};
+            ['heart_rate', 'bp'].forEach(type => {
+                chartDataObj[type] = sortedData.filter(log => log.type === type);
+            });
+            setChartData(chartDataObj);
 
         } catch (error) {
             console.error("Error fetching vitals", error);
@@ -186,7 +193,7 @@ const VitalsDashboard = () => {
             </div>
         </div>
     );
-    if(recipients.length === 0){
+    if (recipients.length === 0) {
         return (
             <div className="min-h-screen bg-gray-50/50 font-sans text-gray-900 p-6 flex flex-col items-center justify-center">
                 <div className="max-w-2xl mx-auto text-center">
@@ -292,7 +299,7 @@ const VitalsDashboard = () => {
                                     <TrendingUp className="w-4 h-4 text-gray-400" /> Heart Rate Trend
                                 </h3>
                                 <div className="flex-1 border-2 border-dashed border-gray-100 rounded-lg flex items-center justify-center bg-gray-50/50">
-                                    <VitalChart data={historyData.filter(log => log.type === 'heart_rate')} color="#ef4444" unit="bpm" />
+                                    <VitalChart data={chartData.heart_rate} color="#ef4444" unit="bpm" />
                                 </div>
                             </div>
                             <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm min-h-[300px] flex flex-col">
@@ -300,7 +307,7 @@ const VitalsDashboard = () => {
                                     <Activity className="w-4 h-4 text-gray-400" /> BP Trend
                                 </h3>
                                 <div className="flex-1 border-2 border-dashed border-gray-100 rounded-lg flex items-center justify-center bg-gray-50/50">
-                                    <VitalChart data={historyData.filter(log => log.type === 'bp')} color="#3b82f6" unit="mmHg" />
+                                    <VitalChart data={chartData.bp  } color="#3b82f6" unit="mmHg" />
 
                                 </div>
                             </div>
