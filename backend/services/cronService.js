@@ -1,17 +1,18 @@
 import cron from "node-cron";
 import { Task } from "../models/task.model.js";
 import { Notification } from "../models/notification.model.js";
+import { createNotification } from "../data/notificationController.js";
 export const initCronJobs = () => {
   console.log("⏰ Initializing Cron Jobs...");
 
   // Job 1: Recurring Task Creation
   // Run daily at midnight
-  cron.schedule('0 0 * * *', async () => {
-    console.log('Running daily recurring task check...');
+  cron.schedule("0 0 * * *", async () => {
+    console.log("Running daily recurring task check...");
     try {
       await processRecurringTasks();
     } catch (error) {
-      console.error('Error in recurring task cron:', error);
+      console.error("Error in recurring task cron:", error);
     }
   });
 
@@ -26,9 +27,9 @@ export const initCronJobs = () => {
     }
   });
 
-  // JOB 3: Send Task Reminders (Due in 24 hours)
-  // Runs every hour
-  cron.schedule("0 * * * *", async () => {
+  // JOB 3: Send Task Reminders (Due in 5 mins and 0 mins)
+  // Runs every minute
+  cron.schedule("* * * * *", async () => {
     console.log("Running Job: Send Task Reminders");
     try {
       await sendTaskReminders();
@@ -37,12 +38,6 @@ export const initCronJobs = () => {
     }
   });
 
-  // Run once on startup for dev convenience
-  // processRecurringTasks();
-  // markOverdueTasksAsMissed();
-  // // JOB 4: Clear Old Notifications
-  // // Runs daily at midnight
-  //for now runs midnight 
   cron.schedule("0 0 * * *", async () => {
     console.log("Running Job: Clear Old Notifications");
     try {
@@ -121,25 +116,107 @@ const markOverdueTasksAsMissed = async () => {
 
 const sendTaskReminders = async () => {
   const now = new Date();
-  const in23Hours = new Date(now.getTime() + 23 * 60 * 60 * 1000); // 23 hours from now
-  const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
+  const in4Mins = new Date(now.getTime() + 4 * 60 * 1000);
+  const in5Mins = new Date(now.getTime() + 5 * 60 * 1000);
+  const in1Min = new Date(now.getTime() + 1 * 60 * 1000);
 
-  const tasksDue = await Task.find({
-    dueAt: { $gt: in23Hours, $lte: in24Hours },
+  const tasksDueIn5Mins = await Task.find({
+    dueAt: { $gt: in4Mins, $lte: in5Mins },
     status: "pending",
   }).lean();
 
-  console.log(`Found ${tasksDue.length} tasks due in the next 24 hours.`);
-  // Notification logic to be added later
+  const tasksDueNow = await Task.find({
+    dueAt: { $gt: now, $lte: in1Min },
+    status: "pending",
+  }).lean();
+
+  console.log(`Found ${tasksDueIn5Mins.length} tasks due in 5 minutes.`);
+  console.log(`Found ${tasksDueNow.length} tasks due now.`);
+
+  for (const task of tasksDueIn5Mins) {
+    try {
+      const existingReminder = await Notification.findOne({
+        taskId: task._id,
+        type: "task_reminder",
+        "metadata.reminderType": "5_minutes",
+      });
+
+      if (existingReminder) {
+        console.log(`5-min reminder already sent for task: ${task.title}`);
+        continue;
+      }
+
+      await createNotification({
+        type: "task_reminder",
+        recipientId: task.assignedTo.toString(),
+        senderId: task.createdBy.toString(),
+        groupId: task.groupId.toString(),
+        taskId: task._id.toString(),
+        title: `Task Due Soon: ${task.title}`,
+        message: `Reminder: Task "${task.title}" is due in 5 minutes.`,
+        metadata: { reminderType: "5_minutes" },
+      });
+      console.log(`Sent 5-min reminder for task: ${task.title}`);
+    } catch (error) {
+      console.error(
+        `Failed to send 5-min reminder for task ${task._id}:`,
+        error
+      );
+    }
+  }
+
+  for (const task of tasksDueNow) {
+    try {
+      const existingReminder = await Notification.findOne({
+        taskId: task._id,
+        type: "task_reminder",
+        "metadata.reminderType": "due_now",
+      });
+
+      if (existingReminder) {
+        console.log(`Due-now reminder already sent for task: ${task.title}`);
+        continue;
+      }
+
+      const deletedCount = await Notification.deleteMany({
+        taskId: task._id,
+        type: "task_reminder",
+        "metadata.reminderType": "5_minutes",
+      });
+
+      if (deletedCount.deletedCount > 0) {
+        console.log(
+          `Deleted ${deletedCount.deletedCount} 5-min reminder(s) for task: ${task.title}`
+        );
+      }
+
+      await createNotification({
+        type: "task_reminder",
+        recipientId: task.assignedTo.toString(),
+        senderId: task.createdBy.toString(),
+        groupId: task.groupId.toString(),
+        taskId: task._id.toString(),
+        title: `Task Due Now: ${task.title}`,
+        message: `Urgent: Task "${task.title}" is due now!`,
+        metadata: { reminderType: "due_now" },
+      });
+      console.log(`Sent due-now reminder for task: ${task.title}`);
+    } catch (error) {
+      console.error(
+        `Failed to send due-now reminder for task ${task._id}:`,
+        error
+      );
+    }
+  }
 };
 const clearOldNotifications = async () => {
   const cutoffDate = new Date();
 
-  // TESTING: Clear notifications older than 5 days logic
-  // CHANGE THIS BACK TO 30 DAYS FOR PRODUCTION
   cutoffDate.setDate(cutoffDate.getDate() - 5);
 
-  console.log(`Running notification cleanup. Cutoff: ${cutoffDate.toISOString()}`);
+  console.log(
+    `Running notification cleanup. Cutoff: ${cutoffDate.toISOString()}`
+  );
 
   try {
     const result = await Notification.deleteMany({
