@@ -23,7 +23,18 @@ router.post("/:groupId/messages", requireAuth, async (req, res) => {
     const { groupId } = req.params;
     const { message, meta = {} } = req.body;
     const userId = req.user._id;
-
+    if (!groupId) {
+      return res.status(400).json({
+        success: false,
+        message: "groupId parameter is required"
+      });
+    }
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId is required"
+      });
+    }
     if (!message || typeof message !== "string" || message.trim().length === 0) {
       return res.status(400).json({
         success: false,
@@ -41,7 +52,7 @@ router.post("/:groupId/messages", requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error("Error in POST /messages:", error);
-    res.status(400).json({
+    res.status(500).json({
       success: false,
       message: error.message || "Failed to send message"
     });
@@ -54,7 +65,18 @@ router.get("/:groupId/messages", requireAuth, async (req, res) => {
     const { groupId } = req.params;
     const userId = req.user._id;
     const {sortOrder } = req.query;
-
+    if (!groupId) {
+      return res.status(400).json({
+        success: false,
+        message: "groupId parameter is required"
+      });
+    }
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId is required"
+      });
+    }
     const options = {
       sortOrder: sortOrder ? parseInt(sortOrder) : 1
     };
@@ -68,7 +90,7 @@ router.get("/:groupId/messages", requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error("Error in GET /messages:", error);
-    res.status(400).json({
+    res.status(500).json({
       success: false,
       message: error.message || "Failed to retrieve messages"
     });
@@ -80,7 +102,18 @@ router.get("/:groupId/messages/recent", requireAuth, async (req, res) => {
     const { groupId } = req.params;
     const userId = req.user._id;
     
-
+    if (!groupId) {
+      return res.status(400).json({
+        success: false,
+        message: "groupId parameter is required"
+      });
+    }
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId is required"
+      });
+    }
     const messages = await getRecentMessages(groupId, userId);
 
     res.status(200).json({
@@ -90,7 +123,7 @@ router.get("/:groupId/messages/recent", requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error("Error in GET /messages/recent:", error);
-    res.status(400).json({
+    res.status(500).json({
       success: false,
       message: error.message || "Failed to retrieve recent messages"
     });
@@ -103,7 +136,24 @@ router.get("/:groupId/messages/search", requireAuth, async (req, res) => {
     const { groupId } = req.params;
     const userId = req.user._id;
     const { q: searchQuery, limit, skip } = req.query;
-
+    if (!groupId) {
+      return res.status(400).json({
+        success: false,
+        message: "groupId parameter is required"
+      });
+    }
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId is required"
+      });
+    }
+    if (!searchQuery && searchQuery !== "") {
+      return res.status(400).json({
+        success: false,
+        message: "Search query parameter 'q' is required"
+      });
+    }
     if (!searchQuery || searchQuery.trim().length === 0) {
       return res.status(400).json({
         success: false,
@@ -126,7 +176,7 @@ router.get("/:groupId/messages/search", requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error("Error in GET /messages/search:", error);
-    res.status(400).json({
+    res.status(500).json({
       success: false,
       message: error.message || "Failed to search messages"
     });
@@ -137,7 +187,18 @@ router.get("/:groupId/stats", requireAuth, async (req, res) => {
   try {
     const { groupId } = req.params;
     const userId = req.user._id;
-
+    if (!groupId) {
+      return res.status(400).json({
+        success: false,
+        message: "groupId parameter is required"
+      });
+    }
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId is required"
+      });
+    }
     const stats = await getGroupMessageStats(groupId, userId);
 
     res.status(200).json({
@@ -146,7 +207,7 @@ router.get("/:groupId/stats", requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error("Error in GET /stats:", error);
-    res.status(400).json({
+    res.status(500).json({
       success: false,
       message: error.message || "Failed to retrieve statistics"
     });
@@ -158,7 +219,18 @@ router.get("/:groupId/unread-count", requireAuth, async (req, res) => {
   try {
     const { groupId } = req.params;
     const userId = req.user._id;
-
+    if (!groupId) {
+      return res.status(400).json({
+        success: false,
+        message: "groupId parameter is required"
+      });
+    }
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId is required"
+      });
+    }
     const count = await getUnreadCount(groupId, userId);
 
     res.status(200).json({
@@ -167,7 +239,7 @@ router.get("/:groupId/unread-count", requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error("Error in GET /unread-count:", error);
-    res.status(400).json({
+    res.status(500).json({
       success: false,
       message: error.message || "Failed to retrieve unread count"
     });
@@ -180,7 +252,18 @@ router.patch("/messages/:messageId/status", requireAuth, async (req, res) => {
     const { messageId } = req.params;
     const { status } = req.body;
     const userId = req.user._id;
-
+    if (!messageId) {
+      return res.status(400).json({
+        success: false,
+        message: "messageId parameter is required"
+      });
+    }
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId is required"
+      });
+    } 
     if (!status || !["sent", "delivered", "read"].includes(status)) {
       return res.status(400).json({
         success: false,
@@ -197,7 +280,7 @@ router.patch("/messages/:messageId/status", requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error("Error in PATCH /messages/status:", error);
-    res.status(400).json({
+    res.status(500).json({
       success: false,
       message: error.message || "Failed to update message status"
     });
@@ -209,7 +292,18 @@ router.patch("/:groupId/mark-all-read", requireAuth, async (req, res) => {
   try {
     const { groupId } = req.params;
     const userId = req.user._id;
-
+    if (!groupId) {
+      return res.status(400).json({
+        success: false,
+        message: "groupId parameter is required"
+      });
+    }
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId is required"
+      });
+    }
     const result = await markAllAsRead(groupId, userId);
 
     res.status(200).json({
@@ -219,7 +313,7 @@ router.patch("/:groupId/mark-all-read", requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error("Error in PATCH /mark-all-read:", error);
-    res.status(400).json({
+    res.status(500).json({
       success: false,
       message: error.message || "Failed to mark messages as read"
     });
@@ -232,7 +326,24 @@ router.put("/messages/:messageId", requireAuth, async (req, res) => {
     const { messageId } = req.params;
     const { message } = req.body;
     const userId = req.user._id;
-
+    if (!messageId) {
+      return res.status(400).json({
+        success: false,
+        message: "messageId parameter is required"
+      });
+    }
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId is required"
+      });
+    }
+    if (!message && message !== "") {
+      return res.status(400).json({
+        success: false,
+        message: "Message is required"
+      });
+    } 
     if (!message || typeof message !== "string" || message.trim().length === 0) {
       return res.status(400).json({
         success: false,
@@ -250,7 +361,7 @@ router.put("/messages/:messageId", requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error("Error in PUT /messages:", error);
-    res.status(400).json({
+    res.status(500).json({
       success: false,
       message: error.message || "Failed to edit message"
     });
@@ -262,8 +373,22 @@ router.delete("/messages/:messageId", requireAuth, async (req, res) => {
   try {
     const { messageId } = req.params;
     const userId = req.user._id;
-
+    if (!messageId) {
+      return res.status(400).json({
+        success: false,
+        message: "messageId parameter is required"
+      });
+    }
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId is required"
+      });
+    }
     const io = req.app.get("io");
+    if (!io) {
+      throw new Error("Socket.io instance not found");
+    }
     const deletedMessage = await deleteMessage(messageId, userId, io);
 
     res.status(200).json({
@@ -273,7 +398,7 @@ router.delete("/messages/:messageId", requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error("Error in DELETE /messages:", error);
-    res.status(400).json({
+    res.status(500).json({
       success: false,
       message: error.message || "Failed to delete message"
     });

@@ -147,7 +147,8 @@ export default function Tasks() {
       setLoading(true);
       const res = await api.get(`/tasks/search?userId=${userId}`);
 
-      const data = res.data;
+      if (res.status !== 200) throw new Error("Failed to fetch tasks");
+      const data = await res.data;
       console.log("Fetched tasks:", data);
       setTasks(data);
     } catch (err) {
@@ -191,14 +192,33 @@ export default function Tasks() {
     try {
       const endpoint = newStatus === "completed" ? "complete" : "uncomplete";
       if (endpoint === "uncomplete") {
+        // const res = await fetch(
+        //   `http://localhost:3000/api/tasks/${taskId}/uncomplete`,
+        //   {
+        //     method: "POST",
+        //     headers: { "Content-Type": "application/json" },
+        //     body: JSON.stringify({ uncompletedBy: userId }),
+        //   }
+        // );
         const res = await api.post(`/tasks/${taskId}/uncomplete`, {
           uncompletedBy: userId,
         });
         console.log("Uncomplete response:", res);
+        if (res.status !== 200) throw new Error("Failed to uncomplete task");
       } else {
+        // const res = await fetch(
+        //   `http://localhost:3000/api/tasks/${taskId}/complete`,
+        //   {
+        //     method: "POST",
+        //     headers: { "Content-Type": "application/json" },
+        //     body: JSON.stringify({ completedBy: userId }),
+        //   }
+        // );
         const res = await api.post(`/tasks/${taskId}/complete`, {
           completedBy: userId,
         });
+        console.log("Complete response:", res);
+        if (res.status !== 200) throw new Error("Failed to update task");
         toast.success(
           newStatus === "completed" ? "Task completed!" : "Task reopened"
         );
@@ -213,8 +233,11 @@ export default function Tasks() {
     if (!window.confirm("Are you sure you want to delete this task?")) return;
 
     try {
+      // const res = await fetch(`http://localhost:3000/api/tasks/${taskId}`, {
+      //   method: "DELETE",
+      // });
       const res = await api.delete(`/tasks/${taskId}`);
-
+      if (res.status !== 200) throw new Error("Failed to delete task");
       setTasks((prev) => prev.filter((t) => t._id !== taskId));
       toast.success("Task deleted");
     } catch (err) {

@@ -11,30 +11,26 @@ export const requireAuth = async (req, res, next) => {
   }
 
   try {
-    // 1. Try verifying as Custom JWT
     const p = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
     req.user = { _id: p._id, email: p.email, role: p.role };
     return next();
   } catch (jwtError) {
-    // 2. If JWT fails, try verifying as Firebase ID Token
     try {
       const decoded = await admin.auth().verifyIdToken(token);
 
-      // Find user in MongoDB by Firebase UID
       const user = await User.findOne({ uid: decoded.uid }).select(
         "_id email role firstName lastName"
       );
 
       if (!user) {
-        // Optional: You might want to create the user here if they don't exist,
-        // but usually that happens at login/signup.
         return res.status(401).json({ error: "User not found in system" });
       }
 
-      req.user = user; // Mongoose document or POJO
+      req.user = user;
       req.firebaseUser = decoded;
       return next();
     } catch (firebaseError) {
+      console.error("Authentication failed:", firebaseError);
       return res.status(401).json({ error: "Invalid or expired token" });
     }
   }

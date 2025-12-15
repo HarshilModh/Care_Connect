@@ -151,6 +151,24 @@ const GroupDetails = () => {
       formData.append("dataFiles", file);
     });
 
+    // try {
+    //   const response = await axios.post(
+    //     "http://localhost:3000/api/documents/",
+    //     formData,
+    //     {
+    //       headers: {
+    //         "Content-Type": "multipart/form-data",
+    //       },
+    //       onUploadProgress: (progressEvent) => {
+    //         if (!progressEvent.total) return;
+    //         const percentCompleted = Math.round(
+    //           (progressEvent.loaded * 100) / progressEvent.total
+    //         );
+    //         setUploadProgress(percentCompleted);
+    //       },
+    //     }
+    //   );
+
     try {
       const response = await api.post(`/documents/`, formData, {
         headers: {

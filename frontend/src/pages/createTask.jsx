@@ -13,6 +13,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
+import api from "../api/axios";
 
 export default function CreateTask() {
   const [title, setTitle] = useState("");
@@ -81,7 +82,7 @@ export default function CreateTask() {
     async function fetchGroups() {
       try {
         const res = await api.get(`/family-groups/user/${userId}`);
-        let data = res.data;
+        let data = await res.data;
         data = data.filter(
           (g) =>
             g.members.some((m) => m.userId === userId) ||
@@ -106,13 +107,24 @@ export default function CreateTask() {
     async function fetchData() {
       try {
         // Recipients
+        // const resRecipients = await fetch(
+        //   `http://localhost:3000/api/care-recipients/group/${selectedGroup}`
+        // );
         const resRecipients = await api.get(
           `/care-recipients/group/${selectedGroup}`
         );
 
-        const dataRecipients = resRecipients.data;
+        const dataRecipients = await resRecipients.data;
+        if (!dataRecipients || dataRecipients.length === 0) {
+          setRecipients([]);
+          toast.info("No care recipients found in this group.");
+        }
         //if error in dataRecipients, throw error
         if (dataRecipients.error) {
+          console.error(
+            "Error fetching care recipients:",
+            dataRecipients.error
+          );
           setRecipients([]);
           throw new Error(dataRecipients.error);
         }
@@ -126,9 +138,16 @@ export default function CreateTask() {
         setRecipients(formattedRecipients);
 
         // Members
+        // const resMembers = await fetch(
+        //   `http://localhost:3000/api/memberships/group/${selectedGroup}`
+        // );
         const resMembers = await api.get(`/memberships/group/${selectedGroup}`);
-        const dataMembers = resMembers.data;
-
+        const dataMembers = await resMembers.data;
+        // console.log("Members fetched: ", dataMembers);
+        if (!dataMembers || dataMembers.length === 0) {
+          setMembers([]);
+          toast.info("No members found in this group.");
+        }
         const formattedMembers = [];
         for (const item of dataMembers) {
           const user = item.userId;
@@ -149,6 +168,9 @@ export default function CreateTask() {
           });
         }
         setMembers(formattedMembers);
+        if (formattedMembers.length === 0) {
+          toast.info("No assignable members found in this group.");
+        }
       } catch (err) {
         console.error(err);
         toast.error(err.message || "Failed to fetch recipients or members.");
@@ -204,13 +226,28 @@ export default function CreateTask() {
       let response;
       if (!hasFiles) {
         // OLD BEHAVIOR: JSON request (no files)
+        // response = await fetch("http://localhost:3000/api/tasks", {
+        //   method: "POST",
+        //   headers: { "Content-Type": "application/json" },
+        //   body: JSON.stringify({
+        //     groupId: selectedGroup,
+        //     assignedTo: assignedTo || undefined,
+        //     recipientId: recipient,
+        //     createdBy: userId,
+        //     title,
+        //     description: desc,
+        //     dueAt: dueDate ,
+        //     repeatRule: repeatRule,
+        //     type,
+        //   }),
+        // });
         response = await api.post("/tasks", {
           groupId: selectedGroup,
-          assignedTo: assignedTo || undefined,
           recipientId: recipient,
           createdBy: userId,
           title,
-          description: desc,
+          description: desc || "",
+          assignedTo: assignedTo || undefined,
           dueAt: dueDate,
           repeatRule: repeatRule,
           type,
@@ -235,6 +272,10 @@ export default function CreateTask() {
 
         response = await api.post("/tasks", formData);
       }
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      // if (!response.ok) throw new Error("Failed to create task");
 
       toast.success("Task created successfully!");
       navigate("/tasks");

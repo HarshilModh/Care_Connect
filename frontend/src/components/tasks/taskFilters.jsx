@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import api from "../../api/axios";
-
 export default function TaskFilters({ userId, onFilterChange }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
@@ -23,8 +22,12 @@ export default function TaskFilters({ userId, onFilterChange }) {
     });
 
     try {
+      // const res = await fetch(
+      //   `http://localhost:3000/api/tasks/search?${params}`
+      // );
       const res = await api.get(`/tasks/search?${params}`);
-      onFilterChange(res.data);
+      const data = await res.data;
+      onFilterChange(data);
     } catch (err) {
       console.error("Error fetching tasks:", err);
     }
