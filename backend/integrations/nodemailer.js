@@ -53,7 +53,9 @@ export async function sendPanicAlertEmail({ to, alertDetails }) {
           <h3 style="color: #991b1b; margin-top: 0; margin-bottom: 15px; font-size: 18px;">Alert Details</h3>
           <div style="margin-bottom: 10px;">
             <strong style="color: #7f1d1d;">Group Name:</strong> 
-            <span style="color: #1f2937;">${alertDetails.groupName || 'Unknown Group'}</span>
+            <span style="color: #1f2937;">${
+              alertDetails.groupName || "Unknown Group"
+            }</span>
           </div>
           <div style="margin-bottom: 10px;">
             <strong style="color: #7f1d1d;">Sender:</strong> 
@@ -71,7 +73,9 @@ export async function sendPanicAlertEmail({ to, alertDetails }) {
       </div>
       
       <div style="background-color: #f9fafb; padding: 15px; text-align: center; border-top: 1px solid #e5e7eb;">
-        <a href="http://localhost:5173" style="background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Open Care Connect</a>
+        <a href="${
+          process.env.FRONTEND_URL || "http://localhost:5173"
+        }" style="background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Open Care Connect</a>
       </div>
     </div>
   `;
