@@ -67,7 +67,7 @@ export default function Navbar() {
           {/* right - actions */}
           <div className="flex items-center gap-3">
             {/* theme toggle */}
-            <button
+            {/* <button
               onClick={toggleTheme}
               className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition"
               title="Toggle theme"
@@ -78,7 +78,7 @@ export default function Navbar() {
               ) : (
                 <SunIcon className="w-5 h-5 text-indigo-300" />
               )}
-            </button>
+            </button> */}
 
             {/* notification bell */}
             <NotificationBell />

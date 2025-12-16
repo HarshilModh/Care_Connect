@@ -84,8 +84,19 @@ const AddMedicationModal = ({ isOpen, onClose, onSuccess }) => {
                 return;
             }
         }
+        const timeePerDayNumRegex = /^\d+$/;
+        if (!timeePerDayNumRegex.test(timesPerDay)) {
+            setError("Times per day must be a valid number.");
+            return;
+        }
         if (Number(timesPerDay) <= 0) {
             setError("Times per day must be at least 1.");
+            return;
+        }
+    
+        const supplyCountNumRegex = /^\d+$/;
+        if (!supplyCountNumRegex.test(supplyCount)) {
+            setError("Supply count must be a valid number.");
             return;
         }
         if (Number(supplyCount) < 0) {

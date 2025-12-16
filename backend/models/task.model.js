@@ -20,17 +20,26 @@ const taskSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    title: {
+     title: {
       type: String,
       required: true,
       trim: true,
       maxlength: 200,
+      match: [
+        /^(?=.*[a-zA-Z])[a-zA-Z0-9\s.,'!?()\-]+$/,
+        "Title must contain at least one letter and can include letters, numbers, spaces, and basic punctuation.",
+      ],
     },
     description: {
       type: String,
       trim: true,
+      required: true,
       maxlength: 2000,
       default: "",
+      match: [
+        /^(?=.*[a-zA-Z])[a-zA-Z0-9\s.,'!?()\-]*$/,
+        "Description must contain at least one letter and can include letters, numbers, spaces, and basic punctuation.",
+      ],
     },
     assignedTo: {
       type: mongoose.Schema.Types.ObjectId,
@@ -55,6 +64,7 @@ const taskSchema = new mongoose.Schema(
       type: String,
       trim: true,
       maxlength: 500,
+      enum: ["daily","weekly","monthly",""],
       default: "",
     },
     status: {

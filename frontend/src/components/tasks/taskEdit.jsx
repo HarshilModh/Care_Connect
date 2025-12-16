@@ -40,7 +40,15 @@ const TASK_TYPES = [
     color: "bg-yellow-100 text-yellow-600 border-yellow-200",
   },
 ];
-
+const getCurrentTimestamp = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
 export default function EditTaskModal({ task, isOpen, onClose, onSuccess }) {
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
@@ -54,6 +62,16 @@ export default function EditTaskModal({ task, isOpen, onClose, onSuccess }) {
   const [assignedTo, setAssignedTo] = useState("");
   const [repeatRule, setRepeatRule] = useState("");
   const [members, setMembers] = useState([]);
+
+  const getCurrentTimestamp = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
 
   // Get userId from localStorage with useMemo just once to check the perf of this
   const userId = useMemo(() => {
@@ -71,15 +89,11 @@ export default function EditTaskModal({ task, isOpen, onClose, onSuccess }) {
     if (task) {
       setTitle(task.title || "");
       setDesc(task.description || "");
-      // Format date for datetime-local input (local timezone)
       if (task.dueAt) {
         const date = new Date(task.dueAt);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const day = String(date.getDate()).padStart(2, "0");
-        const hours = String(date.getHours()).padStart(2, "0");
-        const minutes = String(date.getMinutes()).padStart(2, "0");
-        setDueDate(`${year}-${month}-${day}T${hours}:${minutes}`);
+        const offset = date.getTimezoneOffset() * 60000;
+        const localDate = new Date(date.getTime() - offset);
+        setDueDate(localDate.toISOString().slice(0, 16));
       } else {
         setDueDate("");
       }
@@ -191,8 +205,64 @@ export default function EditTaskModal({ task, isOpen, onClose, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim() || !selectedGroup || !recipient) {
+    if (
+      !title.trim() ||
+      !selectedGroup ||
+      !recipient ||
+      !dueDate ||
+      !type ||
+      !userId ||
+      !desc.trim() ||
+      assignedTo === undefined
+    ) {
       toast.error("Please fill in all required fields.");
+      return;
+    }
+    //input validation
+    if (title.length > 100) {
+      toast.error("Title cannot exceed 100 characters.");
+      return;
+    }
+
+    // Title: required, must contain at least one letter
+    const titleRegex = /^(?=.*[a-zA-Z])[a-zA-Z0-9\s.,'!?()\-]+$/;
+    if (!titleRegex.test(title.trim())) {
+      toast.error(
+        "Title must contain at least one letter and valid characters."
+      );
+      return;
+    }
+
+    // Description: optional, must contain at least one letter if not empty
+    const descRegex = /^(?=.*[a-zA-Z])[a-zA-Z0-9\s.,'!?()\-]*$/;
+    if (desc.trim() && !descRegex.test(desc.trim())) {
+      toast.error(
+        "Description must contain at least one letter and valid characters."
+      );
+      return;
+    }
+
+    //asginedTo cannot be not selected
+    if (!assignedTo) {
+      toast.error("Please select a member to assign the task to.");
+      return;
+    }
+
+    //care recipient cannot be not selected
+    if (!recipient) {
+      toast.error("Please select a care recipient.");
+      return;
+    }
+    //due date cannot be empty
+    if (!dueDate) {
+      toast.error("Please select a due date.");
+      return;
+    }
+    //due date cannot be in the past
+    const now = new Date();
+    const selectedDueDate = new Date(dueDate);
+    if (selectedDueDate < now) {
+      toast.error("Due date cannot be in the past.");
       return;
     }
 
@@ -208,7 +278,7 @@ export default function EditTaskModal({ task, isOpen, onClose, onSuccess }) {
         recipientId: recipient,
         title,
         description: desc,
-        dueAt: dueAtISO,
+        dueAt: dueDate ? new Date(dueDate).toISOString() : null,
         repeatRule: repeatRule || null,
         type,
       });
@@ -419,7 +489,9 @@ export default function EditTaskModal({ task, isOpen, onClose, onSuccess }) {
                 <input
                   type="datetime-local"
                   value={dueDate}
+                  min={getCurrentTimestamp()}
                   onChange={(e) => setDueDate(e.target.value)}
+                  onKeyDown={(e) => e.preventDefault()}
                   className="w-full pl-9 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                 />
               </div>

@@ -15,6 +15,8 @@ const careRecipientSchema = new mongoose.Schema({
     },
     dob: {
         type: Date,
+        min: new Date('1900-01-01'),
+        max: new Date(),
         default: null,
         required: false
     },
@@ -33,9 +35,9 @@ const careRecipientSchema = new mongoose.Schema({
     emergencyContacts: {
         type: [
             {
-                name: { type: String, required: true, trim: true, maxlength: 100 },
-                phone: { type: String, required: true, trim: true, maxlength: 20,match: [/^\+?[0-9\s\-()]+$/, 'Use a valid phone number'] },
-                relation: { type: String, required: false, trim: true, maxlength: 100 }
+                name: { type: String, required: true, trim: true, maxlength: 100,match: [/^[a-zA-Z\s]+$/, 'Name must contain only letters and spaces.'] },
+                phone: { type: String, required: true, trim: true, maxlength: 20,match: [/^(?=(?:.*\d){10,})\+?[0-9\s\-()]{10,20}$/, 'Use a valid phone number'] },
+                relation: { type: String, required: false, trim: true, maxlength: 100,match: [/^[a-zA-Z\s]+$/, 'Relation must contain only letters and spaces.'] }
             }
         ],
         default: []

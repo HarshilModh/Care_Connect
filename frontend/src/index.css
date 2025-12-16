@@ -324,3 +324,12 @@ html.dark .sidebar-logout:hover {
 .sidebar-logout:active {
   transform: translateY(0.5px);
 }
+
+/* ---------- Tasks Page Calendar Overrides ---------- */
+.rbc-calendar { font-family: inherit; }
+.rbc-header { padding: 12px 0; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #6b7280; letter-spacing: 0.05em; border-bottom: none !important; }
+.rbc-month-view { border: none !important; }
+.rbc-day-bg { border-left: 1px solid #f3f4f6 !important; }
+.rbc-off-range-bg { background-color: #f9fafb !important; }
+.rbc-today { background-color: #eff6ff !important; }
+.rbc-event { background: transparent !important; padding: 1px !important; }

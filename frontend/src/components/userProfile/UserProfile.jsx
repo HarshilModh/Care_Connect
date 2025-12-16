@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { validateAge, validateRequired, validatePhone } from '../../utils/validation';
 import {
     User, CheckCircle, XCircle, Calendar, Shield, Key, Edit,
     LogOut, Trash2, Lock, Users, Heart, Plus, Save, X
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 
 
 const UserProfile = () => {
@@ -85,6 +86,61 @@ const UserProfile = () => {
 
     const saveCaregiverProfile = async () => {
         try {
+            if (!caregiverProfileForm.bio || !caregiverProfileForm.bio.trim()) {
+                toast.error("Bio is required");
+                return;
+            }
+            if (caregiverProfileForm.bio.trim().length < 10) {
+                toast.error("Bio must be at least 10 characters long");
+                return;
+            }
+            if (!/^(?!^[\d\s.,'"\-!?()]+$)[a-zA-Z0-9\s.,'"\-!?()]{10,2000}$/.test(caregiverProfileForm.bio.trim())) {
+                toast.error("Bio can contain letters, numbers, spaces, and basic punctuation, but not special characters like <, >, {, }, and cannot contain only numbers or special characters.");
+                return;
+            }
+            if (caregiverProfileForm.experienceYears) {
+                if (isNaN(caregiverProfileForm.experienceYears) || Number(caregiverProfileForm.experienceYears) < 0) {
+                    toast.error("Years of experience must be a non-negative number");
+                    return;
+                }
+            }
+            if (caregiverProfileForm.skills && caregiverProfileForm.skills.trim()) {
+                if (caregiverProfileForm.skills.trim().length < 2) {
+                    toast.error("Please specify at least one skill");
+                    return;
+                }
+                for (let skill of caregiverProfileForm.skills.split(",")) {
+                    if (skill.trim() && !/^[a-zA-Z\s]+$/.test(skill.trim())) {
+                        toast.error(`Skill "${skill.trim()}" is invalid. Skills can only contain letters and spaces.`);
+                        return;
+                    }
+                }
+            }
+            if (caregiverProfileForm.certifications && caregiverProfileForm.certifications.trim()) {
+                if (caregiverProfileForm.certifications.trim().length < 2) {
+                    toast.error("Please specify at least one certification");
+                    return;
+                }
+                for (let cert of caregiverProfileForm.certifications.split(",")) {
+                    const trimmedCert = cert.trim();
+                    if (!trimmedCert) continue;
+                    if (!/^(?![\d\s]+$)[a-zA-Z0-9\s]+$/.test(trimmedCert)) {
+                        toast.error(`Certification "${trimmedCert}" is invalid. Certifications can only contain letters, numbers, and spaces, and cannot be only numbers or spaces.`);
+                        return;
+                    }
+                }
+            }
+            if (caregiverProfileForm.rate && (isNaN(caregiverProfileForm.rate) || Number(caregiverProfileForm.rate) < 0)) {
+                toast.error("Hourly rate must be a non-negative number");
+                return;
+            }
+            if (caregiverProfileForm.availability && caregiverProfileForm.availability.trim()) {
+                if (caregiverProfileForm.availability.trim().length < 2) {
+                    toast.error("Please specify your availability");
+                    return;
+                }
+            }
+
             const payload = {
                 bio: caregiverProfileForm.bio.trim(),
                 experienceYears: Number(caregiverProfileForm.experienceYears) || 0,
@@ -131,6 +187,7 @@ const UserProfile = () => {
             const response = await api.get(`/care-recipients/user/${user._id}`);
             console.log("Care Recipients Response:", response.data);
             setCareRecipients(response.data);
+            console.log("Care Recipients Set:", careRecipients);
         } catch (error) {
             console.error("Error fetching care recipients:", error);
             toast.error("Failed to load care recipients");
@@ -168,7 +225,6 @@ const UserProfile = () => {
     };
 
 
-
     const updateCaregiver = async (id) => {
         try {
             const response = await api.put(`/caregivers/${id}`, editForm);
@@ -198,7 +254,53 @@ const UserProfile = () => {
     // CRUD operations for care recipients
 
 
+    const validateCareRecipientForm = (data) => {
+        // Validate Date of Birth
+        if (data.dob) {
+            const dobError = validateAge(data.dob);
+            if (dobError) {
+                toast.error(dobError);
+                return false;
+            }
+        }
+
+        // Validate Primary Condition
+        const conditionError = validateRequired(data.primaryCondition, "Primary Condition");
+        if (conditionError) {
+            toast.error(conditionError);
+            return false;
+        }
+
+        // Validate Emergency Contacts
+        if (data.emergencyContacts && data.emergencyContacts.length > 0) {
+            for (let i = 0; i < data.emergencyContacts.length; i++) {
+                const contact = data.emergencyContacts[i];
+                const nameError = validateRequired(contact.name, `Emergency Contact ${i + 1} Name`);
+                if (nameError) {
+                    toast.error(nameError);
+                    return false;
+                }
+
+                const phoneError = validatePhone(contact.phone);
+                if (phoneError) {
+                    toast.error(`Emergency Contact ${i + 1}: ${phoneError}`);
+                    return false;
+                }
+
+                // relation is optional but if present check? 
+                // schema says optional, validation.js doesn't have specific relation check, maybe just length?
+                // skipping strict relation check as per user snippet only name/phone emphasised or just reused logic.
+            }
+        }
+
+        return true;
+    };
+
     const updateCareRecipient = async (id) => {
+        if (!validateCareRecipientForm(editForm)) {
+            return;
+        }
+
         try {
             const response = await api.put(`/care-recipients/${id}`, editForm);
             setCareRecipients(careRecipients.map(r => r._id === id ? response.data : r));
@@ -206,7 +308,7 @@ const UserProfile = () => {
             toast.success("Care recipient updated successfully");
         } catch (error) {
             console.error("Error updating care recipient:", error);
-            toast.error("Failed to update care recipient");
+            toast.error(`Failed to update care recipient: ${error.response.data?.error || error.message}`);
         }
     };
 
@@ -293,14 +395,14 @@ const UserProfile = () => {
                                     Edit Profile
                                 </button>
                             </Link>
-                    {!isGoogleUser && (
-                            <Link to="/forgot-password">
-                                <button className="w-full inline-flex items-center justify-center px-4 py-3 rounded-xl bg-white border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition">
-                                    <Lock className="w-4 h-4 mr-2 text-gray-400" />
-                                    Reset Password
-                                </button>
-                            </Link>
-                        )}
+                            {!isGoogleUser && (
+                                <Link to="/forgot-password">
+                                    <button className="w-full inline-flex items-center justify-center px-4 py-3 rounded-xl bg-white border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition">
+                                        <Lock className="w-4 h-4 mr-2 text-gray-400" />
+                                        Reset Password
+                                    </button>
+                                </Link>
+                            )}
                         </>
                         {/* )} */}
 
@@ -420,11 +522,11 @@ const UserProfile = () => {
     // Render Caregivers Tab
     const renderCaregiversTab = () => (
         <div className="max-w-5xl w-full bg-white rounded-3xl shadow-2xl p-8">
-                <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6">
                 <div>
                     <h2 className="text-2xl font-semibold text-gray-900">Caregivers</h2>
                     <p className="text-sm text-gray-500">
-                    Manage caregivers connected to your account.
+                        Manage caregivers connected to your account.
                     </p>
                 </div>
                 <button
@@ -434,7 +536,7 @@ const UserProfile = () => {
                     <Plus className="w-4 h-4" />
                     Add Caregiver
                 </button>
-                </div>
+            </div>
 
             {/* 🔹 My Caregiver Profile card */}
 
@@ -449,7 +551,6 @@ const UserProfile = () => {
                     <p className="text-sm mt-2">Click "Add Caregiver" to get started</p>
                 </div>
             ) : (
-                /* ... your existing caregivers.map(...) cards ... */
                 <div className="space-y-4">
                     <div className="mb-8 border border-green-100 rounded-2xl p-6 bg-green-50/40">
                         <div className="flex justify-between items-start mb-4">
@@ -615,7 +716,7 @@ const UserProfile = () => {
                                 </div>
                             </div>
                         ) : caregiverProfile ? (
-                            // 🔹 View mode
+                            //  View mode
                             <div className="space-y-3 text-sm">
                                 <div>
                                     <p className="text-xs font-semibold text-gray-600 mb-1">Bio</p>
@@ -716,19 +817,19 @@ const UserProfile = () => {
     const renderCareRecipientsTab = () => (
         <div className="max-w-5xl w-full bg-white rounded-3xl shadow-2xl p-8">
             <div className="flex items-center justify-between mb-6">
-            <div>
-                <h2 className="text-2xl font-semibold text-gray-900">Care Recipients</h2>
-                <p className="text-sm text-gray-500">
-                Manage the people receiving care in your network.
-                </p>
-            </div>
-            <button
-                onClick={() => navigate("/addMember")}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-            >
-                <Plus className="w-4 h-4" />
-                Add Recipient
-            </button>
+                <div>
+                    <h2 className="text-2xl font-semibold text-gray-900">Care Recipients</h2>
+                    <p className="text-sm text-gray-500">
+                        Manage the people receiving care in your network.
+                    </p>
+                </div>
+                <button
+                    onClick={() => navigate("/addMember")}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                >
+                    <Plus className="w-4 h-4" />
+                    Add Recipient
+                </button>
             </div>
 
             {loading ? (
@@ -745,29 +846,21 @@ const UserProfile = () => {
                         const isEditing = editingId === `recipient-${recipient._id}`;
                         const data = isEditing ? editForm : recipient;
 
+                        // Helper to format date
+                        const formatDate = (d) => {
+                            if (!d) return 'N/A';
+                            return new Date(d).toLocaleDateString();
+                        };
+
                         return (
                             <div key={recipient._id} className="border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-shadow">
                                 <div className="flex justify-between items-start mb-4">
                                     <div>
                                         <h3 className="text-xl font-semibold text-gray-800">
-                                            {isEditing ? (
-                                                <input
-                                                    type="text"
-                                                    value={data.recipientName || ''}
-                                                    onChange={(e) => setEditForm({ ...editForm, recipientName: e.target.value })}
-                                                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none"
-                                                    placeholder="Recipient Name"
-                                                />
-                                            ) : (
-                                                data.recipientName || 'Unnamed Recipient'
-                                            )}
+                                            {/* Since backend doesn't populate name, and it is the current user's recipient profile, we show the current user's name */}
+                                            {firstName} {lastName}
                                         </h3>
-                                        <span className={`inline-block mt-2 px-3 py-1 text-xs font-semibold rounded-full ${data.careLevel === 'High' ? 'bg-red-100 text-red-800' :
-                                            data.careLevel === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                                                'bg-green-100 text-green-800'
-                                            }`}>
-                                            {data.careLevel} Care Level
-                                        </span>
+                                        <p className="text-sm text-gray-500">Care Recipient Profile</p>
                                     </div>
                                     {!isEditing ? (
                                         <div className="flex gap-2">
@@ -802,61 +895,149 @@ const UserProfile = () => {
                                     )}
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {['dateOfBirth', 'emergencyContact', 'careLevel'].map((field) => (
-                                        <div key={field}>
-                                            <label className="block text-xs font-medium text-gray-600 mb-1 capitalize">
-                                                {field.replace(/([A-Z])/g, ' $1').trim()}
-                                            </label>
-                                            {isEditing ? (
-                                                field === 'careLevel' ? (
-                                                    <select
-                                                        value={data[field] || 'Low'}
-                                                        onChange={(e) => setEditForm({ ...editForm, [field]: e.target.value })}
-                                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none"
-                                                    >
-                                                        <option>Low</option>
-                                                        <option>Medium</option>
-                                                        <option>High</option>
-                                                    </select>
-                                                ) : (
-                                                    <input
-                                                        type={field === 'dateOfBirth' ? 'date' : 'text'}
-                                                        value={data[field] || ''}
-                                                        onChange={(e) => setEditForm({ ...editForm, [field]: e.target.value })}
-                                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none"
-                                                    />
-                                                )
-                                            ) : (
-                                                <p className="text-sm text-gray-800 bg-gray-50 px-3 py-2 rounded-lg">
-                                                    {data[field] || 'N/A'}
-                                                </p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Date of Birth */}
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">Date of Birth</label>
+                                        {isEditing ? (
+                                            <input
+                                                type="date"
+                                                 max={new Date(
+                                                new Date().setFullYear(new Date().getFullYear() - 18)
+                                                          )
+                                                  .toISOString()
+                                              .split("T")[0]}
+                                                value={data.dob ? new Date(data.dob).toISOString().split('T')[0] : ''}
+                                                onChange={(e) => setEditForm({ ...editForm, dob: e.target.value })}
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none"
+                                            />
+                                        ) : (
+                                            <p className="text-sm text-gray-800 bg-gray-50 px-3 py-2 rounded-lg">
+                                                {formatDate(data.dob)}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Primary Condition */}
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">Primary Condition</label>
+                                        {isEditing ? (
+                                            <input
+                                                type="text"
+                                                value={data.primaryCondition || ''}
+                                                onChange={(e) => setEditForm({ ...editForm, primaryCondition: e.target.value })}
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none"
+                                            />
+                                        ) : (
+                                            <p className="text-sm text-gray-800 bg-gray-50 px-3 py-2 rounded-lg">
+                                                {data.primaryCondition || 'N/A'}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Notes */}
+                                    <div className="md:col-span-2">
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+                                        {isEditing ? (
+                                            <textarea
+                                                rows={3}
+                                                value={data.notes || ''}
+                                                onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none"
+                                            />
+                                        ) : (
+                                            <p className="text-sm text-gray-800 bg-gray-50 px-3 py-2 rounded-lg whitespace-pre-wrap">
+                                                {data.notes || 'No notes added'}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Emergency Contacts */}
+                                    <div className="md:col-span-2">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <label className="block text-xs font-medium text-gray-600">Emergency Contacts</label>
+                                            {isEditing && (
+                                                <button
+                                                    onClick={() => {
+                                                        const currentContacts = data.emergencyContacts || [];
+                                                        setEditForm({
+                                                            ...editForm,
+                                                            emergencyContacts: [...currentContacts, { name: '', phone: '', relation: '' }]
+                                                        });
+                                                    }}
+                                                    className="text-xs flex items-center gap-1 text-green-600 hover:text-green-700 font-semibold"
+                                                >
+                                                    <Plus className="w-3 h-3" /> Add Contact
+                                                </button>
                                             )}
                                         </div>
-                                    ))}
-                                    {['medicalConditions', 'medications', 'allergies'].map((field) => (
-                                        <div key={field} className="md:col-span-3">
-                                            <label className="block text-xs font-medium text-gray-600 mb-1 capitalize">
-                                                {field.replace(/([A-Z])/g, ' $1').trim()}
-                                            </label>
-                                            {isEditing ? (
-                                                <input
-                                                    type="text"
-                                                    value={Array.isArray(data[field]) ? data[field].join(', ') : ''}
-                                                    onChange={(e) => setEditForm({
-                                                        ...editForm,
-                                                        [field]: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                                                    })}
-                                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none"
-                                                    placeholder="Comma separated"
-                                                />
-                                            ) : (
-                                                <p className="text-sm text-gray-800 bg-gray-50 px-3 py-2 rounded-lg">
-                                                    {Array.isArray(data[field]) && data[field].length > 0 ? data[field].join(', ') : 'None'}
-                                                </p>
-                                            )}
-                                        </div>
-                                    ))}
+
+                                        {data.emergencyContacts && data.emergencyContacts.length > 0 ? (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {data.emergencyContacts.map((contact, idx) => (
+                                                    <div key={idx} className={`border p-3 rounded-xl ${isEditing ? 'bg-white border-gray-200' : 'bg-red-50 border-red-100'}`}>
+                                                        {isEditing ? (
+                                                            <div className="space-y-2 relative">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const updated = data.emergencyContacts.filter((_, i) => i !== idx);
+                                                                        setEditForm({ ...editForm, emergencyContacts: updated });
+                                                                    }}
+                                                                    className="absolute -top-2 -right-2 p-1 bg-red-100 text-red-600 rounded-full hover:bg-red-200"
+                                                                    title="Remove contact"
+                                                                >
+                                                                    <X className="w-3 h-3" />
+                                                                </button>
+
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Name"
+                                                                    value={contact.name}
+                                                                    onChange={(e) => {
+                                                                        const updated = [...data.emergencyContacts];
+                                                                        updated[idx] = { ...updated[idx], name: e.target.value };
+                                                                        setEditForm({ ...editForm, emergencyContacts: updated });
+                                                                    }}
+                                                                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-red-500 focus:outline-none"
+                                                                />
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Phone"
+                                                                    value={contact.phone}
+                                                                    onChange={(e) => {
+                                                                        const updated = [...data.emergencyContacts];
+                                                                        updated[idx] = { ...updated[idx], phone: e.target.value };
+                                                                        setEditForm({ ...editForm, emergencyContacts: updated });
+                                                                    }}
+                                                                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-red-500 focus:outline-none"
+                                                                />
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Relation"
+                                                                    value={contact.relation}
+                                                                    onChange={(e) => {
+                                                                        const updated = [...data.emergencyContacts];
+                                                                        updated[idx] = { ...updated[idx], relation: e.target.value };
+                                                                        setEditForm({ ...editForm, emergencyContacts: updated });
+                                                                    }}
+                                                                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-red-500 focus:outline-none"
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <p className="font-semibold text-sm text-gray-900">{contact.name}</p>
+                                                                <p className="text-xs text-gray-600">{contact.relation} • {contact.phone}</p>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-4 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                                                <p className="text-sm text-gray-500 italic">No emergency contacts listed</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         );
@@ -918,6 +1099,7 @@ const UserProfile = () => {
                     {activeTab === 'careRecipients' && renderCareRecipientsTab()}
                 </div>
             </div>
+            <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="colored" />
         </div>
     );
 };

@@ -71,18 +71,18 @@ const GroupDetails = () => {
         const membersData = Array.isArray(membersRes.data)
           ? membersRes.data
           : [];
+        console.log("Fetched members:", membersData);
         const isMember = membersData.some(
           (member) => member.userId._id === userId
         );
         if (!isMember) {
           // console.log("User is not a member of this group");
           toast.error("You are not a member of this group.", {
-            toastId: "not-member-error",
+            toastId: "not-member-error"
           });
           navigate("/family-groups");
         }
         setMembers(membersData);
-
         // Process roles
         setStats({
           admins: membersData.filter(
@@ -108,6 +108,7 @@ const GroupDetails = () => {
         console.error("Error loading group details:", err);
         setError(err.message || "Failed to load group details");
         toast.error("Failed to load group details");
+        navigate("/family-groups");
       } finally {
         setLoading(false);
       }
@@ -457,14 +458,14 @@ const GroupDetails = () => {
                   <Activity className="w-4 h-4" /> Vitals & Health
                 </button>
                 {/* admin cannot leave the group */}
-                {!canEdit && (
+                {/* {!canEdit && (
                   <button
                     onClick={handleLeaveGroup}
                     className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-sm font-medium"
                   >
                     <LogOut className="w-4 h-4" /> Leave Group
                   </button>
-                )}
+                )} */}
               </div>
             </div>
           </div>
@@ -590,6 +591,8 @@ const GroupDetails = () => {
           careRecipentId={selectedCareRecipientId}
           groupId={groupId}
         />
+
+
       </div>
     </main>
   );

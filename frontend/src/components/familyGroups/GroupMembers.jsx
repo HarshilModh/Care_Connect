@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { toast } from "react-toastify"
+import { toast,ToastContainer } from "react-toastify"
 import { CheckCircleIcon, ClockIcon } from "@heroicons/react/24/solid"
 import api from "../../api/axios"
 
@@ -62,11 +62,12 @@ const GroupMembers = () => {
       try {
         setLoading(true);
         const res = await api.get(`/memberships/group/${groupId}`, { signal: controller.signal });
-
+        console.log("Fetched members:", res.data);
         const data = Array.isArray(res.data) ? res.data : res.data?.members || [];
         setMembers(data);
 
         const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+        console.log("Current user:", currentUser);
         const isMember = data.some(m => m.userId._id === currentUser?._id);
 
         if (!isMember) {
@@ -75,8 +76,10 @@ const GroupMembers = () => {
         }
 
       } catch (err) {
+        console.error("Error fetching members:", err);
         if (err.name === 'CanceledError') return; // Ignore aborts
         setError(err.response?.data?.message || "Failed to fetch members");
+        navigate("/family-groups");
       } finally {
         setLoading(false);
       }
@@ -111,6 +114,7 @@ const GroupMembers = () => {
   const handleRemove = async (member) => {
     if (member.role === "admin") {
       toast.error("Cannot remove admins.");
+      console.log("Attempted to remove admin member:", member);
       return;
     }
 
@@ -295,6 +299,8 @@ const MemberCard = ({ member, onRemove, isRemoving }) => {
         >
           {isRemoving ? "..." : "Remove"}
         </button>
+      <ToastContainer position="top-right" autoClose={5000} />
+
       </div>
     </div>
   )

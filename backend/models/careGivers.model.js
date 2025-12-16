@@ -11,8 +11,11 @@ const careGiverSchema = new mongoose.Schema({
     bio: {
         type: String,
         trim: true,
+        minlength: 10,
         maxlength: 2000,
-        default: ''
+        default: '',
+        // Bio can contain letters, numbers, spaces, and basic punctuation. but not special characters like <, >, {, } but not only numbers or special characters
+        match: [/^(?!^[\d\s.,'"\-!?()]+$)[a-zA-Z0-9\s.,'"\-!?()]{10,2000}$/, 'Bio can contain letters, numbers, spaces, and basic punctuation, but not special characters like <, >, {, }, and cannot contain only numbers or special characters.'],
     },
     experienceYears: {
         type: Number,
@@ -21,11 +24,11 @@ const careGiverSchema = new mongoose.Schema({
     },
     skills: {
         type: [String],
-        default: []
+        default: [],
     },
     certifications: {
         type: [String],
-        default: []
+        default: [],
     },
     availability: {
         type: mongoose.Schema.Types.Mixed,
