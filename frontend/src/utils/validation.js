@@ -78,6 +78,9 @@ export const validateRequired = (value, fieldName = "Field") => {
   if (!value || (typeof value === "string" && !value.trim())) {
     return `${fieldName} is required`;
   }
+  if(value.trim && value.trim().length <2){
+    return `${fieldName} must be at least 2 characters long`;
+  }
   return "";
 };
 

@@ -38,7 +38,7 @@ const VALID_STATUSES = ["active", "pending", "removed"];
 const ROLES_REQUIRING_ONBOARDING = ["careGiver", "careRecipient"];
 
 //Create Membership
-router.post("/", requireAuth, async (req, res) => {
+router.post("/",requireAuth, async (req, res) => {
   try {
     console.log("req.body", req.body);
     console.log("inside create membership route");

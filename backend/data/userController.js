@@ -21,9 +21,13 @@ import { Membership } from "../models/memberShip.model.js";
 import { FamilyGroup } from "../models/familyGroups.model.js";
 import { Chat } from "../models/chat.model.js";
 import { sendMail } from "../integrations/nodemailer.js";
-
 import admin from "../integrations/firebaseAdmin.js";
+import { Task } from "../models/task.model.js";
 import { createNotification } from "./notificationController.js";
+import { Notification } from "../models/notification.model.js";
+import { Medication } from "../models/medication.model.js";
+import { Vital } from "../models/vital.model.js";
+import { Document } from "../models/document.model.js";
 
 dotenv.config();
 
@@ -213,7 +217,7 @@ export const getUserById = async (userId) => {
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       throw new Error("Invalid user id");
     }
-  
+
     const user = await User.findById(userId).select("-password -refreshToken");
     if (!user) throw new Error("User not found");
 
@@ -294,14 +298,14 @@ export const deleteUser = async (userId) => {
 
     // 2) Delete all chat messages sent by this user (from ALL groups)
     const userChatsResult = await Chat.deleteMany({ senderId: userId });
-    console.log(`✅ Deleted ${userChatsResult.deletedCount} chat messages sent by user`);
+    console.log(`Deleted ${userChatsResult.deletedCount} chat messages sent by user`);
 
     // 3) Delete all memberships where this user is a member (but not owner)
     const membershipResult = await Membership.deleteMany({
       userId,
       role: { $ne: "admin" } // Don't delete admin memberships yet
     });
-    console.log(`✅ Deleted ${membershipResult.deletedCount} non-admin memberships for user`);
+    console.log(`Deleted ${membershipResult.deletedCount} non-admin memberships for user`);
 
     // 4) Handle groups owned by this user - transfer ownership or delete
     const ownedGroups = await FamilyGroup.find({ createdBy: userId });
@@ -332,7 +336,7 @@ export const deleteUser = async (userId) => {
 
         await group.save();
         groupsTransferred++;
-        console.log(`✅ Transferred ownership of group ${group._id} to user ${newOwnerMembership.userId}`);
+        console.log(`Transferred ownership of group ${group._id} to user ${newOwnerMembership.userId}`);
 
         // Create notification for new owner
         try {
@@ -352,7 +356,7 @@ export const deleteUser = async (userId) => {
         await Membership.deleteMany({ groupId: group._id });
         await group.deleteOne();
         groupsDeleted++;
-        console.log(`✅ Deleted empty group ${group._id} (no members to transfer to)`);
+        console.log(`Deleted empty group ${group._id} (no members to transfer to)`);
       }
     }
 
@@ -361,19 +365,43 @@ export const deleteUser = async (userId) => {
       userId,
       role: "admin"
     });
-    console.log(`✅ Deleted ${adminMembershipResult.deletedCount} admin memberships for user`);
+    console.log(`Deleted ${adminMembershipResult.deletedCount} admin memberships for user`);
+    //delete all the tasks created by this user, createdBy,recipientId,assignedTo fields, createdBy fields 
+    const tasksResult = await Task.deleteMany({
+      $or: [{ createdBy: userId }, { recipientId: userId }, { assignedTo: userId }]
+    });
+    console.log(`Deleted ${tasksResult.deletedCount} tasks related to user`);
+    //delete all notifications for this user recipientId and senderId
+    const notificationsResult = await Notification.deleteMany({
+      $or: [{ recipientId: userId }, { senderId: userId }]
+    });
+    //deleed all notifications for this user recipientId and senderId fields
+    console.log(`Deleted ${notificationsResult.deletedCount} notifications for user`);
+
+    // Delete medications for this user (recipientId)
+    const medicationResult = await Medication.deleteMany({ recipientId: userId });
+    console.log(`Deleted ${medicationResult.deletedCount} medications for user`);
+
+    // Delete vitals for this user (userId)
+    const vitalResult = await Vital.deleteMany({ userId });
+    console.log(`Deleted ${vitalResult.deletedCount} vitals for user`);
+
+    //commenting out documents deletion as it is not needed
+    // Delete documents uploaded by this user (uploadedBy)
+    // const documentResult = await Document.deleteMany({ uploadedBy: userId });
+    // console.log(`Deleted ${documentResult.deletedCount} documents uploaded by user`);
+
 
     // 6) Delete the user from MongoDB
     await User.findByIdAndDelete(userId);
-    console.log(`✅ Deleted user from MongoDB: ${userId}`);
-
+    console.log(`Deleted user from MongoDB: ${userId}`);
     // 7) Clear refresh token from Redis
     try {
       const redisKey = `refresh:${userId}`;
       await client.del(redisKey);
-      console.log(`✅ Cleared Redis refresh token for user: ${userId}`);
+      console.log(`Deleted Redis refresh token for user: ${userId}`);
     } catch (redisErr) {
-      console.error("⚠️ Failed to clear Redis token:", redisErr?.message || redisErr);
+      console.error("Failed to clear Redis token:", redisErr?.message || redisErr);
     }
 
     // 8) Best-effort: delete Firebase user
@@ -381,12 +409,12 @@ export const deleteUser = async (userId) => {
       const firebaseUid = user.uid || null;
       if (firebaseUid) {
         await admin.auth().deleteUser(firebaseUid);
-        console.log(`✅ Firebase user deleted: ${firebaseUid}`);
+        console.log(`Deleted Firebase user: ${firebaseUid}`);
       } else {
-        console.log("⚠️ No Firebase UID found; skipping Firebase deletion");
+        console.log("No Firebase UID found; skipping Firebase deletion");
       }
     } catch (fbErr) {
-      console.error("⚠️ Failed to delete Firebase user:", fbErr?.message || fbErr);
+      console.error("Failed to delete Firebase user:", fbErr?.message || fbErr);
     }
 
     const result = {
@@ -395,18 +423,20 @@ export const deleteUser = async (userId) => {
       removedUserChats: userChatsResult.deletedCount || 0,
       removedMemberships: (membershipResult.deletedCount + adminMembershipResult.deletedCount) || 0,
       groupsTransferred: groupsTransferred,
-      groupsDeleted: groupsDeleted
+      groupsDeleted: groupsDeleted,
+      removedMedications: medicationResult.deletedCount || 0,
+      removedVitals: vitalResult.deletedCount || 0,
+      // removedDocuments: documentResult.deletedCount || 0
     };
 
-    console.log("✅ User deletion completed successfully:", result);
+    console.log("User deletion completed successfully:", result);
     return result;
 
   } catch (error) {
-    console.error("❌ Error deleting user:", error);
+    console.error("Error deleting user:", error);
     throw new Error(`Error deleting user: ${error.message}`);
   }
 };
-// ...existing code...
 
 //Get All Users
 export const getAllUsers = async () => {
