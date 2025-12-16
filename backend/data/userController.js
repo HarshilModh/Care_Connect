@@ -111,13 +111,6 @@ export const createUser = async (
       throw new Error("Fields cannot be empty");
     }
 
-    try {
-      validateNameInput(firstName, "First name");
-      validateNameInput(lastName, "Last name");
-    } catch (validationError) {
-      throw new Error(validationError.message);
-    }
-
     if (password !== confirmPassword) {
       throw new Error("Passwords do not match");
     }
