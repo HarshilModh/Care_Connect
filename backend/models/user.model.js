@@ -11,8 +11,8 @@ const userSchema = new mongoose.Schema({
     trim: true,
     lowercase: true,
     minlength: 2,
-    maxlength: 50
-
+    maxlength: 50,
+    match: [/^[a-zA-Z]+$/, 'First name must contain only letters.']
   },
   lastName: {
     type: String,
@@ -20,7 +20,8 @@ const userSchema = new mongoose.Schema({
     trim: true,
     lowercase: true,
     minlength: 2,
-    maxlength: 50
+    maxlength: 50,
+    match: [/^[a-zA-Z]+$/, 'Last name must contain only letters.']
 
   },
   email: {

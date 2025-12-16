@@ -271,6 +271,11 @@ const AddMembers = () => {
         toast.error("Every pending row must have a role");
         return;
       }
+      const validRole = ROLE_OPTIONS.some((opt) => opt.value === r.role);
+      if (!validRole) {
+           toast.error(`Invalid role for ${r.email || r.userId}`);
+           return;
+      } 
     }
 
     const uniques = [];
@@ -380,11 +385,16 @@ const AddMembers = () => {
       toast.error(emailError);
       return;
     }
-
+    const nameRegex = /^[a-zA-Z]+$/;
+    
     // Validate first name
     const firstNameError = validateRequired(inviteFirstName, "First name");
     if (firstNameError) {
       toast.error(firstNameError);
+      return;
+    }
+    if (!nameRegex.test(inviteFirstName)) {
+      toast.error("First name must contain only letters.");
       return;
     }
 
@@ -392,6 +402,15 @@ const AddMembers = () => {
     const lastNameError = validateRequired(inviteLastName, "Last name");
     if (lastNameError) {
       toast.error(lastNameError);
+      return;
+    }
+    if (!nameRegex.test(inviteLastName)) {
+      toast.error("Last name must contain only letters.");
+      return;
+    }
+    const validRole = ROLE_OPTIONS.map((opt) => opt.value);
+    if (!validRole.includes(inviteRole)) {
+      toast.error("Please select a valid role for the invitee.");
       return;
     }
 
@@ -507,6 +526,17 @@ const AddMembers = () => {
       setInviteRole("familyMember");
     } catch (err) {
       console.error("Invite error", err);
+      //delete user from firebase if created
+      if (err.code !== "auth/email-already-in-use") {
+        const user = auth.currentUser;
+        if (user) {
+          user.delete().catch((deleteErr) => {
+            console.error("Failed to delete user from Firebase", deleteErr);
+          });
+          console.log("Deleted user from Firebase due to invite failure");
+          
+      }
+      }
       toast.error("Failed to send invite: " + err.message);
     } finally {
       setInviteSubmitting(false);
@@ -527,7 +557,7 @@ const AddMembers = () => {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6">
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -940,7 +970,7 @@ const AddMembers = () => {
 
       </div>
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
-    </main>
+    </div>
   );
 };
 

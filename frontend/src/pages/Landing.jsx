@@ -48,12 +48,12 @@ function Landing() {
                         >
                             Start Free Account <ArrowRight className="w-4 h-4" />
                         </Link>
-                        <Link
+                        {/* <Link
                             to="/signin"
                             className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-base font-bold px-8 py-3.5 rounded-full hover:border-slate-300 transition-all shadow-sm hover:shadow-md"
                         >
                             View Live Demo
-                        </Link>
+                        </Link> */}
                     </div>
                 </div>
             </header>

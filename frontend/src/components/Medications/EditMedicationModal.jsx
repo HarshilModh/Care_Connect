@@ -84,6 +84,58 @@ const EditMedicationModal = ({ medicationId, isOpen, onClose, onSuccess }) => {
       setError("Medication Name is required.");
       return;
     }
+    if (!recipientId) {
+      setError("Please select a Care Recipient.");
+      return;
+    }
+    if (!user || !user._id) {
+      setError("Invalid User. Please reload the page.");
+      return;
+    }
+    if (!dosage) {
+      setError("Dosage is required.");
+      return;
+    }
+    if (dosage.length > 50) {
+      const dosagePattern = /^.{0,50}$/;
+      if (!dosagePattern.test(dosage)) {
+        setError("Dosage must be less than 50 characters.");
+        return;
+      }
+    }
+    const timesPerDayNumRegex = /^\d+$/;
+    if (!timesPerDayNumRegex.test(timesPerDay)) {
+      setError("Times per day must be a valid number.");
+      return;
+    }
+    if (Number(timesPerDay) <= 0) {
+      setError("Times per day must be at least 1.");
+      return;
+    }
+
+    const supplyCountNumRegex = /^\d+$/;
+    if (!supplyCountNumRegex.test(supplyCount)) {
+      setError("Supply count must be a valid number.");
+      return;
+    }
+    if (Number(supplyCount) < 0) {
+      setError("Supply count cannot be negative.");
+      return;
+    }
+    if (refillDate === null || refillDate === undefined || refillDate === '') {
+      setError("Refill date is required.");
+      return;
+    }
+
+    if (refillDate) {
+      const selectedDate = new Date(refillDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate < today) {
+        setError("Refill date cannot be in the past.");
+        return;
+      }
+    }
 
     setLoading(true);
     setError(null);

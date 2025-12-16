@@ -45,6 +45,13 @@ const CaregiverOnboarding = () => {
       toast.error("Bio must be at least 10 characters long");
       return false;
     }
+    //[/^(?!^[\d\s.,'"\-!?()]+$)[a-zA-Z0-9\s.,'"\-!?()]{10,2000}$/, 'Bio can contain letters, numbers, spaces, and basic punctuation, but not special characters like <, >, {, }, and cannot contain only numbers or special characters.'],
+    if (!/^(?!^[\d\s.,'"\-!?()]+$)[a-zA-Z0-9\s.,'"\-!?()]{10,2000}$/.test(bio.trim())) {
+      toast.error(
+        "Bio can contain letters, numbers, spaces, and basic punctuation, but not special characters like <, >, {, }, and cannot contain only numbers or special characters."
+      );
+      return false;
+    }
 
     // Validate experience years
     if (experienceYears) {
@@ -61,6 +68,15 @@ const CaregiverOnboarding = () => {
         return false;
       }
     }
+    for (let skill of skills.split(",")) {
+      if (skill.trim() && !/^[a-zA-Z\s]+$/.test(skill.trim())) {
+        toast.error(
+          `Skill "${skill.trim()}" is invalid. Skills can only contain letters and spaces.`
+        );
+        return false;
+      }
+    }
+
 
     // Validate certifications
     if (certifications && certifications.trim()) {
@@ -69,6 +85,19 @@ const CaregiverOnboarding = () => {
         return false;
       }
     }
+    for (let cert of certifications.split(",")) {
+       const trimmedCert = cert.trim();
+
+        // Skip empty certifications
+        if (!trimmedCert) continue;
+
+        if (!/^(?![\d\s]+$)[a-zA-Z0-9\s]+$/.test(trimmedCert)) {
+             toast.error(
+              `Certification "${trimmedCert}" is invalid. Certifications can only contain letters, numbers, and spaces, and cannot be only numbers or spaces.`
+          );
+        return false;
+  }
+}
 
     // Validate rate if provided
     if (rate && (isNaN(rate) || Number(rate) < 0)) {
@@ -151,7 +180,7 @@ const CaregiverOnboarding = () => {
   };
 
   return (
-    <main className="page bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div className="page bg-gray-50 dark:bg-gray-900 transition-colors">
       <div className="container-n max-w-2xl mx-auto py-8">
         <header className="mb-6 text-center">
           <h1 className="section-title text-gray-900 dark:text-white">
@@ -304,7 +333,7 @@ const CaregiverOnboarding = () => {
         pauseOnHover
         theme="colored"
       />
-    </main>
+    </div>
   );
 };
 
