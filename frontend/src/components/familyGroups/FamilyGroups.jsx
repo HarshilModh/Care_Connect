@@ -16,7 +16,7 @@ import {
   Edit,
   ArrowRight
 } from "lucide-react";
-import { toast,ToastContainer } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 
 const FamilyGroups = () => {
   const [familyGroups, setFamilyGroups] = useState([]);
@@ -130,7 +130,7 @@ const FamilyGroups = () => {
   );
 
   return (
-    <main className="min-h-screen bg-gray-50/50 py-10 px-4 sm:px-6">
+    <div className="min-h-screen bg-gray-50/50 py-10 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
@@ -289,7 +289,7 @@ const FamilyGroups = () => {
         )}
       </div>
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
-    </main>
+    </div>
   );
 };
 

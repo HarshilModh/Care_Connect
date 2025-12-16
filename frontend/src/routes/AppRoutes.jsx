@@ -43,8 +43,6 @@ const AppRoutes = () => {
       <Route path="/verify-success" element={<VerifySuccess />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/chat" element={<ChatLayout />} />
-      <Route path="/groups/edit/:id" element={<EditGroup />} />
       <Route
         path="/edit-profile"
         element={
@@ -171,8 +169,25 @@ const AppRoutes = () => {
           </PrivateRoute>
         }
       />
+      <Route    
+      path="/chat" element={
+        <PrivateRoute>
+          <ChatLayout />
+        </PrivateRoute>
+      } 
+      />
+      <Route path="/groups/edit/:id" element={
+        <PrivateRoute>
+          <EditGroup />
+        </PrivateRoute>
+      } />
 
-      <Route path="/notifications" element={<Notifications />} />
+      <Route path="/notifications" element={
+        <PrivateRoute>
+          <Notifications />
+        </PrivateRoute>
+      } 
+      />
 
 
       <Route path="*" element={<Not_Found />} />
