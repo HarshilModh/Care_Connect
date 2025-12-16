@@ -88,7 +88,7 @@ function SignIn() {
     }
 
     const payload = {
-      email: formData.email,
+      email: formData.email.trim().toLowerCase(),
       password: formData.password,
     };
 

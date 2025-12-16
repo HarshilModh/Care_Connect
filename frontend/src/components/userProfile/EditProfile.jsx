@@ -4,7 +4,7 @@ import { getAuth } from "firebase/auth";
 import api from "../../api/axios";
 //Navigation
 import { Link } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast,ToastContainer } from "react-toastify";
 import { validateName, validateEmail } from "../../utils/validation";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
@@ -159,19 +159,15 @@ const EditProfile = () => {
               <span className="float-label">Last Name</span>
             </div>
           </div>
+          <div className="space-y-1 ">         
+            <label className="block text-sm font-medium text-slate-700">
+            Email:
+          </label>
+          
+        
+          <span>{email}</span>
+        </div>
 
-          <div className={`floater ${email ? "filled" : ""}`}>
-            <input
-              type="email"
-              value={email}
-              readOnly
-              // onChange={(e) => setEmail(e.target.value)}
-              className="input bg-gray-100 cursor-not-allowed"
-              maxLength={120}
-            //required
-            />
-            <span className="float-label">Email Address</span>
-          </div>
 
           <div className="pt-4">
             <button
@@ -210,6 +206,7 @@ const EditProfile = () => {
           </div>
         </form>
       </div>
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
     </div>
   );
 };

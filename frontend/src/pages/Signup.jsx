@@ -120,7 +120,7 @@ export default function Signup() {
       console.log("Creating Firebase user");
       const userCredential = await createUserWithEmailAndPassword(
         auth,
-        formData.email,
+        formData.email.trim().toLowerCase(),
         formData.password
       );
       console.log("Firebase user created:", userCredential);
@@ -136,7 +136,7 @@ export default function Signup() {
       const payload = {
         firstName: formData.firstName,
         lastName: formData.lastName,
-        email: formData.email,
+        email: formData.email.trim().toLowerCase(),
         password: formData.password,
         confirmPassword: formData.confirmpassword,
         firebaseUid: user.uid,

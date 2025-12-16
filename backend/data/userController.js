@@ -80,7 +80,13 @@ export const createUser = async (
   try {
     //validation
     console.log("Creating user with data:", {
-      firstName, lastName, email, password, confirmPassword, needPasswordReset, uid,
+      firstName,
+      lastName,
+      email,
+      password,
+      confirmPassword,
+      needPasswordReset,
+      uid,
     });
 
     if (!firstName || !lastName || !email || !password || !confirmPassword) {
@@ -122,18 +128,17 @@ export const createUser = async (
     let resetPasswordLink = null;
 
     if (needPasswordReset === true) {
-
       const actionCodeSettings = {
         url: `${process.env.CLIENT_URL}`, // or your frontend route
         handleCodeInApp: true,
       };
-      console.log("actionCodeSettings", actionCodeSettings)
+      console.log("actionCodeSettings", actionCodeSettings);
 
       const resetPasswordLink = await admin
         .auth()
         .generatePasswordResetLink(normEmail, actionCodeSettings);
 
-      console.log("resetPasswordLink", resetPasswordLink)
+      console.log("resetPasswordLink", resetPasswordLink);
 
       // Now send email with this link instead of plain password
       const response = await sendMail({
@@ -255,7 +260,7 @@ export const updateUser = async (userId, updateData) => {
     if (Object.keys(safe).length === 0) {
       throw new Error("No valid fields to update");
     }
-    //also set isVerified to false if email is changed 
+    //also set isVerified to false if email is changed
     if (typeof email === "string" && email.trim()) {
       const normEmail = email.trim().toLowerCase();
       if (!isValidEmail(normEmail)) throw new Error("Invalid email");
@@ -271,7 +276,9 @@ export const updateUser = async (userId, updateData) => {
     if (firebaseUid) {
       await admin.auth().updateUser(firebaseUid, {
         email: safe.email,
-        displayName: `${safe.firstName || updated.firstName} ${safe.lastName || updated.lastName}`
+        displayName: `${safe.firstName || updated.firstName} ${
+          safe.lastName || updated.lastName
+        }`,
       });
     }
 
@@ -298,14 +305,18 @@ export const deleteUser = async (userId) => {
 
     // 2) Delete all chat messages sent by this user (from ALL groups)
     const userChatsResult = await Chat.deleteMany({ senderId: userId });
-    console.log(`Deleted ${userChatsResult.deletedCount} chat messages sent by user`);
+    console.log(
+      `Deleted ${userChatsResult.deletedCount} chat messages sent by user`
+    );
 
     // 3) Delete all memberships where this user is a member (but not owner)
     const membershipResult = await Membership.deleteMany({
       userId,
-      role: { $ne: "admin" } // Don't delete admin memberships yet
+      role: { $ne: "admin" }, // Don't delete admin memberships yet
     });
-    console.log(`Deleted ${membershipResult.deletedCount} non-admin memberships for user`);
+    console.log(
+      `Deleted ${membershipResult.deletedCount} non-admin memberships for user`
+    );
 
     // 4) Handle groups owned by this user - transfer ownership or delete
     const ownedGroups = await FamilyGroup.find({ createdBy: userId });
@@ -321,7 +332,7 @@ export const deleteUser = async (userId) => {
         groupId: group._id,
         userId: { $ne: userId },
         status: "active",
-        role: { $in: ["admin", "familyMember"] }
+        role: { $in: ["admin", "familyMember"] },
       }).sort({ role: 1, createdAt: 1 }); // Prefer admin, then oldest member
 
       if (newOwnerMembership) {
@@ -336,7 +347,9 @@ export const deleteUser = async (userId) => {
 
         await group.save();
         groupsTransferred++;
-        console.log(`Transferred ownership of group ${group._id} to user ${newOwnerMembership.userId}`);
+        console.log(
+          `Transferred ownership of group ${group._id} to user ${newOwnerMembership.userId}`
+        );
 
         // Create notification for new owner
         try {
@@ -345,7 +358,7 @@ export const deleteUser = async (userId) => {
             recipientId: newOwnerMembership.userId.toString(),
             title: "Group Ownership Transferred",
             message: `You are now the owner of "${group.groupName}"`,
-            metadata: { groupId: group._id.toString() }
+            metadata: { groupId: group._id.toString() },
           });
         } catch (notifErr) {
           console.error("Failed to create transfer notification:", notifErr);
@@ -356,31 +369,45 @@ export const deleteUser = async (userId) => {
         await Membership.deleteMany({ groupId: group._id });
         await group.deleteOne();
         groupsDeleted++;
-        console.log(`Deleted empty group ${group._id} (no members to transfer to)`);
+        console.log(
+          `Deleted empty group ${group._id} (no members to transfer to)`
+        );
       }
     }
 
     // 5) Now delete remaining admin memberships for this user
     const adminMembershipResult = await Membership.deleteMany({
       userId,
-      role: "admin"
+      role: "admin",
     });
-    console.log(`Deleted ${adminMembershipResult.deletedCount} admin memberships for user`);
-    //delete all the tasks created by this user, createdBy,recipientId,assignedTo fields, createdBy fields 
+    console.log(
+      `Deleted ${adminMembershipResult.deletedCount} admin memberships for user`
+    );
+    //delete all the tasks created by this user, createdBy,recipientId,assignedTo fields, createdBy fields
     const tasksResult = await Task.deleteMany({
-      $or: [{ createdBy: userId }, { recipientId: userId }, { assignedTo: userId }]
+      $or: [
+        { createdBy: userId },
+        { recipientId: userId },
+        { assignedTo: userId },
+      ],
     });
     console.log(`Deleted ${tasksResult.deletedCount} tasks related to user`);
     //delete all notifications for this user recipientId and senderId
     const notificationsResult = await Notification.deleteMany({
-      $or: [{ recipientId: userId }, { senderId: userId }]
+      $or: [{ recipientId: userId }, { senderId: userId }],
     });
     //deleed all notifications for this user recipientId and senderId fields
-    console.log(`Deleted ${notificationsResult.deletedCount} notifications for user`);
+    console.log(
+      `Deleted ${notificationsResult.deletedCount} notifications for user`
+    );
 
     // Delete medications for this user (recipientId)
-    const medicationResult = await Medication.deleteMany({ recipientId: userId });
-    console.log(`Deleted ${medicationResult.deletedCount} medications for user`);
+    const medicationResult = await Medication.deleteMany({
+      recipientId: userId,
+    });
+    console.log(
+      `Deleted ${medicationResult.deletedCount} medications for user`
+    );
 
     // Delete vitals for this user (userId)
     const vitalResult = await Vital.deleteMany({ userId });
@@ -391,7 +418,6 @@ export const deleteUser = async (userId) => {
     // const documentResult = await Document.deleteMany({ uploadedBy: userId });
     // console.log(`Deleted ${documentResult.deletedCount} documents uploaded by user`);
 
-
     // 6) Delete the user from MongoDB
     await User.findByIdAndDelete(userId);
     console.log(`Deleted user from MongoDB: ${userId}`);
@@ -401,7 +427,10 @@ export const deleteUser = async (userId) => {
       await client.del(redisKey);
       console.log(`Deleted Redis refresh token for user: ${userId}`);
     } catch (redisErr) {
-      console.error("Failed to clear Redis token:", redisErr?.message || redisErr);
+      console.error(
+        "Failed to clear Redis token:",
+        redisErr?.message || redisErr
+      );
     }
 
     // 8) Best-effort: delete Firebase user
@@ -421,7 +450,8 @@ export const deleteUser = async (userId) => {
       ok: true,
       deletedUserId: userId,
       removedUserChats: userChatsResult.deletedCount || 0,
-      removedMemberships: (membershipResult.deletedCount + adminMembershipResult.deletedCount) || 0,
+      removedMemberships:
+        membershipResult.deletedCount + adminMembershipResult.deletedCount || 0,
       groupsTransferred: groupsTransferred,
       groupsDeleted: groupsDeleted,
       removedMedications: medicationResult.deletedCount || 0,
@@ -431,7 +461,6 @@ export const deleteUser = async (userId) => {
 
     console.log("User deletion completed successfully:", result);
     return result;
-
   } catch (error) {
     console.error("Error deleting user:", error);
     throw new Error(`Error deleting user: ${error.message}`);
@@ -486,14 +515,13 @@ export const authenticateUser = async (email, password) => {
     // console.log("hashedPassword", hashedPassword);
 
     const isPasswordValid = await user.isPasswordCorrect(password);
-    console.log(
-      "isPasswordValid:", isPasswordValid
-    )
+    console.log("isPasswordValid:", isPasswordValid);
     if (!isPasswordValid) {
       throw new Error("Invalid password or email");
     }
     const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
-      user._id);
+      user._id
+    );
     let loggedInUser = await User.findOne({ email }).select(
       "-password -refreshToken"
     );
@@ -558,7 +586,6 @@ export const resetUserPassword = async (email, newPassword) => {
     if (!user) throw new Error("User not found");
 
     if (user.isVerified === false) {
-
       user.isVerified = true;
       console.log("isVerified changes to true", user.isVerified);
     }
@@ -567,7 +594,6 @@ export const resetUserPassword = async (email, newPassword) => {
     if (user.needPasswordReset === true) {
       user.needPasswordReset = false;
       console.log("needPasswordReset changes to false", user.needPasswordReset);
-
     }
 
     user.password = newPassword.trim();
@@ -575,7 +601,7 @@ export const resetUserPassword = async (email, newPassword) => {
 
     await client.del(`refresh:${user._id}`); // force re-login
 
-    console.log("user password reset successfull")
+    console.log("user password reset successfull");
 
     return { ok: true };
   } catch (error) {
@@ -585,10 +611,10 @@ export const resetUserPassword = async (email, newPassword) => {
 };
 
 //Verify User Email
-export const verifyUserEmail = async (userId, verificationCode) => { };
+export const verifyUserEmail = async (userId, verificationCode) => {};
 
 //Send Password Reset Email
-export const sendPasswordResetEmail = async (email) => { };
+export const sendPasswordResetEmail = async (email) => {};
 
 //Update User Profile Picture
 export const updateUserProfilePicture = async (userId, profilePictureUrl) => {
@@ -760,13 +786,14 @@ export const authenticateUserWithGoogle = async (idToken) => {
     }
 
     const { uid, email, name, picture } = decodedToken;
+    const normEmail = email.trim().toLowerCase();
     const [firstName, lastName = ""] = (name || "Google User").split(" ");
     // Password must contain at least one uppercase letter, one lowercase letter, and one number.
     const password = Math.random().toString(36).slice(-8) + "Aa1"; // random  password
 
     // Add user in  MongoDB
     let user = await User.findOne({ uid: uid });
-    let userExistsWithEmail = await User.findOne({ email: email });
+    let userExistsWithEmail = await User.findOne({ email: normEmail });
     // If user exists with the same email but not with Google, link Google UID
     if (!user && userExistsWithEmail) {
       // Link Google UID to existing user
@@ -784,7 +811,7 @@ export const authenticateUserWithGoogle = async (idToken) => {
         firstName,
         lastName,
         displayName: firstName, //
-        email,
+        email: normEmail,
         isVerified: true,
         googleId: uid,
         password,

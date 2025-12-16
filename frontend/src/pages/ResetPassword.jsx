@@ -72,7 +72,7 @@ export default function ResetPassword() {
       await confirmPasswordReset(auth, oobCode, password);
 
       const resetpass = await api.patch("users/me/reset_passoword", {
-        email,
+        email: email.trim().toLowerCase(),
         password,
       });
       console.log("resetpass", resetpass);

@@ -56,6 +56,12 @@ export const validateName = (name, fieldName = "Name") => {
   if (!/^[a-zA-Z\s'-]+$/.test(name)) {
     return `${fieldName} can only contain letters, spaces, hyphens, and apostrophes`;
   }
+  if (/^[0-9]+$/.test(name.trim())) {
+    return `${fieldName} cannot contain only numbers`;
+  }
+  if (!/[a-zA-Z]/.test(name)) {
+    return `${fieldName} must contain at least one letter`;
+  }
   return "";
 };
 
@@ -78,7 +84,7 @@ export const validateRequired = (value, fieldName = "Field") => {
   if (!value || (typeof value === "string" && !value.trim())) {
     return `${fieldName} is required`;
   }
-  if(value.trim && value.trim().length <2){
+  if (value.trim && value.trim().length < 2) {
     return `${fieldName} must be at least 2 characters long`;
   }
   return "";
@@ -93,6 +99,16 @@ export const validateGroupName = (name) => {
   }
   if (name.trim().length > 100) {
     return "Group name must be at most 100 characters long";
+  }
+  if (/^[0-9]+$/.test(name.trim())) {
+    return "Group name cannot contain only numbers";
+  }
+  if (!/[a-zA-Z]/.test(name)) {
+    return "Group name must contain at least one letter";
+  }
+  const specialCharCount = (name.match(/[^a-zA-Z0-9\s]/g) || []).length;
+  if (specialCharCount > name.length / 2) {
+    return "Group name contains too many special characters";
   }
   return "";
 };
@@ -120,6 +136,16 @@ export const validateTaskTitle = (title) => {
   }
   if (title.trim().length > 200) {
     return "Task title must be at most 200 characters long";
+  }
+  if (/^[0-9]+$/.test(title.trim())) {
+    return "Task title cannot contain only numbers";
+  }
+  if (!/[a-zA-Z]/.test(title)) {
+    return "Task title must contain at least one letter";
+  }
+  const specialCharCount = (title.match(/[^a-zA-Z0-9\s]/g) || []).length;
+  if (specialCharCount > title.length / 2) {
+    return "Task title contains too many special characters";
   }
   return "";
 };
@@ -172,7 +198,7 @@ export const validateAge = (age) => {
   }
 
   // Check if age is a date string (YYYY-MM-DD format)
-  if (typeof age === 'string' && age.includes('-')) {
+  if (typeof age === "string" && age.includes("-")) {
     const birthDate = new Date(age);
     if (isNaN(birthDate.getTime())) {
       return "Please enter a valid birth date";
@@ -183,9 +209,11 @@ export const validateAge = (age) => {
     const monthDiff = today.getMonth() - birthDate.getMonth();
 
     // Adjust age if birthday hasn't occurred this year
-    const finalAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())
-      ? calculatedAge - 1
-      : calculatedAge;
+    const finalAge =
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+        ? calculatedAge - 1
+        : calculatedAge;
 
     if (finalAge < 0 || finalAge > 150) {
       return "Please enter a valid birth date (age must be between 0 and 150)";
@@ -208,6 +236,12 @@ export const validateEmergencyContact = (contact) => {
   }
   if (contact.trim().length < 2) {
     return "Emergency contact must be at least 2 characters long";
+  }
+  // If it looks like a name (not all digits), validate as text
+  if (!/^[\d\s\-\+\(\)]+$/.test(contact)) {
+    if (!/[a-zA-Z]/.test(contact)) {
+      return "Emergency contact name must contain at least one letter";
+    }
   }
   return "";
 };
