@@ -40,7 +40,15 @@ const TASK_TYPES = [
     color: "bg-yellow-100 text-yellow-600 border-yellow-200",
   },
 ];
-
+const getCurrentTimestamp = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
 export default function EditTaskModal({
   task,
   isOpen,
@@ -60,6 +68,16 @@ export default function EditTaskModal({
   const [repeatRule, setRepeatRule] = useState("");
   const [members, setMembers] = useState([]);
 
+  const getCurrentTimestamp = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   // Get userId from localStorage with useMemo just once to check the perf of this
   const userId = useMemo(() => {
     try {
@@ -76,7 +94,14 @@ export default function EditTaskModal({
     if (task) {
       setTitle(task.title || "");
       setDesc(task.description || "");
-      setDueDate(task.dueAt ? new Date(task.dueAt).toISOString().slice(0, 16) : "");
+      if (task.dueAt) {
+        const date = new Date(task.dueAt);
+        const offset = date.getTimezoneOffset() * 60000;
+        const localDate = new Date(date.getTime() - offset);
+        setDueDate(localDate.toISOString().slice(0, 16));
+      } else {
+        setDueDate("");
+      }
       setType(task.type || "task");
 
       const groupId = task.groupId?._id || task.groupId || "";
@@ -185,8 +210,52 @@ export default function EditTaskModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim() || !selectedGroup || !recipient) {
+    if (!title.trim() || !selectedGroup || !recipient || !dueDate || !type || !userId || !desc.trim() || assignedTo === undefined) {
       toast.error("Please fill in all required fields.");
+      return;
+    }
+    //input validation
+    if (title.length > 100) {
+      toast.error("Title cannot exceed 100 characters.");
+      return;
+    }
+
+    // Title: required, must contain at least one letter
+    const titleRegex = /^(?=.*[a-zA-Z])[a-zA-Z0-9\s.,'!?()\-]+$/;
+    if (!titleRegex.test(title.trim())) {
+      toast.error("Title must contain at least one letter and valid characters.");
+      return;
+    }
+
+    // Description: optional, must contain at least one letter if not empty
+    const descRegex = /^(?=.*[a-zA-Z])[a-zA-Z0-9\s.,'!?()\-]*$/;
+    if (desc.trim() && !descRegex.test(desc.trim())) {
+      toast.error("Description must contain at least one letter and valid characters.");
+      return;
+    }
+
+
+    //asginedTo cannot be not selected
+    if (!assignedTo) {
+      toast.error("Please select a member to assign the task to.");
+      return;
+    }
+
+    //care recipient cannot be not selected
+    if (!recipient) {
+      toast.error("Please select a care recipient.");
+      return;
+    }
+    //due date cannot be empty
+    if (!dueDate) {
+      toast.error("Please select a due date.");
+      return;
+    }
+    //due date cannot be in the past
+    const now = new Date();
+    const selectedDueDate = new Date(dueDate);
+    if (selectedDueDate < now) {
+      toast.error("Due date cannot be in the past.");
       return;
     }
 
@@ -199,7 +268,7 @@ export default function EditTaskModal({
         recipientId: recipient,
         title,
         description: desc,
-        dueAt: dueDate || null,
+        dueAt: dueDate ? new Date(dueDate).toISOString() : null,
         repeatRule: repeatRule || null,
         type,
       });
@@ -218,8 +287,8 @@ export default function EditTaskModal({
   if (!isOpen) return null;
 
   // Modal JSX
-  
-    return (
+
+  return (
     <div className="fixed inset-0 bg-black/60 flex justify-center items-center p-4 z-[9999]" onClick={onClose}>
       <div
         className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
@@ -240,7 +309,7 @@ export default function EditTaskModal({
         </div>
         {/* Task category */}
         <div className="overflow-y-auto p-6 space-y-6 custom-scrollbar">
-        
+
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-3">
               Task Category
@@ -270,7 +339,7 @@ export default function EditTaskModal({
             </div>
           </div>
 
-       
+
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -307,7 +376,7 @@ export default function EditTaskModal({
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-     
+
               <div className="relative">
                 <label className="block text-xs font-medium text-gray-600 mb-1">Family Group</label>
                 <div className="relative">
@@ -391,7 +460,7 @@ export default function EditTaskModal({
               </div>
             </div>
 
-    
+
             <div className="relative pt-2">
               <label className="block text-xs font-medium text-gray-600 mb-1">Due Date</label>
               <div className="relative">
@@ -399,7 +468,9 @@ export default function EditTaskModal({
                 <input
                   type="datetime-local"
                   value={dueDate}
+                  min={getCurrentTimestamp()}
                   onChange={(e) => setDueDate(e.target.value)}
+                  onKeyDown={(e) => e.preventDefault()}
                   className="w-full pl-9 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                 />
               </div>

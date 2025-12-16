@@ -8,13 +8,20 @@ const medicationSchema = new mongoose.Schema(
       trim: true,
       minlength: 1,
       maxlength: 200,
-    },
-    dosage: {
-      type: String,
-      trim: true,
-      maxlength: 100,
-      default: "",
-    },
+        match: [
+    /^(?=.*[a-zA-Z])[a-zA-Z0-9\s.,()\-]+$/,
+    "Medication name must contain letters and may include numbers, spaces, hyphens, and parentheses.",
+  ],},
+   dosage: {
+  type: String,
+  trim: true,
+  maxlength: 100,
+  default: "",
+ match: [
+  /^$|^\s*\d+(\.\d+)?(\s*[-–]\s*\d+(\.\d+)?)?\s*(mg|g|ml|mcg|milligrams?|grams?|milliliters?|units?|tablets?|capsules?)\s*$/i,
+  "Dosage must include a number and unit (e.g., 400 mg, 1–2 tablets).",
+],
+},
     frequency: {
       type: String,
       enum: ["daily", "weekly", "as_needed"],

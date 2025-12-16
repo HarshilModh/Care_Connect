@@ -269,7 +269,7 @@ export default function Tasks() {
   const onView = (newView) => setCurrentView(newView);
 
   return (
-    <main className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6">
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -459,15 +459,7 @@ export default function Tasks() {
           </div>
         ) : (
           <div className="bg-white p-6 rounded-2xl shadow-xl border border-gray-100 h-[700px]">
-            <style>{`
-                .rbc-calendar { font-family: inherit; }
-                .rbc-header { padding: 12px 0; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #6b7280; letter-spacing: 0.05em; border-bottom: none !important; }
-                .rbc-month-view { border: none !important; }
-                .rbc-day-bg { border-left: 1px solid #f3f4f6 !important; }
-                .rbc-off-range-bg { background-color: #f9fafb !important; }
-                .rbc-today { background-color: #eff6ff !important; }
-                .rbc-event { background: transparent !important; padding: 1px !important; }
-            `}</style>
+
             <BigCalendar
               localizer={localizer}
               events={calendarEvents}
@@ -512,6 +504,6 @@ export default function Tasks() {
           theme="colored"
         />
       </div>
-    </main>
+    </div>
   );
 }

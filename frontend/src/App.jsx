@@ -10,8 +10,8 @@ import AppRoutes from "./routes/AppRoutes";
 import "./App.css"; // keep your css imports
 
 // const hideLayoutRoutes = ["/signin", "/signup",];
-const hideSidebarRoutes = ["/", "/signin", "/signup"]; // ⬅️ hide sidebar on Landing too
-const hideNavbarRoutes = ["/signin", "/signup"]; // ⬅️ only auth pages hide navbar
+const hideSidebarRoutes = ["/", "/signin", "/signup"]; // hide sidebar on Landing too
+const hideNavbarRoutes = ["/signin", "/signup"]; // only auth pages hide navbar
 
 function App() {
   const location = useLocation();

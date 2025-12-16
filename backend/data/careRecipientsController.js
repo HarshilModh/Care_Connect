@@ -311,14 +311,14 @@ export const getAllCareRecipients = async () => {
 //Get Care Recipients by Group ID
 export const getCareRecipientsByGroupId = async (groupId) => {
   try {
-    if (!groupId ) {
+    if (!groupId) {
       throw new Error("Invalid or missing groupId");
     }
-    if(!mongo.ObjectId.isValid(groupId)){
+    if (!mongo.ObjectId.isValid(groupId)) {
       throw new Error("Invalid or missing groupId");
     }
 
-    const recipients = await Membership.find({ groupId, role: "careRecipient",status:"active" }).populate(  
+    const recipients = await Membership.find({ groupId, role: "careRecipient", status: "active" }).populate(
       "userId",
       "firstName lastName email"
     );
@@ -342,7 +342,7 @@ export const getCareRecipientsByUserId = async (userId) => {
       throw new Error("Invalid or missing userId");
     }
 
-    const recipients = await CareRecipient.find({ userId });
+    const recipients = await CareRecipient.find({ userId }).populate("userId", "firstName lastName");
 
     if (!recipients || recipients.length === 0) {
       return [];
@@ -737,7 +737,7 @@ export const getCareRecipientsWithoutEmergencyContacts = async () => {
   } catch (error) {
     throw new Error(
       "Error fetching care recipients without emergency contacts: " +
-        error.message
+      error.message
     );
   }
 };

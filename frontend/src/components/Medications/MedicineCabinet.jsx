@@ -230,6 +230,8 @@ const MedicineCabinet = () => {
                 >
                   {/* Header */}
                   <div className="flex justify-between items-start mb-4">
+                  
+                 
                     <div>
                       <h3 className="text-lg font-bold text-gray-900 truncate">
                         {med.name}
@@ -252,9 +254,18 @@ const MedicineCabinet = () => {
                         className="text-gray-400 hover:text-red-500"
                       >
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                      </button>     
                     </div>
                   </div>
+             {/* Refill Date */}
+              {med.refillDate && (
+              <div className="flex items-center gap-1 text-xs text-gray-500 mb-4">
+              <Droplets className="w-4 h-4 text-blue-500" />
+             <span>
+             Refill: {new Date(med.refillDate).toLocaleDateString()}
+           </span>
+              </div>
+              )}
 
                   {/* Details */}
                   <div className="mb-6 space-y-2 text-sm text-gray-600">
@@ -290,7 +301,9 @@ const MedicineCabinet = () => {
                       <CheckCircle2 className="w-4 h-4" />
                       Take Dose
                     </button>
+
                   </div>
+                  
                 </div>
               );
             })}

@@ -167,6 +167,7 @@ const VitalsDashboard = () => {
     const MetricCard = ({ title, value, unit, icon: Icon, colorClass, type }) => (
         <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col justify-between hover:border-gray-200 transition-colors h-32">
             <div className="text-right">
+              {latestVitals[type]?._id && (
                 <button
                     onClick={() => {
                         deleteVital(latestVitals[type]?._id);
@@ -176,6 +177,7 @@ const VitalsDashboard = () => {
                 >
                     <Trash2 className="w-4 h-4" />
                 </button>
+                )}
             </div>
             <div className="flex justify-between items-start">
                 <span className="text-gray-500 text-sm font-medium">{title}</span>

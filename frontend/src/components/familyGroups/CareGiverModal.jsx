@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactModal from 'react-modal';
-import { X, User, Award, BookOpen, Clock, FileText } from 'lucide-react';
+import { X, User, Award, BookOpen, Clock, FileText, Calendar } from 'lucide-react';
 import api from '../../api/axios';
 
 ReactModal.setAppElement('#root');
@@ -106,13 +106,31 @@ const CareGiverModal = ({ isOpen, onClose, careGiverId }) => {
                                     <div className="flex items-center gap-2 text-gray-500 text-xs font-medium uppercase mb-1">
                                         <Clock className="w-3 h-3" /> Experience
                                     </div>
-                                    <p className="font-semibold text-gray-900">{careGiver.experience} Years</p>
+                                    <p className="font-semibold text-gray-900">{careGiver.experienceYears} Years</p>
+                                </div>
+                                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                    <div className="flex items-center gap-2 text-gray-500 text-xs font-medium uppercase mb-1">
+                                        <Award className="w-3 h-3" /> Rate
+                                    </div>
+                                    <p className="font-semibold text-gray-900">${careGiver.rate || 0}/hr</p>
                                 </div>
                                 <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
                                     <div className="flex items-center gap-2 text-gray-500 text-xs font-medium uppercase mb-1">
                                         <Award className="w-3 h-3" /> Certifications
                                     </div>
                                     <p className="font-semibold text-gray-900">{careGiver.certifications?.length || 0}</p>
+                                    {careGiver.certifications && careGiver.certifications.length > 0 && (
+                                        <div className="mt-1 space-y-1">
+                                            {careGiver.certifications.map((cert, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="px-2 py-1 bg-green-50 text-green-700 text-xs font-medium rounded-full border border-green-100 inline-block"
+                                                >
+                                                    {cert}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -140,6 +158,25 @@ const CareGiverModal = ({ isOpen, onClose, careGiverId }) => {
                                     ))}
                                     {(!careGiver.skills || careGiver.skills.length === 0) && (
                                         <span className="text-sm text-gray-500 italic">No specific skills listed.</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                                    <Calendar className="w-4 h-4 text-gray-400" /> Availability
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {careGiver.availability?.map((slot, index) => (
+                                        <span
+                                            key={index}
+                                            className="px-2.5 py-1 bg-purple-50 text-purple-700 text-xs font-medium rounded-full border border-purple-100"
+                                        >
+                                            {slot}
+                                        </span>
+                                    ))}
+                                    {(!careGiver.availability || careGiver.availability.length === 0) && (
+                                        <span className="text-sm text-gray-500 italic">No availability listed.</span>
                                     )}
                                 </div>
                             </div>

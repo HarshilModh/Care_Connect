@@ -191,10 +191,22 @@ export default function CreateTask() {
       toast.error("Title cannot exceed 100 characters.");
       return;
     }
-    if (desc.length > 500) {
-      toast.error("Description cannot exceed 500 characters.");
+  
+    // Title: required, must contain at least one letter
+    const titleRegex = /^(?=.*[a-zA-Z])[a-zA-Z0-9\s.,'!?()\-]+$/;
+    if (!titleRegex.test(title.trim())) {
+          toast.error("Title must contain at least one letter and valid characters.");
+    return;
+    }
+
+  // Description: optional, must contain at least one letter if not empty
+    const descRegex = /^(?=.*[a-zA-Z])[a-zA-Z0-9\s.,'!?()\-]*$/;
+    if (desc.trim() && !descRegex.test(desc.trim())) {
+      toast.error("Description must contain at least one letter and valid characters.");
       return;
     }
+
+  
     //asginedTo cannot be not selected
     if (!assignedTo) {
       toast.error("Please select a member to assign the task to.");
@@ -211,6 +223,14 @@ export default function CreateTask() {
       toast.error("Please select a due date.");
       return;
     }
+    //due date cannot be in the past
+    const now = new Date();
+    const selectedDueDate = new Date(dueDate);
+    if (selectedDueDate < now) {
+      toast.error("Due date cannot be in the past.");
+      return;
+    }
+    
     setLoading(true);
     try {
       const hasFiles = files && files.length > 0;
@@ -293,7 +313,7 @@ export default function CreateTask() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6">
+    <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto">
         <header className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-gray-900">Create New Task</h1>
@@ -548,6 +568,6 @@ export default function CreateTask() {
           autoClose={3000}
         />
       </div>
-    </main>
+    </div>
   );
 }

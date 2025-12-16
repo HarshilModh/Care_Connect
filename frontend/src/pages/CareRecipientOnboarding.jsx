@@ -9,6 +9,7 @@ import {
   validateAge,
   validateEmergencyContact,
 } from "../utils/validation";
+import { useEffect } from "react";
 
 const CareRecipientOnboarding = () => {
   const [saving, setSaving] = useState(false);
@@ -20,7 +21,7 @@ const CareRecipientOnboarding = () => {
   const [emergencyName, setEmergencyName] = useState("");
   const [emergencyPhone, setEmergencyPhone] = useState("");
   const [emergencyRelation, setEmergencyRelation] = useState("");
-
+  const [members, setMembers] = useState(false);
   const navigate = useNavigate();
   const { groupId } = useParams();
   console.log("groupId", groupId);
@@ -33,7 +34,44 @@ const CareRecipientOnboarding = () => {
   } catch (err) {
     console.error("Invalid user data in localStorage", err);
   }
+  const [loading, setLoading] = useState(true);
+  const fetchMembers = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      console.log("Fetching members for groupId:", groupId);
+      const res = await api.get(`/memberships/group/${groupId}`);
+      console.log("Fetched members:", res.data);
+      const data = Array.isArray(res.data) ? res.data : res.data?.members || [];
+      setMembers(data);
+      const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+      console.log("Current user:", currentUser);
 
+      // Verify the user is a member AND has the 'careRecipient' role
+      const memberRecord = data.find(m => m.userId._id === currentUser?._id);
+
+      if (!memberRecord || memberRecord.role !== 'careRecipient') {
+        toast.error("Access denied. You must be a Care Recipient to access this page.");
+        navigate("/family-groups");
+      }
+    } catch (err) {
+      console.error("Error fetching members:", err);
+      if (err.name === 'CanceledError') return; // Ignore aborts
+      setError(err.response?.data?.message || "Failed to fetch members");
+      navigate("/family-groups");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (groupId) {
+      fetchMembers();
+    } else {
+      toast.error("Missing group information.");
+      navigate("/family-groups");
+    }
+  }, [groupId]);
   const validateForm = () => {
     if (!groupId) {
       toast.error("Missing group information. Please go back and try again.");
@@ -72,7 +110,11 @@ const CareRecipientOnboarding = () => {
       toast.error(emergencyError);
       return false;
     }
-
+    const phoneRegex = /^(?=(?:.*\d){10,})\+?[0-9\s\-()]{10,20}$/;
+    if (!phoneRegex.test(emergencyPhone.trim())) {
+      toast.error("Please enter a valid phone number for the emergency contact.");
+      return false;
+    }
     return true;
   };
   const handleSubmit = async (e) => {
@@ -82,6 +124,8 @@ const CareRecipientOnboarding = () => {
 
     setSaving(true);
     setError(null);
+
+
 
     try {
       const payload = {
@@ -140,7 +184,7 @@ const CareRecipientOnboarding = () => {
   };
 
   return (
-    <main className="page">
+    <div className="page">
       <div className="container-n max-w-2xl mx-auto">
         <header className="mb-6 text-center">
           <h1 className="section-title">Care Recipient Onboarding</h1>
@@ -279,7 +323,7 @@ const CareRecipientOnboarding = () => {
         pauseOnHover
         theme="colored"
       />
-    </main>
+    </div>
   );
 };
 
