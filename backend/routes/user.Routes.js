@@ -148,11 +148,13 @@ router.get("/search/", verifyFirebaseToken, async (req, res, next) => {
         .json({ error: "Email must be a non-empty string" });
     }
 
-    if (!isValidEmail(email)) {
+    const normEmail = email.trim().toLowerCase();
+
+    if (!isValidEmail(normEmail)) {
       return res.status(400).json({ error: "Invalid email format" });
     }
 
-    const users = await searchUsersByEmail(email);
+    const users = await searchUsersByEmail(normEmail);
     console.log("Fetched User using email >>>", users);
     return res.status(200).json(users);
   } catch (e) {
@@ -203,7 +205,7 @@ router.patch("/me", async (req, res, next) => {
     const updateData = {
       firstName: firstname,
       lastName: lastname,
-      email: email,
+      email: email ? email.trim().toLowerCase() : undefined,
       firebaseUid: firebaseUid,
     };
     const updated = await updateUser(id, updateData);
@@ -251,8 +253,9 @@ router.patch("/me/reset_passoword", async (req, res) => {
   try {
     console.log("<>><>");
     const { email, password } = req.body || {};
-    console.log("email?>>>", email, password);
-    const result = await resetUserPassword(email, password);
+    const normEmail = email ? email.trim().toLowerCase() : email;
+    console.log("email?>>>", normEmail, password);
+    const result = await resetUserPassword(normEmail, password);
     res.status(200).json(result);
     console.log("password");
   } catch (error) {
@@ -280,14 +283,15 @@ router.post("/verify-email", verifyFirebaseToken, async (req, res) => {
     console.log("📧 Syncing email verification for:", req.firebaseUser);
 
     // Find or create user
-    let user = await User.findOne({ email: req.firebaseUser.email });
+    const normEmail = req.firebaseUser.email ? req.firebaseUser.email.trim().toLowerCase() : req.firebaseUser.email;
+    let user = await User.findOne({ email: normEmail });
     console.log("firstUser", user);
 
     if (!user) {
       // Create new user if doesn't exist
       user = await User.create({
         firebaseUid: req.user.uid,
-        email: req.user.email,
+        email: normEmail,
         emailVerified: true,
         verifiedAt: new Date(),
       });

@@ -22,7 +22,8 @@ export default function ForgotPassword() {
 
         try {
             setLoading(true);
-            await sendPasswordResetEmail(auth, email);
+            const normalizedEmail = email.trim().toLowerCase();
+            await sendPasswordResetEmail(auth, normalizedEmail);
             toast.success("Password reset email sent! Check your inbox.");
             setEmail("");
             setTimeout(() => navigate("/signin"), 3000);
