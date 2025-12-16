@@ -1,176 +1,135 @@
 # CareConnect
 
-CareConnect is a MERN based caregiving collaboration platform.
-Families, caregivers and care recipients can coordinate care activities in one place.
+> A comprehensive caregiving collaboration platform that brings families, caregivers, and care recipients together to coordinate care activities seamlessly.
+
+CareConnect is a full-stack MERN application designed to simplify care coordination through real-time communication, task management, medication tracking, and vital monitoring - all in one centralized platform.
 
 ---
 
-## Repository Structure
+## 🌟 Features
 
-```
-/backend      Node plus Express API
-/frontend     React with Vite
-docker-compose.yml   Starts backend, frontend, MongoDB, Redis
-```
+### Core Functionality
+
+- **Family Group Management** - Create and manage family groups with role-based access control
+- **Task Management** - Create, assign, and track care tasks with reminders and notifications
+- **Medication Tracking** - Log medications, dosages, schedules, and refill reminders
+- **Vital Monitoring** - Record and track blood pressure, heart rate, weight, glucose, and temperature
+- **Document Storage** - Upload and manage care-related documents securely
+- **Real-time Chat** - Group messaging with Socket.IO for instant communication
+- **Notifications** - Automated reminders for tasks, medications, and care activities
+
+### User Roles
+
+- **Care Recipients** - Individuals receiving care
+- **Care Givers** - Professional or family caregivers
+- **Family Members** - Family participants in care coordination
+- **Admins/Owners** - Group administrators with full permissions
+
+### Authentication & Security
+
+- Firebase Authentication with email/password and Google OAuth
+- JWT-based session management with access and refresh tokens
+- Role-based access control (RBAC) for all resources
+- Email verification and password reset flows
+- Case-insensitive email handling for improved user experience
+
+## 🏗️ Architecture
+
+### Tech Stack
+
+**Frontend**
+
+- React 18 with Vite
+- TailwindCSS for styling
+- React Router for navigation
+- Axios for API calls
+- Socket.IO client for real-time features
+- React Toastify for notifications
+- Firebase Auth SDK
+
+**Backend**
+
+- Node.js with Express
+- MongoDB with Mongoose ODM
+- Redis for caching and session management
+- Firebase Admin SDK for authentication
+- Socket.IO for real-time communication
+- Node-cron for scheduled tasks
+- Nodemailer for email notifications
+
+**Storage & Services**
+
+- AWS S3 for file storage
+- Cloudinary for image management
+- MongoDB Atlas (production)
+- Redis for token caching
 
 ---
 
-## Requirements
+2. **Set up environment variables**
 
-* Docker Desktop (Mac, Windows or Linux)
-* Optional: Node JS for running backend or frontend without Docker
+   Create `backend/.env`:
 
----
+   ```env
+   # Database
+   MONGODB_URI=mongodb://mongodb:27017/care_connect_db
 
-## Start the entire project with Docker (recommended)
+   # Redis
+   REDIS_URL=redis://redis:6379
 
-From the project root folder:
+   # JWT Secrets
+   ACCESS_TOKEN_SECRET=your_access_token_secret
+   REFRESH_TOKEN_SECRET=your_refresh_token_secret
 
-```sh
-docker compose down
-docker compose up --build
-```
+   # Firebase
+   FIREBASE_PROJECT_ID=your_project_id
+   FIREBASE_PRIVATE_KEY=your_private_key
+   FIREBASE_CLIENT_EMAIL=your_client_email
 
-What happens
+   # AWS S3
+   AWS_ACCESS_KEY_ID=your_access_key
+   AWS_SECRET_ACCESS_KEY=your_secret_key
+   AWS_REGION=us-east-1
+   S3_BUCKET_NAME=your_bucket_name
 
-| Service     | URL or Port                                    | Description                                 |
-| ----------- | ---------------------------------------------- | ------------------------------------------- |
-| Backend API | [http://localhost:3000](http://localhost:3000) | Express server connected to Mongo and Redis |
-| Frontend    | [http://localhost:5173](http://localhost:5173) | Vite development server with hot reload     |
-| MongoDB     | 27017                                          | Data persistence through Docker volume      |
-| Redis       | 6379                                           | Token caching and background processes      |
+   # Email (Nodemailer)
+   EMAIL_HOST=smtp.gmail.com
+   EMAIL_PORT=465
+   EMAIL_USER=your_email@gmail.com
+   EMAIL_PASS=your_app_password
+   ```
 
-The frontend reads the API base URL from the environment variable `VITE_API_URL` set inside docker compose.
+   Create `frontend/.env`:
 
----
+   ```env
+   VITE_API_URL=http://localhost:3000/api
+   VITE_FIREBASE_API_KEY=your_firebase_api_key
+   VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
+   VITE_FIREBASE_PROJECT_ID=your_project_id
+   ```
 
-## Run locally without Docker (development mode)
+3. **Access the application**
+   - Frontend: [http://localhost:5173](http://localhost:5173)
+   - Backend API: [http://localhost:3000](http://localhost:3000)
+   - MongoDB: `localhost:27017`
+   - Redis: `localhost:6379`
 
-### Backend
+### Local Development
 
-```sh
+**Backend Setup**
+
+```bash
 cd backend
 npm install
-npm run dev
+npm start
 ```
 
-Your backend `.env` should contain:
+**Frontend Setup**
 
-```
-MONGODB_URI=mongodb://127.0.0.1:27017/care_connect_db
-REDIS_URL=redis://127.0.0.1:6379
-```
-
-### Frontend
-
-```sh
+```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Create `frontend/.env`:
-
-```
-VITE_API_URL=http://localhost:3000/api
-```
-
----
-
-## Optional: Run MongoDB and Redis manually (useful when backend runs with nodemon)
-
-### Start MongoDB with volume persistence
-
-```sh
-docker run -d \
-  --name mongodb \
-  -p 27017:27017 \
-  -v mongo-data:/data/db \
-  mongo:7
-```
-
-### Start Redis
-
-```sh
-docker run -d \
-  --name redis \
-  -p 6379:6379 \
-  redis:7 --appendonly yes
-```
-
-### Stop or start later
-
-```sh
-docker stop mongodb redis
-docker start mongodb redis
-```
-
-You do not need to recreate containers every time.
-Just stop and start them.
-
----
-
-## Redis port already in use
-
-If Redis is already running on your machine you may see:
-
-```
-Bind for port 6379 failed: port is already allocated
-```
-
-Fix option:
-
-Stop the local Redis service if installed via Homebrew:
-
-```sh
-brew services stop redis
-```
-
-Or change Redis port inside docker compose:
-
-```yaml
-redis:
-  ports:
-    - "6380:6379"
-```
-
----
-
-## Notes about volumes and node modules
-
-Docker compose keeps the backend and frontend `node_modules` isolated using volumes.
-This avoids permission issues between host and container.
-
-Example in `docker-compose.yml`:
-
-```yaml
-volumes:
-  backend_node_modules:
-```
-
-Then referenced in backend service:
-
-```yaml
-volumes:
-  - ./backend:/app
-  - backend_node_modules:/app/node_modules
-```
-
----
-
-## Troubleshooting
-
-| Problem                      | Solution                        |
-| ---------------------------- | ------------------------------- |
-| Service is not starting      | `docker compose logs <service>` |
-| Need to rebuild containers   | `docker compose up --build`     |
-| Run containers in background | `docker compose up -d`          |
-| Follow logs live             | `docker compose logs -f`        |
-
----
-
-## Environment file locations
-
-* Backend uses: `backend/.env`
-* Frontend uses: `frontend/.env`
-* Docker Compose injects both automatically
+**Production URL**: `http://3.138.189.214:5173/`
