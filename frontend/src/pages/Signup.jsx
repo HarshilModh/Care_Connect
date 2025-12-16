@@ -128,7 +128,7 @@ export default function Signup() {
 
       console.log("Sending email verification");
       await sendEmailVerification(user, {
-        url: `${FRONTEND_URL}/verify-success`,
+        url: `http://localhost:5173/verify-success`,
       });
       console.log("Email verification sent");
       //toast.success("Verification email sent! Redirecting to login...");

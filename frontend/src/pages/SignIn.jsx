@@ -115,7 +115,7 @@ function SignIn() {
           "Email not verified. Please check your inbox for the verification email."
         );
         sendEmailVerification(auth.currentUser, {
-          url: `${FRONTEND_URL}/verify-success`,
+          url: `http://localhost:5173/verify-success`,
         });
         return;
       }
