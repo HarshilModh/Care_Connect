@@ -138,8 +138,9 @@ const AddMembers = () => {
 
     const timer = setTimeout(async () => {
       try {
+        const normalizedEmail = email.trim().toLowerCase();
         const res = await api.get(
-          `/users/search/${encodeURIComponent(email)}`,
+          `/users/search/${encodeURIComponent(normalizedEmail)}`,
           {
             withCredentials: true,
             signal: controller.signal,
@@ -274,14 +275,15 @@ const AddMembers = () => {
 
     const uniques = [];
     for (const r of pending) {
-      const key = r.userId || r.email;
+      const normalizedEmail = r.email ? r.email.trim().toLowerCase() : null;
+      const key = r.userId || normalizedEmail;
       if (!uniques.some((u) => u.key === key)) {
         uniques.push({
           key,
           payload: {
             groupId: r.groupId,
             userId: r.userId || null,
-            email: r.email || null,
+            email: normalizedEmail,
             role: r.role,
             status: "pending",
           },
@@ -403,7 +405,7 @@ const AddMembers = () => {
       console.log("password", password);
       const userCredential = await createUserWithEmailAndPassword(
         auth,
-        inviteEmail,
+        inviteEmail.trim().toLowerCase(),
         password
       );
 
@@ -438,7 +440,7 @@ const AddMembers = () => {
         {
           firstName: inviteFirstName,
           lastName: inviteLastName,
-          email: inviteEmail,
+          email: inviteEmail.trim().toLowerCase(),
           password,
           confirmPassword: password,
           phone: null,
