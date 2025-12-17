@@ -389,18 +389,14 @@ const UserProfile = () => {
                     <div className="mt-6 w-full space-y-3">
                         {/* {!isGoogleUser && ( */}
                         <>
-                            <Link to="/edit-profile">
-                                <button className="w-full inline-flex items-center justify-center px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-fuchsia-600 text-white font-semibold shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.98] transition">
-                                    <Edit className="w-4 h-4 mr-2" />
-                                    Edit Profile
-                                </button>
+                            <Link to="/edit-profile" className="w-full inline-flex items-center justify-center px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-fuchsia-600 text-white font-semibold shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.98] transition">
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit Profile
                             </Link>
                             {!isGoogleUser && (
-                                <Link to="/forgot-password">
-                                    <button className="w-full inline-flex items-center justify-center px-4 py-3 rounded-xl bg-white border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition">
-                                        <Lock className="w-4 h-4 mr-2 text-gray-400" />
-                                        Reset Password
-                                    </button>
+                                <Link to="/forgot-password" className="w-full inline-flex items-center justify-center px-4 py-3 rounded-xl bg-white border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition">
+                                    <Lock className="w-4 h-4 mr-2 text-gray-400" />
+                                    Reset Password
                                 </Link>
                             )}
                         </>
@@ -902,11 +898,11 @@ const UserProfile = () => {
                                         {isEditing ? (
                                             <input
                                                 type="date"
-                                                 max={new Date(
-                                                new Date().setFullYear(new Date().getFullYear() - 18)
-                                                          )
-                                                  .toISOString()
-                                              .split("T")[0]}
+                                                max={new Date(
+                                                    new Date().setFullYear(new Date().getFullYear() - 18)
+                                                )
+                                                    .toISOString()
+                                                    .split("T")[0]}
                                                 value={data.dob ? new Date(data.dob).toISOString().split('T')[0] : ''}
                                                 onChange={(e) => setEditForm({ ...editForm, dob: e.target.value })}
                                                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none"

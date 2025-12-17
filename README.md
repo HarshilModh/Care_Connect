@@ -10,126 +10,155 @@ CareConnect is a full-stack MERN application designed to simplify care coordinat
 
 ### Core Functionality
 
-- **Family Group Management** - Create and manage family groups with role-based access control
-- **Task Management** - Create, assign, and track care tasks with reminders and notifications
-- **Medication Tracking** - Log medications, dosages, schedules, and refill reminders
-- **Vital Monitoring** - Record and track blood pressure, heart rate, weight, glucose, and temperature
-- **Document Storage** - Upload and manage care-related documents securely
-- **Real-time Chat** - Group messaging with Socket.IO for instant communication
-- **Notifications** - Automated reminders for tasks, medications, and care activities
+- **Family Group Management**: Create and manage family groups with role-based access control (Admins, Members).
+- **Task Management**: Create, assign, and track care tasks with due dates, priorities, and status updates.
+- **Medication Tracking**: Log medications, dosages, frequency, and refill reminders.
+- **Vital Monitoring**: Record and track key health metrics like blood pressure, heart rate, weight, glucose, and temperature with visual charts.
+- **Document Storage**: Upload and manage care-related documents (Medical Records, Prescriptions, etc.) securely using AWS S3.
+- **Real-time Chat**: Integrated group messaging for instant communication between family members and caregivers.
+- **Notifications**: Automated system notifications for important updates and reminders.
 
-### User Roles
+### Role-Based Access
 
-- **Care Recipients** - Individuals receiving care
-- **Care Givers** - Professional or family caregivers
-- **Family Members** - Family participants in care coordination
-- **Admins/Owners** - Group administrators with full permissions
+- **Care Recipients**: The central focus of the care group.
+- **Caregivers**: Professional or family members providing direct care.
+- **Family Members**: Participants assisting in coordination.
+- **Admins**: Group creators with full management permissions.
 
-### Authentication & Security
+### Security & Architecture
 
-- Firebase Authentication with email/password and Google OAuth
-- JWT-based session management with access and refresh tokens
-- Role-based access control (RBAC) for all resources
-- Email verification and password reset flows
-- Case-insensitive email handling for improved user experience
-
-## 🏗️ Architecture
-
-### Tech Stack
-
-**Frontend**
-
-- React 18 with Vite
-- TailwindCSS for styling
-- React Router for navigation
-- Axios for API calls
-- Socket.IO client for real-time features
-- React Toastify for notifications
-- Firebase Auth SDK
-
-**Backend**
-
-- Node.js with Express
-- MongoDB with Mongoose ODM
-- Redis for caching and session management
-- Firebase Admin SDK for authentication
-- Socket.IO for real-time communication
-- Node-cron for scheduled tasks
-- Nodemailer for email notifications
-
-**Storage & Services**
-
-- AWS S3 for file storage
-- Cloudinary for image management
-- MongoDB Atlas (production)
-- Redis for token caching
+- **Authentication**: Robust Firebase Authentication (Email/Password & Google OAuth).
+- **Data Protection**: AWS S3 for secure file storage and signed URL access.
+- **Real-time Updates**: Socket.IO for instant chat and status reflection.
+- **Background Jobs**: Automated cron jobs for scheduled tasks (medications, refills).
 
 ---
 
-2. **Set up environment variables**
+## 🏗️ Architecture & Tech Stack
 
-   Create `backend/.env`:
+### Frontend
+- **Framework**: React 19 + Vite
+- **Styling**: Tailwind CSS v4
+- **State & UI**: Headless UI
+- **Visualization**: Recharts (for Vitals)
+- **Communication**: Socket.IO Client, Axios
 
-   ```env
-   # Database
-   MONGODB_URI=mongodb://mongodb:27017/care_connect_db
 
-   # Redis
-   REDIS_URL=redis://redis:6379
+### Backend
+- **Runtime**: Node.js + Express 5
+- **Database**: MongoDB (Mongoose ODM)
+- **Caching**: Redis (Session management & caching)
+- **Real-time**: Socket.IO
+- **Storage**: AWS S3 (via AWS SDK v3)
+- **Auth**: Firebase Admin SDK
+- **Email**: Nodemailer
 
-   # JWT Secrets
-   ACCESS_TOKEN_SECRET=your_access_token_secret
-   REFRESH_TOKEN_SECRET=your_refresh_token_secret
+### Infrastructure
+- **Hosting**: AWS / Local
 
-   # Firebase
-   FIREBASE_PROJECT_ID=your_project_id
-   FIREBASE_PRIVATE_KEY=your_private_key
-   FIREBASE_CLIENT_EMAIL=your_client_email
+### Prerequisites
+Ensure you have the following installed:
+- **Node.js** (v18+ recommended)
+- **MongoDB**
+- **Redis**
 
-   # AWS S3
-   AWS_ACCESS_KEY_ID=your_access_key
-   AWS_SECRET_ACCESS_KEY=your_secret_key
-   AWS_REGION=us-east-1
-   S3_BUCKET_NAME=your_bucket_name
+---
 
-   # Email (Nodemailer)
-   EMAIL_HOST=smtp.gmail.com
-   EMAIL_PORT=465
-   EMAIL_USER=your_email@gmail.com
-   EMAIL_PASS=your_app_password
+### Configuration :
+
+The project zip file includes the necessary `.env` files for both `frontend/` and `backend/` with all required API keys and database configurations pre-set. No manual variable setup is required.
+
+### Installation :
+
+1. Clone the repository to your local machine using the command
+   `git clone https://github.com/HarshilModh/Care_Connect.git`
+
+2. Install the dependencies needed for the project
+   **Backend:**
+   ```bash
+   cd backend
+   npm install
+   ```
+   **Frontend:**
+   ```bash
+   cd frontend
+   npm install
    ```
 
-   Create `frontend/.env`:
-
-   ```env
-   VITE_API_URL=http://localhost:3000/api
-   VITE_FIREBASE_API_KEY=your_firebase_api_key
-   VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
-   VITE_FIREBASE_PROJECT_ID=your_project_id
+3. Start the application
+   **Backend:**
+   ```bash
+   cd backend
+   npm start
    ```
+   *The server listens on PORT: 3000 by default.*
 
-3. **Access the application**
-   - Frontend: [http://localhost:5173](http://localhost:5173)
-   - Backend API: [http://localhost:3000](http://localhost:3000)
-   - MongoDB: `localhost:27017`
-   - Redis: `localhost:6379`
+   **Frontend:**
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+   *The frontend runs on http://localhost:5173 by default.*
 
-### Local Development
 
-**Backend Setup**
+### Accessing the Application :
 
-```bash
-cd backend
-npm install
-npm start
-```
+1. Project URL : [http://localhost:5173/](http://localhost:5173/)
 
-**Frontend Setup**
+2. Navigate to [http://localhost:5173/signup](http://localhost:5173/signup) to create a new account.
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+3. Navigate to [http://localhost:5173/signin](http://localhost:5173/signin) to login to an existing account.
 
-**Production URL**: `http://3.138.189.214:5173/`
+
+### Database :
+
+1. A MongoDB database named `care_connect_db` is utilized (on `localhost:27017`). Ensure your local MongoDB instance is running.
+
+2. Open MongoDB Compass and connect to `mongodb://localhost:27017/care_connect_db`.
+
+
+### Important Notes :
+
+- Please create an account with your own email to test the OTP email functionality.
+- OTP emails can sometimes land in your spam or junk folder so please check that.
+
+### Deployment Information
+
+We have deployed this application on AWS EC2. You can access it at:  
+[http://3.138.189.214:5173/](http://3.138.189.214:5173/)  
+
+*Note: The AWS EC2 instance may be paused due to low credits. Please Shirsha know if you face any issues accessing the application.*
+
+
+### Credentials for Testing CareConnect
+
+- **Email**: person1.careconnect@gmail.com  
+  **Password**: r$zr6Ur.ZfjDkJ4
+
+- **Email**: person2.careconnect@gmail.com  
+  **Password**: Q2M8kPjVmz2!.Jd
+
+- **Email**: person3.careconnect@gmail.com  
+  **Password**: Cs554WebDev@@
+
+- **Email**: person4.careconnect@gmail.com  
+  **Password**: Abcd123@@
+
+**Note**: You cannot use the "Reset Password" or "Forgot Password" features with these emails, as they are shared testing accounts. If needed, you can create your own account for testing.
+
+---
+
+### Feature Explained if missed in video
+
+- **Task Status**: If you see a red background in a task, it means the task has been marked as "missed" by the cron job.
+
+
+### Task Editing Behavior
+
+- **Calendar View**: 
+  - When you click on a task:
+    - If you are an admin, the task will open in edit mode.
+    - If the task is marked as "done" (tick), it will not open for editing.
+
+- **List View**: 
+  - The "Edit" button will be disabled for tasks marked as "done".

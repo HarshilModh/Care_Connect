@@ -120,6 +120,10 @@ const CustomEvent = ({ event }) => {
   );
 };
 
+const CustomCalendarHeader = ({ label }) => {
+  return <span className="text-gray-700 font-semibold">{label}</span>;
+};
+
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -544,8 +548,11 @@ export default function Tasks() {
             )}
           </div>
         ) : (
-          <div className="bg-white p-6 rounded-2xl shadow-xl border border-gray-100 h-[700px]">
-
+          <div
+            className="bg-white p-6 rounded-2xl shadow-xl border border-gray-100 h-[700px]"
+            role="grid"
+            aria-label="Tasks Calendar"
+          >
             <BigCalendar
               localizer={localizer}
               events={calendarEvents}
@@ -561,6 +568,7 @@ export default function Tasks() {
               components={{
                 toolbar: CustomToolbar,
                 event: CustomEvent,
+                header: CustomCalendarHeader,
               }}
               onSelectEvent={(event) => {
                 if (event.resource.status === "completed") return;

@@ -296,7 +296,7 @@ function SignIn() {
         </div>
       </div>
 
-      <ToastContainer
+      {/* <ToastContainer
         position="top-center"
         autoClose={3000}
         hideProgressBar={false}
@@ -307,7 +307,7 @@ function SignIn() {
         draggable
         pauseOnHover
         theme="colored"
-      />
+      /> */}
     </div>
   );
 }

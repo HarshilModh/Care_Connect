@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import api from "../../api/axios";
 import { useParams, useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast,ToastContainer } from "react-toastify";
 import {
   ArrowLeft,
   Users,
@@ -327,7 +327,7 @@ const GroupDetails = () => {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6">
+      <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto space-y-6">
           <div className="h-8 bg-gray-200 rounded w-1/3 animate-pulse"></div>
           <div className="h-32 bg-gray-200 rounded-xl animate-pulse"></div>
@@ -336,13 +336,13 @@ const GroupDetails = () => {
             <div className="h-48 bg-gray-200 rounded-xl animate-pulse"></div>
           </div>
         </div>
-      </main>
+      </div>
     );
   }
 
   if (error || !group) {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-xl font-bold text-gray-900">Group not found</h2>
           <p className="text-gray-500 mt-2">
@@ -356,12 +356,12 @@ const GroupDetails = () => {
             Go Back
           </button>
         </div>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6">
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
         <div>
@@ -592,9 +592,21 @@ const GroupDetails = () => {
           groupId={groupId}
         />
 
-
+      <ToastContainer 
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+        style={{ zIndex: 9999 }}
+      />
       </div>
-    </main>
+    </div>
   );
 };
 
