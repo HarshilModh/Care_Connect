@@ -113,7 +113,7 @@ The project zip file includes the necessary `.env` files for both `frontend/` an
 
 1. A MongoDB database named `care_connect_db` is utilized (on `localhost:27017`). Ensure your local MongoDB instance is running.
 
-2. Open MongoDB Compass and connect to `mongodb://localhost:27017/care_connect_db`.
+2. Open MongoDB Compass and connect to `MONGODB_URI=mongodb+srv://jitesh16:Jitesh%4016@cluster0.j66yjdt.mongodb.net/care_connect?retryWrites=true&w=majority&appName=Cluster0`.
 
 
 ### Important Notes :
