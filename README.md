@@ -128,3 +128,37 @@ We have deployed this application on AWS EC2. You can access it at:
 [http://3.138.189.214:5173/](http://3.138.189.214:5173/)  
 
 *Note: The AWS EC2 instance may be paused due to low credits. Please Shirsha know if you face any issues accessing the application.*
+
+
+### Credentials for Testing CareConnect
+
+- **Email**: person1.careconnect@gmail.com  
+  **Password**: r$zr6Ur.ZfjDkJ4
+
+- **Email**: person2.careconnect@gmail.com  
+  **Password**: Q2M8kPjVmz2!.Jd
+
+- **Email**: person3.careconnect@gmail.com  
+  **Password**: Cs554WebDev@@
+
+- **Email**: person4.careconnect@gmail.com  
+  **Password**: Abcd123@@
+
+**Note**: You cannot use the "Reset Password" or "Forgot Password" features with these emails, as they are shared testing accounts. If needed, you can create your own account for testing.
+
+---
+
+### Feature Explained if missed in video
+
+- **Task Status**: If you see a red background in a task, it means the task has been marked as "missed" by the cron job.
+
+
+### Task Editing Behavior
+
+- **Calendar View**: 
+  - When you click on a task:
+    - If you are an admin, the task will open in edit mode.
+    - If the task is marked as "done" (tick), it will not open for editing.
+
+- **List View**: 
+  - The "Edit" button will be disabled for tasks marked as "done".
