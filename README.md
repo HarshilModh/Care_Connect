@@ -148,9 +148,26 @@ We have deployed this application on AWS EC2. You can access it at:
 
 ---
 
-### Feature Explained if missed in video
+### Feature Explained (If missed in video)
 
-- **Task Status**: If you see a red background in a task, it means the task has been marked as "missed" by the cron job.
+- **Task Status & Reminders**: 
+  - If you see a **red background** in a task, it means the task has been marked as "missed" by our automated cron job (runs every 15 minutes).
+  - **Automated Reminders**: The system checks every minute for tasks due soon.
+    - **5 Minutes Before**: A "Task Due Soon" notification is sent to the assignee.
+    - **Due Time**: An "Urgent: Task Due Now" notification is sent.
+  - **Daily Recurring Tasks**: Every night at midnight, the system automatically generates the next instance for any recurring tasks (daily, weekly, monthly).
+
+- **Panic Button**:
+  - Located in the Family Group details.
+  - Clicking this and confirming will send an **immediate emergency alert** to ALL members of that family group. Use this only for emergencies.
+
+- **Invitation System**:
+  - You can add members in two ways:
+    1. **Search Existing Users**: Find users already on CareConnect by their email.
+    2. **Invite via Email**: If they aren't registered, invite them by email. This creates a pre-verified account for them, and they will receive an email (handled via our simulated email service in development) or notifications upon logging in.
+
+- **Vitals Monitoring**:
+  - We use **Recharts** to visualize health trends. Adding a new vital reading immediately updates the charts to show progress over time.
 
 
 ### Task Editing Behavior
@@ -162,3 +179,11 @@ We have deployed this application on AWS EC2. You can access it at:
 
 - **List View**: 
   - The "Edit" button will be disabled for tasks marked as "done".
+
+### User Deletion
+- When a user deletes their account:
+  - The system checks all groups they own.
+  - It attempts to transfer ownership to the next available family member.
+  - If no other members exist, the entire group is deleted.
+  - **Note**: Deleting a user will also recursively delete their specific tasks, messages, and memberships to ensure no orphaned data remains.
+ 
