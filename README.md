@@ -1,12 +1,12 @@
 # CareConnect
 
-> A comprehensive caregiving collaboration platform that brings families, caregivers, and care recipients together to coordinate care activities seamlessly.
+A comprehensive caregiving collaboration platform that brings families, caregivers, and care recipients together to coordinate care activities seamlessly.
 
 CareConnect is a full-stack MERN application designed to simplify care coordination through real-time communication, task management, medication tracking, and vital monitoring - all in one centralized platform.
 
 ---
 
-## 🌟 Features
+## Features
 
 ### Core Functionality
 
@@ -34,12 +34,11 @@ CareConnect is a full-stack MERN application designed to simplify care coordinat
 
 ---
 
-## 🏗️ Architecture & Tech Stack
+## Architecture & Tech Stack
 
 ### Frontend
 - **Framework**: React 19 + Vite
 - **Styling**: Tailwind CSS v4
-- **State & UI**: Headless UI
 - **Visualization**: Recharts (for Vitals)
 - **Communication**: Socket.IO Client, Axios
 
@@ -114,7 +113,7 @@ The project zip file includes the necessary `.env` files for both `frontend/` an
 
 1. A MongoDB database named `care_connect_db` is utilized (on `localhost:27017`). Ensure your local MongoDB instance is running.
 
-2. Open MongoDB Compass and connect to `mongodb://localhost:27017/care_connect_db`.
+2. Open MongoDB Compass and connect to `MONGODB_URI=mongodb+srv://jitesh16:Jitesh%4016@cluster0.j66yjdt.mongodb.net/care_connect?retryWrites=true&w=majority&appName=Cluster0`.
 
 
 ### Important Notes :
@@ -127,8 +126,7 @@ The project zip file includes the necessary `.env` files for both `frontend/` an
 We have deployed this application on AWS EC2. You can access it at:  
 [http://3.138.189.214:5173/](http://3.138.189.214:5173/)  
 
-*Note: The AWS EC2 instance may be paused due to low credits. Please Shirsha know if you face any issues accessing the application.*
-
+*Note: The AWS EC2 instance may be stopped because of low CPU credits. If the application is unavailable when you try to access or run it, please notify Shirsha so the EC2 instance can be brought back online.*
 
 ### Credentials for Testing CareConnect
 
@@ -148,9 +146,25 @@ We have deployed this application on AWS EC2. You can access it at:
 
 ---
 
-### Feature Explained if missed in video
+### Feature Explained (If missed in video)
 
-- **Task Status**: If you see a red background in a task, it means the task has been marked as "missed" by the cron job.
+- **Task Status & Reminders**: 
+  - If you see a **red background** in a task, it means the task has been marked as "missed" by our automated cron job (runs every 15 minutes).
+  - **Automated Reminders**: The system checks every minute for tasks due soon.
+    - **5 Minutes Before**: A "Task Due Soon" notification is sent to the assignee.
+    - **Due Time**: An "Urgent: Task Due Now" notification is sent.
+  - **Daily Recurring Tasks**: Every night at midnight, the system automatically generates the next instance for any recurring tasks (daily, weekly, monthly).
+
+- **Panic Button**:
+  - Located in the Family Group details.
+  - Clicking this and confirming will send an **immediate emergency alert** to ALL members of that family group. Use this only for emergencies.
+
+- **Invitation System**:
+  - You can add members in two ways:
+    1. **Search Existing Users**: Find users already on CareConnect by their email.
+    2. **Invite via Email: If the user is not registered, they can be invited via email. This creates a pre-verified account for them. They will be required to set or change their password upon first login and will receive an email (via our simulated email service in development) or in-app notifications.
+- **Vitals Monitoring**:
+  - We use **Recharts** to visualize health trends. Adding a new vital reading immediately updates the charts to show progress over time.
 
 
 ### Task Editing Behavior
@@ -162,3 +176,11 @@ We have deployed this application on AWS EC2. You can access it at:
 
 - **List View**: 
   - The "Edit" button will be disabled for tasks marked as "done".
+
+### User Deletion
+- When a user deletes their account:
+  - The system checks all groups they own.
+  - It attempts to transfer ownership to the next available family member.
+  - If no other members exist, the entire group is deleted.
+  - **Note**: Deleting a user will also recursively delete their specific tasks, messages, and memberships to ensure no orphaned data remains.
+ 
