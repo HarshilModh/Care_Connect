@@ -126,8 +126,7 @@ The project zip file includes the necessary `.env` files for both `frontend/` an
 We have deployed this application on AWS EC2. You can access it at:  
 [http://3.138.189.214:5173/](http://3.138.189.214:5173/)  
 
-*Note: The AWS EC2 instance may be paused due to low credits. Please Shirsha know if you face any issues accessing the application.*
-
+*Note: The AWS EC2 instance may be stopped because of low CPU credits. If the application is unavailable when you try to access or run it, please notify Shirsha so the EC2 instance can be brought back online.*
 
 ### Credentials for Testing CareConnect
 
