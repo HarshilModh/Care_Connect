@@ -98,7 +98,7 @@ const CreateGroup = () => {
   };
 
   return (
-    <main className="page">
+    <div className="page">
       <div className="container-n">
         <header className="text-center mb-8">
           <h1 className="section-title">Create Family Group</h1>
@@ -198,7 +198,7 @@ const CreateGroup = () => {
         </p>
       </div>
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
-    </main>
+    </div>
   );
 };
 
