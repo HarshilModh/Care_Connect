@@ -39,7 +39,6 @@ CareConnect is a full-stack MERN application designed to simplify care coordinat
 ### Frontend
 - **Framework**: React 19 + Vite
 - **Styling**: Tailwind CSS v4
-- **State & UI**: Headless UI
 - **Visualization**: Recharts (for Vitals)
 - **Communication**: Socket.IO Client, Axios
 
