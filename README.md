@@ -6,7 +6,7 @@ CareConnect is a full-stack MERN application designed to simplify care coordinat
 
 ---
 
-## 🌟 Features
+## Features
 
 ### Core Functionality
 
@@ -34,7 +34,7 @@ CareConnect is a full-stack MERN application designed to simplify care coordinat
 
 ---
 
-## 🏗️ Architecture & Tech Stack
+## Architecture & Tech Stack
 
 ### Frontend
 - **Framework**: React 19 + Vite
