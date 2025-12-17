@@ -162,8 +162,7 @@ We have deployed this application on AWS EC2. You can access it at:
 - **Invitation System**:
   - You can add members in two ways:
     1. **Search Existing Users**: Find users already on CareConnect by their email.
-    2. **Invite via Email**: If they aren't registered, invite them by email. This creates a pre-verified account for them, and they will receive an email (handled via our simulated email service in development) or notifications upon logging in.
-
+    2. **Invite via Email: If the user is not registered, they can be invited via email. This creates a pre-verified account for them. They will be required to set or change their password upon first login and will receive an email (via our simulated email service in development) or in-app notifications.
 - **Vitals Monitoring**:
   - We use **Recharts** to visualize health trends. Adding a new vital reading immediately updates the charts to show progress over time.
 
