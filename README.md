@@ -1,6 +1,6 @@
 # CareConnect
 
-> A comprehensive caregiving collaboration platform that brings families, caregivers, and care recipients together to coordinate care activities seamlessly.
+A comprehensive caregiving collaboration platform that brings families, caregivers, and care recipients together to coordinate care activities seamlessly.
 
 CareConnect is a full-stack MERN application designed to simplify care coordination through real-time communication, task management, medication tracking, and vital monitoring - all in one centralized platform.
 
