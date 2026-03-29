@@ -26,8 +26,7 @@ import { Membership } from "../models/memberShip.model.js";
 import { createNotification, panicAlertNotification } from "../data/notificationController.js";
 import mongoose from "mongoose";
 import { panicAlertMessage } from "../data/chatController.js";
-import { sendPanicAlertEmail } from "../utils/emailSend.js";
-// Change this line:
+import { sendPanicAlertEmail } from "../integrations/nodemailer.js";// Change this line:
 import { isValidString } from "../utils/validation.utils.js";
 import User from "../models/user.model.js";
 import { requireAuth, verifyFirebaseToken } from "../middlewares/auth.js";
