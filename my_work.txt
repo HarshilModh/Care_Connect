@@ -1,0 +1,75 @@
+4c9d3b7 Merge pull request #59 from HarshilModh/Harshil_Modh
+1e34a2d fix: Add missing start script in package.json frontend
+22a48dc Merge pull request #58 from HarshilModh/Harshil_Modh
+ca6f000 fix: Remove unnecessary arrow from the introduction in README.md
+296ae73 Final Push
+44be383 Final Push
+390c57a Merge pull request #57 from HarshilModh/Harshil_Modh
+ed97238 feat: Add ToastContainer to FamilyGroups and GroupDetails components; update README with testing credentials and feature explanations
+d5171a1 refactor: Update layout structure in CreateGroup and GroupDetails components; enhance link styling in UserProfile
+351b852 feat: Enhance user profile validation and error handling
+340381d Enhance validation for family group names and descriptions; update routing for private access to chat, edit group, and notifications components.
+be914a6 Merge pull request #54 from HarshilModh/Shirsha_Sen
+313c148 Merge pull request #53 from HarshilModh/Harshil_Modh
+653e9dd Merge branch 'master' into Harshil_Modh
+61d5702 Enhance family group and medication functionalities; add description validation, update user deletion logic, and improve error handling in various components
+a45c711 Merge pull request #49 from HarshilModh/Harshil_Modh
+774c730 Merge branch 'master' of https://github.com/HarshilModh/Care_Connect into Harshil_Modh
+1b143f2 Enhance error handling in routes and controllers; update response status codes and add validation for required parameters
+97bc5dd Merge pull request #46 from HarshilModh/Harshil_Modh
+84282d4 Improve error handling in careGivers and chat routes; update response status codes and add validation for required parameters
+5a40682 Merge pull request #44 from HarshilModh/Harshil_Modh
+4eee880 Refactor task-related components to use API client for data fetching; update TaskFilters, CreateTask, and Tasks components for improved error handling and performance.
+c1089cb Fixed AWS s3 errors
+9b59f78 Merge pull request #42 from HarshilModh/Harshil_Modh
+f84e3b1 Refactor GroupMembers component for improved readability and performance; replace axios with api module for API calls, enhance member info handling, and streamline filtering logic. Update TaskCalendar and taskEdit components for better date handling and performance optimizations. Modify onboarding pages to utilize api module for API requests. Revise Home page to improve data fetching and state management. Clean up Not Found and Sign In/Signup pages by removing unnecessary comments and enhancing layout consistency. Update socket.js for cleaner connection logic and improved logging.
+563388a Merge pull request #41 from HarshilModh/Harshil_Modh
+3a368e7 Refactor family groups and task components to use API client; enhance user experience with membership checks and input validations
+d1a90c8 Merge pull request #40 from HarshilModh/Harshil_Modh
+bb897f7 Clear recipients state on error during data fetching in CreateTask component
+f6720cf Merge pull request #39 from HarshilModh/Harshil_Modh
+4fd4c5e Refactor UI components for improved layout and responsiveness; enhance data fetching and error handling in various pages
+3be6691 Enhance error handling in getCareRecipientsByGroupId route and validate groupId
+2a03abf Merge pull request #38 from HarshilModh/Harshil_Modh
+5bcd9ae pem file added
+e172b74 Merge pull request #37 from HarshilModh/Aditya
+16f14cd Merge pull request #35 from HarshilModh/Aditya
+6d8d6c0 Merge pull request #34 from HarshilModh/Harshil_Modh
+7c5e075 feat: Update socket connection URL handling for improved flexibility and development support
+f5f5275 Merge pull request #33 from HarshilModh/Harshil_Modh
+f33da39 feat: Implement panic alert feature with notifications and email alerts
+53cb631 Merge pull request #32 from HarshilModh/Harshil_Modh
+d9ad8b1 feat: add onboarding_required notification type and improve error handling in CreateTask
+2aaa9c0 Merge pull request #31 from HarshilModh/Harshil_Modh
+8e584de feat: enhance user profile and group management with improved data handling and UI updates
+b71faa1 Merge pull request #30 from HarshilModh/Harshil_Modh
+4fc2fc4 feat: enhance membership creation with onboarding notifications and role checks
+1b76b9d Merge pull request #28 from HarshilModh/Harshil_Modh
+23b2e5e Merge branch 'master' into Harshil_Modh
+fa4a4fa feat: add moment.js and react-big-calendar for enhanced date handling and calendar view
+dab3738 Merge pull request #27 from HarshilModh/Aditya
+227ae9f Merge pull request #26 from HarshilModh/Harshil_Modh
+7834635 feat: improve UI layout and enhance chat functionality with user creation logs
+d8422bd feat: enhance UI and functionality across multiple components
+2d124cf feat: enhance UI and functionality across multiple components
+d00d58c feat: add form validation for signup and task creation
+46f76d3 cron jobs
+6f3ed89 feat: Enhance Create Task and Tasks Page UI/UX
+c2ab3fa Merge pull request #21 from HarshilModh/Harshil_Modh
+ffcdcac feat: Implement user profile editing and viewing features
+e8ae06e feat: add chat functionality with group messaging, typing indicators, and message management
+423a7f4 feat(chat): implement chat functionality with message sending, retrieval, and management
+71cc546 Merge pull request #17 from HarshilModh/Harshil_Modh
+5fd52f3 feat: add GroupMembers component with enhanced UI and functionality
+76fc985 feat: add GroupMembers component with enhanced UI and functionality
+e51c794 Merge pull request #10 from HarshilModh/Aditya
+2849bf5 Merge branch 'master' into Aditya
+04a9c3c Merge pull request #8 from HarshilModh/Harshil_Modh
+8df4e8a feat: add GroupMembers component with enhanced UI and functionality
+d3ae287 Merge pull request #7 from HarshilModh/Harshil_Modh
+a069f69 feat: Update frontend dependencies and add new components for family group management
+b816f2f feat: Implement task management functionalities including create, update, delete, and list tasks
+edfda64 sign up and login api done for frontend
+0396e65 Remove future improvements from README
+2117905 Revise README for CareConnect project
+6184805 Stub file created

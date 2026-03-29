@@ -26,14 +26,13 @@ import { Membership } from "../models/memberShip.model.js";
 import { createNotification, panicAlertNotification } from "../data/notificationController.js";
 import mongoose from "mongoose";
 import { panicAlertMessage } from "../data/chatController.js";
-import { sendPanicAlertEmail } from "../integrations/nodemailer.js";
-// Change this line:
+import { sendPanicAlertEmail } from "../integrations/nodemailer.js";// Change this line:
 import { isValidString } from "../utils/validation.utils.js";
 import User from "../models/user.model.js";
 import { requireAuth, verifyFirebaseToken } from "../middlewares/auth.js";
 const router = express.Router();
 
-router.post("/",requireAuth, async (req, res) => {
+router.post("/", requireAuth, async (req, res) => {
   try {
     console.log("here in the post route");
 
@@ -178,7 +177,7 @@ router.get("/name/:groupName", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Group name cannot be an empty string" });
     }
     const familyGroups = await getFamilyGroupsByName(groupName);
-   
+
     res.status(200).json(familyGroups);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -467,7 +466,7 @@ router.post("/group/:id/panic", requireAuth, async (req, res) => {
     }
     if (!mongoose.Types.ObjectId.isValid(senderId)) {
       return res.status(400).json({ error: "senderId must be a valid ObjectId" });
-    } 
+    }
     if (groupId === senderId) {
       return res.status(400).json({ error: "groupId and senderId cannot be the same" });
     }
