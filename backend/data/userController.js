@@ -276,9 +276,8 @@ export const updateUser = async (userId, updateData) => {
     if (firebaseUid) {
       await admin.auth().updateUser(firebaseUid, {
         email: safe.email,
-        displayName: `${safe.firstName || updated.firstName} ${
-          safe.lastName || updated.lastName
-        }`,
+        displayName: `${safe.firstName || updated.firstName} ${safe.lastName || updated.lastName
+          }`,
       });
     }
 
@@ -611,10 +610,10 @@ export const resetUserPassword = async (email, newPassword) => {
 };
 
 //Verify User Email
-export const verifyUserEmail = async (userId, verificationCode) => {};
+export const verifyUserEmail = async (userId, verificationCode) => { };
 
 //Send Password Reset Email
-export const sendPasswordResetEmail = async (email) => {};
+export const sendPasswordResetEmail = async (email) => { };
 
 //Update User Profile Picture
 export const updateUserProfilePicture = async (userId, profilePictureUrl) => {
