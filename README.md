@@ -13,6 +13,7 @@
 
 ## Contents
 
+- [Architecture](#architecture)
 - [The problem](#the-problem)
 - [At a glance](#at-a-glance)
 - [Features](#features)
@@ -21,13 +22,27 @@
 - [Panic alert flow](#panic-alert-flow)
 - [Authentication](#authentication)
 - [Background jobs](#background-jobs)
-- [Architecture](#architecture)
 - [Data model](#data-model)
 - [Engineering decisions](#engineering-decisions)
 - [Tech stack](#tech-stack)
 - [API overview](#api-overview)
 - [Run it locally](#run-it-locally)
 - [Repository layout](#repository-layout)
+
+## Architecture
+
+```mermaid
+flowchart LR
+  UI[React 19 + Vite] -->|REST, axios| API[Express 5 API]
+  UI <-->|Socket.IO rooms per group| API
+  UI -->|sign in| FB[Firebase Auth]
+  API -->|verify ID token| FB
+  API --> M[(MongoDB<br/>11 Mongoose models)]
+  API --> R[(Redis<br/>refresh tokens)]
+  API --> S3[(AWS S3<br/>documents, presigned URLs)]
+  API --> MAIL[Nodemailer<br/>invites and alerts]
+  JOBS[node-cron jobs] --> M
+```
 
 ## The problem
 
@@ -134,21 +149,6 @@ Scheduled with node-cron inside the API:
 | Mark overdue tasks missed | Every 15 minutes |
 | Create the next occurrence of repeating tasks | Nightly |
 | Clear old notifications | Nightly |
-
-## Architecture
-
-```mermaid
-flowchart LR
-  UI[React 19 + Vite] -->|REST, axios| API[Express 5 API]
-  UI <-->|Socket.IO rooms per group| API
-  UI -->|sign in| FB[Firebase Auth]
-  API -->|verify ID token| FB
-  API --> M[(MongoDB<br/>11 Mongoose models)]
-  API --> R[(Redis<br/>refresh tokens)]
-  API --> S3[(AWS S3<br/>documents, presigned URLs)]
-  API --> MAIL[Nodemailer<br/>invites and alerts]
-  JOBS[node-cron jobs] --> M
-```
 
 ## Data model
 
