@@ -4,3 +4,8 @@
 # Ignore environment variable files
 /backend/.env
 /frontend/.env
+# Secrets and keys (never commit these)
+*.pem
+**/serviceAccountKey.json
+# OS files
+.DS_Store
